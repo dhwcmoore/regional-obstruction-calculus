@@ -270,7 +270,7 @@ def print_report() -> None:
         print("  reached for a simpler, more direct reason: this rule was never even")
         print("  globally indexed on this cover, because the triple-support geometry")
         print("  never reuses a support across two contexts. A cover with repeated")
-        print("  triple supports (docs/COUPLED_GENERATOR_SPEC.md's option 1) would be")
+        print("  triple supports (docs/design/COUPLED_GENERATOR_SPEC.md's option 1) would be")
         print("  needed before this rule's sharing behaviour can be tested at all.")
 
 

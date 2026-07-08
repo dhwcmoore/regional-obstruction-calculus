@@ -5,8 +5,8 @@ boolean_crossing_diagnostic.py
 A diagnostic witness, not a theorem: a non-degenerate four-region shared-P
 cover on which the "Boolean proper-crossing" outer-slot rule produces a
 genuine, non-repairable first-order associator residue. See
-docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md for the full write-up, and
-docs/COUPLED_GENERATOR_SPEC.md / docs/REALISABILITY_ROADMAP.md for how
+docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md for the full write-up, and
+docs/design/COUPLED_GENERATOR_SPEC.md / docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for how
 this fits into the still-open coupled-generator question.
 
 This is a genuinely different construction from
@@ -98,7 +98,7 @@ COARSE_D0 = [
 CYCLE = [Fraction(-1), Fraction(-1), Fraction(-1), Fraction(1)]
 
 # The recorded non-degenerate witness (Gate 0-5, all passed -- see
-# docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md).
+# docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md).
 WITNESS: Dict[str, FrozenSet[int]] = {
     "U1": frozenset({0, 1, 2}),
     "U2": frozenset({0, 1, 3}),

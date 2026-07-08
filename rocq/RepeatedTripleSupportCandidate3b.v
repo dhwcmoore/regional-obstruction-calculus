@@ -3,7 +3,7 @@
 
    A finite-incidence-first formalisation of the sixth realisability
    diagnostic (repeated_triple_support_diagnostic.py,
-   docs/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md, commit db6a5cb): the first
+   docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md, commit db6a5cb): the first
    positive linear/rational result in the realisability line, Candidate 3b
    (ordered restriction-to-triple-support outer-slot coupling) run on a
    cover whose four theta-triples share one repeated triple-support point.

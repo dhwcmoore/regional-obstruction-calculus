@@ -3,7 +3,7 @@
 coupled_realisability_diagnostic.py
 
 The first concrete test of the architectural correction specified in
-docs/COUPLED_GENERATOR_SPEC.md: a genuinely coupled first-order associator
+docs/design/COUPLED_GENERATOR_SPEC.md: a genuinely coupled first-order associator
 generator for the four-region cycle, built from one shared point universe
 (no seam instantiates a private VennTriple), diagnosed by exact rational
 basis probing exactly as realisability_diagnostic.py diagnosed the
@@ -48,7 +48,7 @@ set as:
     mu_UvV_W = 0   (outer slot, fixed -- not shared, not free)
 
 This is one specific, falsifiable choice among the open questions
-docs/COUPLED_GENERATOR_SPEC.md section 7 deliberately left open -- not a
+docs/design/COUPLED_GENERATOR_SPEC.md section 7 deliberately left open -- not a
 claim that it is the right one. The result below shows it is not: see
 "Result" below.
 
@@ -86,7 +86,7 @@ the mu's read as a 0-cochain on the same graph. A discrete gradient is a
 coboundary by construction. Adjacency-only mu, with outer slots zero,
 produces gradients, not curvature. The outer correction slots are
 load-bearing, not cosmetic; this diagnostic does not attempt to share
-them (see docs/REALISABILITY_ROADMAP.md for what's still open).
+them (see docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for what's still open).
 
 USAGE:
     python coupled_realisability_diagnostic.py
@@ -273,7 +273,7 @@ def print_report() -> None:
         print()
         print("  COHOMOLOGICAL COLLAPSE: the rank drop is real, but the entire image")
         print("  is already-repairable residues. This coupling produces gradients,")
-        print("  not curvature. See docs/REALISABILITY_ROADMAP.md.")
+        print("  not curvature. See docs/diagnostics/REALISABILITY_DIAGNOSTICS.md.")
 
 
 if __name__ == "__main__":

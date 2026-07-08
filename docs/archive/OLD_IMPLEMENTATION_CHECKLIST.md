@@ -1,3 +1,12 @@
+# Old Implementation Checklist
+
+This file is historical. It records an earlier development plan and
+should not be read as the current project status. See
+[STATUS.md](../../STATUS.md) and [PROJECT_MAP.md](../../PROJECT_MAP.md)
+for the current state.
+
+---
+
 # Implementation Checklist
 
 ## Phase 1: Foundation ✅ COMPLETE

@@ -1,7 +1,7 @@
 # Reproducibility
 
 Command-level reproduction of every checked result in this repository.
-See `docs/THEOREM_CONCORDANCE.md` for which result each command exercises
+See `docs/theory/THEOREM_CONCORDANCE.md` for which result each command exercises
 and exactly what it does and does not prove; this file is deliberately
 just commands and expected output, no explanation.
 
@@ -70,4 +70,4 @@ insert_bridge     A1-A4 true, N0 false, E0 true, verdict_safe false
 A1-A4 persistence witness) and satisfies (E0) exactness reflection, but
 fails (N0) cochain-map naturality — the witness that shows (N0) and (E0)
 are independent conditions, not two views of the same fact. See
-`docs/THEOREM_CONCORDANCE.md` and the paper's Remark 10.8.
+`docs/theory/THEOREM_CONCORDANCE.md` and the paper's Remark 10.8.

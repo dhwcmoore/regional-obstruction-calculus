@@ -2,8 +2,8 @@
 
 **Status: a diagnostic witness, not a theorem and not a release
 milestone.** Fourth in the realisability diagnostic chain. See
-`docs/COUPLED_GENERATOR_SPEC.md` for the architectural question this
-tests one candidate against, and `docs/REALISABILITY_ROADMAP.md` for the
+`docs/design/COUPLED_GENERATOR_SPEC.md` for the architectural question this
+tests one candidate against, and `docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` for the
 full chain. No tag accompanies this result.
 
 ## The construction
@@ -100,7 +100,7 @@ Nothing above is taken on symbolic faith:
 This discipline exists because an earlier hand-reasoned "witness" in this
 same project (the Boolean proper-crossing rule's first proposed
 construction) failed outright when actually run — see
-`docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`. The reduction here *does*
+`docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`. The reduction here *does*
 hold exactly, for a structural reason (it is pure algebra on top of an
 identity `compute_seam_residue` already cross-checks internally, not a
 claim about which points carry which values) — but that structural

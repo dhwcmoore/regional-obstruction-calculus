@@ -75,7 +75,7 @@ def test_computed_pairings_are_honest_not_legacy_numerology():
     refinement_witnesses.py. These differ from the paper's current table
     (-7/2, -4, -5/4, -5) for the three subdivision witnesses, because
     those table values were literal constants with no supporting
-    construction (see README / docs/IMPLEMENTATION_CHECKLIST.md history).
+    construction (see README / docs/archive/OLD_IMPLEMENTATION_CHECKLIST.md history).
     The bridge witness recovers -5 exactly, since it doesn't touch the
     original four edges at all.
     """

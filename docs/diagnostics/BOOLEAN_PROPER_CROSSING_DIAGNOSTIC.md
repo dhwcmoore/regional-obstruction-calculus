@@ -2,9 +2,9 @@
 
 **Status: a diagnostic witness, not a theorem and not a release
 milestone.** This document records one verified computation and what it
-does and does not establish. See `docs/COUPLED_GENERATOR_SPEC.md` for the
+does and does not establish. See `docs/design/COUPLED_GENERATOR_SPEC.md` for the
 architectural question this is one data point toward, and
-`docs/REALISABILITY_ROADMAP.md` for the broader realisability line this
+`docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` for the broader realisability line this
 sits inside. No tag accompanies this result — see "Status" at the bottom.
 
 ## What kind of result this is
@@ -141,9 +141,9 @@ from a degenerate single-point region.
   out to be coboundaries.
 - It is not a realisability theorem. There is no parameter space here,
   so there is no image, no rank, and no obstruction quotient to report —
-  see `docs/REALISABILITY_ROADMAP.md` for why that question needs a
+  see `docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` for why that question needs a
   *linear* coupled generator, which this deterministic rule is not.
-- It does not resolve the open question `docs/COUPLED_GENERATOR_SPEC.md`
+- It does not resolve the open question `docs/design/COUPLED_GENERATOR_SPEC.md`
   §7 and the shared-adjacent-`mu` collapse result left open (what shared,
   non-private, non-zero rule for the outer correction slots produces
   curvature *as a function of free parameters*). This witness uses no

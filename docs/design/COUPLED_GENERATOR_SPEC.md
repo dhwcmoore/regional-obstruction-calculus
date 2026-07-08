@@ -6,12 +6,12 @@ This document settles one thing only: the architectural correction needed
 before a first-order realisability theorem can be non-trivial. It does
 not choose a sharing discipline, does not define the coupled
 parameter-to-residue map `A_S`, and does not contain code. See
-`docs/REALISABILITY_ROADMAP.md` for the negative result this responds to,
+`docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` for the negative result this responds to,
 and §7 below for exactly what is still undecided.
 
 ## 1. Purpose
 
-`docs/REALISABILITY_ROADMAP.md` (commit `742766d`) showed that the
+`docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` (commit `742766d`) showed that the
 current associator generator (`associator_residue.four_cycle_instances()`)
 is surjective onto all of `C^1(N;Q)`: every residue is realisable, a
 negative result. The diagnosis given there was that the generator's four
@@ -187,7 +187,7 @@ None of these should be resolved by extending this document. They are
 the subject of the next design conversation.
 
 **Related, but not a resolution of the above:**
-`docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md` records a deterministic
+`docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md` records a deterministic
 (parameter-free) rule for populating correction slots — including the
 outer ones this section leaves open — and shows it produces a
 non-degenerate residue outside `im(delta^0)` for one specific cover. That
@@ -198,7 +198,7 @@ not a decision about which linear sharing discipline this document's open
 question calls for.
 
 **A tested linear candidate, and why it failed instructively:**
-`docs/LATTICE_IE_DIAGNOSTIC.md` records an actual attempt at this
+`docs/diagnostics/LATTICE_IE_DIAGNOSTIC.md` records an actual attempt at this
 section's open question — `mu` indexed globally by ordered pairs of
 lattice-derived supports (not seam-local), with the outer slots populated
 by inclusion-exclusion over that shared index. Checked against the real
@@ -212,7 +212,7 @@ is a real constraint on any future candidate, not yet satisfied by
 anything tried so far.
 
 **A first positive linear result, and the precondition it depends on:**
-`docs/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md` records the first
+`docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md` records the first
 linear/rational rule in this line to produce a genuinely partial,
 nontrivial obstruction quotient — Candidate 3b (ordered
 restriction-to-triple-support coordinates), tested on a cover whose four
@@ -226,7 +226,7 @@ support in a four-θ-cycle (any two triples sharing a point forces that
 point into all four) — the induced map has rank 2, intersects `im δ⁰` in
 dimension 1, and has quotient dimension 1, invariant under enriching the
 cover up to `|Ui|=12`. This answers the sharpened open question above
-(from `docs/LATTICE_IE_DIAGNOSTIC.md`) in the affirmative for one
+(from `docs/diagnostics/LATTICE_IE_DIAGNOSTIC.md`) in the affirmative for one
 construction: a linear rule *can* have its
 surviving (non-cancelling) coordinates genuinely shared across more than
 one seam context, when the cover is chosen so that sharing is possible at

@@ -79,7 +79,7 @@ machinery around a vacuous claim.
 
 ## What a non-trivial realisability theorem needs
 
-See `docs/COUPLED_GENERATOR_SPEC.md` for the architectural correction
+See `docs/design/COUPLED_GENERATOR_SPEC.md` for the architectural correction
 this points to: the problem is not merely that the seams choose
 independent data, but that no regional object exists yet whose identity
 could be shared between them. That document settles the architectural
@@ -107,7 +107,7 @@ whether a given residue is realisable under it.
 
 ## Diagnostic result: adjacent-overlap μ with zero outer slots
 
-The first concrete test of `docs/COUPLED_GENERATOR_SPEC.md`'s
+The first concrete test of `docs/design/COUPLED_GENERATOR_SPEC.md`'s
 architecture, run against the four-region cycle with one shared point
 universe (`coupled_realisability_diagnostic.py`, no seam instantiates a
 private `VennTriple`), using the cyclic-successor seam-context selector
@@ -178,7 +178,7 @@ What is the weakest non-private, non-zero rule for outer correction data
 that can produce a residue not lying in im(delta^0)?
 ```
 
-See `docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md` for one data point
+See `docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md` for one data point
 toward this: a *deterministic*, non-linear rule (no free parameters —
 correction slots derived from region-lattice containment relations, not
 shared scalars) that does produce a residue outside `im(delta^0)`, for
@@ -189,7 +189,7 @@ evidence that curvature is achievable at all under some sharing rule,
 not progress on the linear picture this section's open question needs.
 
 A first attempt at a linear rule did try to answer it directly: see
-`docs/LATTICE_IE_DIAGNOSTIC.md` for the ordered inclusion-exclusion
+`docs/diagnostics/LATTICE_IE_DIAGNOSTIC.md` for the ordered inclusion-exclusion
 discipline, indexed globally by lattice-derived support pairs rather than
 by seam. It failed — but informatively, and it sharpens the open question
 rather than just restating it. The associator formula cancels exactly the
@@ -265,7 +265,7 @@ for in the sense of changing the verdict.
 general theorem; it depends on repeated triple support and does not apply
 to the standard distinct-support cover; it does not replace item 16's
 non-linear existence witness, which has no rank/quotient to compute at
-all. See `docs/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md` for the full
+all. See `docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md` for the full
 five-point account and verification discipline.
 
 ## Status
@@ -290,7 +290,7 @@ five-point account and verification discipline.
     diagnostic witness, not a theorem) —
     `boolean_crossing_diagnostic.py` +
     `tests/test_boolean_crossing_diagnostic.py` +
-    `docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`. A *deterministic*
+    `docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`. A *deterministic*
     (parameter-free) outer-slot rule — genuine, verified through all six
     validation gates against the real code — that produces a
     non-degenerate residue outside `im(delta^0)`. Not a linear
@@ -303,7 +303,7 @@ five-point account and verification discipline.
 17. **Ordered inclusion-exclusion diagnostic: too free by disguised
     independence** (Python, exact; negative result) —
     `lattice_ie_diagnostic.py` + `tests/test_lattice_ie_diagnostic.py` +
-    `docs/LATTICE_IE_DIAGNOSTIC.md`. A genuine attempt at a *linear*,
+    `docs/diagnostics/LATTICE_IE_DIAGNOSTIC.md`. A genuine attempt at a *linear*,
     globally-indexed (by lattice-derived support pairs, not seam label)
     outer-slot rule. Checked: the associator formula cancels exactly the
     genuinely-shared adjacent-pair terms, leaving only composite
@@ -325,7 +325,7 @@ five-point account and verification discipline.
     `rocq/RepeatedTripleSupportCandidate3b.v` +
     `tests/test_candidate_discipline_diagnostic.py` +
     `tests/test_repeated_triple_support_diagnostic.py` +
-    `docs/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md`. Answers item 17's
+    `docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md`. Answers item 17's
     sharpened open question in the affirmative for one construction:
     `rank(B)=2`, `dim(im(B)∩im δ⁰)=1`, `dim(quotient)=1` — neither full
     rank nor coboundary collapse — on a cover where all four θ-triples

@@ -4,9 +4,9 @@
 release milestone.** Sixth in the realisability diagnostic chain (fifth
 counting only the linear/rational family: items 14/15/17 negative, item
 16 a non-linear existence witness, this one the first linear/rational
-*positive* result). See `docs/COUPLED_GENERATOR_SPEC.md` for the
+*positive* result). See `docs/design/COUPLED_GENERATOR_SPEC.md` for the
 architectural question this tests one candidate against, and
-`docs/REALISABILITY_ROADMAP.md` for the full chain. No tag accompanies
+`docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` for the full chain. No tag accompanies
 this result.
 
 ## The precise claim
@@ -132,7 +132,7 @@ Richness is a variable this construction is provably indifferent to.
 Nothing above is taken on symbolic faith, following the same discipline
 as items 16-17 (an earlier hand-reasoned "witness" in this project failed
 outright when actually run — see
-`docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`):
+`docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`):
 
 - `verify_opposite_pair_sharing_forces_global()` checks the structural
   fact of point 2 by direct construction, not hand argument alone.
@@ -178,7 +178,7 @@ this     Candidate 3b, repeated cover     rank: 2, quotient: 1   FIRST positive 
   claims Candidate 3b is *the* right sharing discipline, only that it is
   a rule capable of producing a genuine, non-collapsing, non-surjective
   obstruction quotient under a specific structural precondition.
-- It does not replace `docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`'s
+- It does not replace `docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md`'s
   result — that is a different, non-linear (parameter-free) positive
   case with no rank/quotient to compute at all. This is a different,
   linear/rational positive case, reached by a different mechanism.

@@ -2,7 +2,7 @@
 Locks in the realisability diagnostic's negative result: the current
 associator generator (associator_residue.py's four_cycle_instances-style
 construction) is surjective onto all of C^1(N;Q). See
-docs/REALISABILITY_ROADMAP.md for what this means and does not mean.
+docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for what this means and does not mean.
 
 This is a regression guard, not a proof -- if a future change to the
 generator (e.g. adding real cross-seam coupling) makes this test fail,

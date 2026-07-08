@@ -1,6 +1,6 @@
 """
 Locks in the "cohomological collapse" result for the first concrete
-coupled generator test (docs/COUPLED_GENERATOR_SPEC.md's architecture,
+coupled generator test (docs/design/COUPLED_GENERATOR_SPEC.md's architecture,
 adjacent-overlap sharing with outer correction slots fixed to zero): the
 induced map has rank 3 (a real drop from the independent generator's
 full rank 4), but its image is exactly im(delta^0) of the same cyclic
@@ -9,7 +9,7 @@ graph, so the realisable-obstruction quotient is trivial.
 This is a regression guard on a specific, falsified design choice, not a
 proof that coupling is hopeless -- see
 coupled_realisability_diagnostic.py's module docstring and
-docs/REALISABILITY_ROADMAP.md for what remains open (the outer
+docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for what remains open (the outer
 correction slots). If a future change to this specific construction
 makes these assertions fail, check whether that's because the outer
 slots are no longer zero -- that would be expected, and good.

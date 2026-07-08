@@ -4,7 +4,7 @@ carrier_matrix_infrastructure.py
 
 Reusable machinery for testing coupled outer-slot disciplines, factored
 out after the ordered inclusion-exclusion diagnostic (`3ad4bbd`,
-docs/LATTICE_IE_DIAGNOSTIC.md) showed that "globally indexed" is not
+docs/diagnostics/LATTICE_IE_DIAGNOSTIC.md) showed that "globally indexed" is not
 enough: a candidate rule can be genuinely shared at the parameter level
 and still collapse to seam-local independence if the associator formula
 cancels exactly the shared terms. This module makes that check

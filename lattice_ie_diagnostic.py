@@ -3,8 +3,8 @@
 lattice_ie_diagnostic.py
 
 Fourth realisability diagnostic: the ordered inclusion-exclusion outer-
-slot discipline. See docs/LATTICE_IE_DIAGNOSTIC.md for the full write-up
-and docs/COUPLED_GENERATOR_SPEC.md / docs/REALISABILITY_ROADMAP.md for
+slot discipline. See docs/diagnostics/LATTICE_IE_DIAGNOSTIC.md for the full write-up
+and docs/design/COUPLED_GENERATOR_SPEC.md / docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for
 how this fits into the broader realisability line.
 
 The construction
@@ -47,7 +47,7 @@ symbolic algebra, and verify_reduction_against_real_code() spot-checks it
 against compute_seam_residue directly under random rational parameters,
 on two different triples with different role assignments (an earlier
 Boolean-rule "witness" in this same project failed exactly this kind of
-check -- see docs/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md -- so nothing
+check -- see docs/diagnostics/BOOLEAN_PROPER_CROSSING_DIAGNOSTIC.md -- so nothing
 here is accepted without it).
 
 Because only the two composite (meet-based) keys per triple survive, and

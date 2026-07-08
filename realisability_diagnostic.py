@@ -3,13 +3,13 @@
 realisability_diagnostic.py
 
 A single diagnostic computation for the realisability question raised as
-future work (item 14 in the README; see docs/REALISABILITY_ROADMAP.md):
+future work (item 14 in the README; see docs/diagnostics/REALISABILITY_DIAGNOSTICS.md):
 which seam residues can the associator-generation pipeline
 (associator_residue.py's four_cycle_instances-style construction) actually
 produce?
 
 This is deliberately NOT a realisability theorem, an analyser module, or a
-proof-carrying certificate format -- see docs/REALISABILITY_ROADMAP.md for
+proof-carrying certificate format -- see docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for
 why not yet. It answers one question about the *current* generator before
 any theorem is attempted, using the actual literal-expansion-verified
 compute_seam_residue path (via associator_residue.compile_residue), not a
@@ -130,7 +130,7 @@ def print_report() -> None:
         print("  constraint. Every residue in C^1(N;Q) -- obstructed or not -- is")
         print("  realisable, because its four seams are fully independent local")
         print("  Venn-triple instances with no shared data. See")
-        print("  docs/REALISABILITY_ROADMAP.md for what a non-trivial")
+        print("  docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for what a non-trivial")
         print("  realisability theorem would require.")
 
 

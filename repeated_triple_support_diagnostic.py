@@ -7,8 +7,8 @@ result in this line: Candidate 3b (ordered restriction-to-triple-support
 outer-slot coupling, see candidate_discipline_diagnostic.py) run on a
 cover whose four theta-triples share a single repeated triple-support
 point, instead of the four distinct points of the standard cover. See
-docs/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md for the full write-up and
-docs/COUPLED_GENERATOR_SPEC.md / docs/REALISABILITY_ROADMAP.md for how
+docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md for the full write-up and
+docs/design/COUPLED_GENERATOR_SPEC.md / docs/diagnostics/REALISABILITY_DIAGNOSTICS.md for how
 this fits the broader realisability line.
 
 The precise claim
