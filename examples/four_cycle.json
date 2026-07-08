@@ -1,0 +1,18 @@
+{
+  "name": "Four-Cycle Obstruction Witness",
+  "complex": {
+    "name": "Four-Cycle Nerve (Figure 3)",
+    "dim_0": 4,
+    "dim_1": 4,
+    "dim_2": 0,
+    "coboundary_0": [
+      ["-1", "1", "0", "0"],
+      ["0", "-1", "1", "0"],
+      ["0", "0", "-1", "1"],
+      ["-1", "0", "0", "1"]
+    ],
+    "coboundary_1": []
+  },
+  "residue": ["1", "1", "1", "-2"],
+  "cycle_witness": ["-1", "-1", "-1", "1"]
+}

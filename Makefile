@@ -1,0 +1,40 @@
+PYTHON ?= python3
+PYTEST ?= $(PYTHON) -m pytest
+
+.PHONY: test check clean check-python check-residue check-refinements check-random check-rocq check-ocaml check-associator
+
+check: check-python
+
+check-python:
+	$(PYTHON) residue_classifier.py examples/four_cycle.json
+	$(PYTHON) refinement_checker.py
+	$(PYTHON) run_associator_obstruction.py examples/four_cycle_associator.json
+	$(PYTEST) -q
+
+check-residue:
+	$(PYTHON) residue_classifier.py examples/four_cycle.json
+
+check-refinements:
+	$(PYTHON) refinement_checker.py
+
+check-associator:
+	$(PYTHON) run_associator_obstruction.py examples/four_cycle_associator.json
+
+check-random:
+	$(PYTEST) -q tests/test_random_residue_regression.py
+
+check-rocq:
+	coqc rocq/AdmissibleRefinementPersistence.v
+	cd rocq && coqc AssociatorResidueRepair.v && coqc FourCycleObstruction.v && coqc RepeatedTripleSupportCandidate3b.v
+
+check-ocaml:
+	cd ocaml && ocamlopt \
+	  refinement_witnesses.ml refinement_checker.ml \
+	  -o ../refinement_checker_ocaml
+	./refinement_checker_ocaml
+
+clean:
+	rm -rf __pycache__ tests/__pycache__ .pytest_cache
+	rm -f refinement_checker_ocaml
+	rm -f ocaml/*.cmi ocaml/*.cmx ocaml/*.o
+	rm -f rocq/*.vo rocq/*.vok rocq/*.vos rocq/*.glob rocq/.*.aux

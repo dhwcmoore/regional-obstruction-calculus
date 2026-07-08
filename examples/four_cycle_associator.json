@@ -1,0 +1,19 @@
+{
+  "name": "Four-Cycle Obstruction Witness (associator-generated)",
+  "note": "Same delta^0, cycle_witness, and target residue as examples/four_cycle.json, but here the residue is not declared directly: it is compiled by associator_residue.py from the seam_instances below via the paper's associator-defect machinery (regional_composition.py), one independent Venn-triple instance per coarse seam.",
+  "coboundary_0": [
+    ["-1", "1", "0", "0"],
+    ["0", "-1", "1", "0"],
+    ["0", "0", "-1", "1"],
+    ["-1", "0", "0", "1"]
+  ],
+  "cycle_witness": ["-1", "-1", "-1", "1"],
+  "seam_order": ["e12", "e23", "e34", "e14"],
+  "seam_instances": {
+    "e12": {"mu_VW": "1", "mu_UvV_W": "0", "mu_U_VvW": "0", "mu_UV": "0"},
+    "e23": {"mu_VW": "1", "mu_UvV_W": "0", "mu_U_VvW": "0", "mu_UV": "0"},
+    "e34": {"mu_VW": "1", "mu_UvV_W": "0", "mu_U_VvW": "0", "mu_UV": "0"},
+    "e14": {"mu_VW": "-2", "mu_UvV_W": "0", "mu_U_VvW": "0", "mu_UV": "0"}
+  },
+  "expected_residue": ["1", "1", "1", "-2"]
+}
