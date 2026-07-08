@@ -1,61 +1,100 @@
 # Reproducibility
 
 Command-level reproduction of every checked result in this repository.
-See `docs/theory/THEOREM_CONCORDANCE.md` for which result each command exercises
-and exactly what it does and does not prove; this file is deliberately
-just commands and expected output, no explanation.
+See `docs/theory/THEOREM_CONCORDANCE.md` for which result each command
+exercises and exactly what it does and does not prove; this file is
+deliberately just commands and expected output.
 
-All commands below were run from the repository root immediately before
-this file was committed, and all exited `0`.
+Python checks are the default reproducibility path. Rocq and OCaml
+checks require external toolchains and are not assumed available in
+every environment.
 
-## Python, exact rational
+## Setup
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+make check-python
+```
+
+`make check-python` runs the core computed results in order, then the
+full pytest suite:
+
+```sh
+python residue_classifier.py examples/four_cycle.json
+python refinement_checker.py
+python run_associator_obstruction.py examples/four_cycle_associator.json
+python -m pytest -q
+```
+
+Expected: `124 passed`.
+
+## Individual checks
 
 ```sh
 python residue_classifier.py examples/four_cycle.json
 python refinement_checker.py
 python run_associator_obstruction.py examples/four_cycle_associator.json --json out.json
 python first_order_certificate_checker.py out.json
-pytest
+python -m pytest -q
 ```
 
-`pytest` alone (no path) collects the full suite — 68 tests as of this
-commit, across `tests/test_random_residue_regression.py`,
-`tests/test_refinement_witnesses.py`, `tests/test_finite_algebra.py`,
-`tests/test_regional_composition.py`, `tests/test_associator_residue.py`,
-`tests/test_repair_solver.py`, `tests/test_associator_four_cycle.py`, and
-`tests/test_first_order_certificates.py`.
-
-## Rocq
-
-Compile in this order (later files `Require` earlier ones):
+## Realisability diagnostics (optional; also covered by pytest)
 
 ```sh
-cd rocq
-coqc AdmissibleRefinementPersistence.v
-coqc CochainNaturalityDescent.v
-coqc CommonSubdivisionAgreement.v
-coqc ExactnessReflection.v
-coqc AssociatorResidueRepair.v
-coqc FourCycleObstruction.v
-coqc FirstOrderClassifierCertificate.v
+python realisability_diagnostic.py
+python coupled_realisability_diagnostic.py
+python boolean_crossing_diagnostic.py
+python lattice_ie_diagnostic.py
+python candidate_discipline_diagnostic.py
+python repeated_triple_support_diagnostic.py
 ```
 
-All seven compile with no `Admitted`, `Axiom`, or `sorry` (grep the
-`.v` files yourself to check; none of the theorem statements above
-depend on you trusting this file's word for it).
+Each prints its own rank/quotient/verdict numbers; see
+`docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` and RESULTS.md R6-R9 for
+what each result means.
 
-## OCaml parity (optional, environment-dependent)
+## Rocq (optional, requires `coqc`)
+
+```sh
+make check-rocq
+```
+
+which compiles, in dependency order:
+
+```sh
+coqc rocq/AdmissibleRefinementPersistence.v
+cd rocq
+coqc AssociatorResidueRepair.v
+coqc FourCycleObstruction.v
+coqc RepeatedTripleSupportCandidate3b.v
+```
+
+`rocq/CochainNaturalityDescent.v`, `rocq/CommonSubdivisionAgreement.v`,
+`rocq/ExactnessReflection.v`, and `rocq/FirstOrderClassifierCertificate.v`
+compile standalone with `coqc <file>.v` from the `rocq/` directory (not
+yet wired into the `check-rocq` Makefile target). All eight `.v` files
+contain no `Admitted`, `Axiom`, or `sorry` — grep them yourself to check;
+nothing here depends on taking this file's word for it.
+
+## OCaml parity (optional, requires `ocamlopt`)
+
+```sh
+make check-ocaml
+```
+
+which is:
 
 ```sh
 cd ocaml
-ocamlfind ocamlopt -package zarith -linkpkg \
-  refinement_witnesses.ml refinement_checker.ml -o refinement_checker
-./refinement_checker
+ocamlopt refinement_witnesses.ml refinement_checker.ml -o ../refinement_checker_ocaml
+./refinement_checker_ocaml
 ```
 
 Mirrors `refinement_checker.py`'s (A1)-(A4) computation independently, in
-OCaml's own exact rational type — not (N0)/(E0), which were added to the
-Python side after this mirror was last updated; see README item 5.
+a self-contained OCaml exact-rational type over ordinary integers — not
+(N0)/(E0), added to the Python side after this mirror was last updated.
 
 ## Expected truth table (`refinement_checker.py`)
 
@@ -71,3 +110,17 @@ A1-A4 persistence witness) and satisfies (E0) exactness reflection, but
 fails (N0) cochain-map naturality — the witness that shows (N0) and (E0)
 are independent conditions, not two views of the same fact. See
 `docs/theory/THEOREM_CONCORDANCE.md` and the paper's Remark 10.8.
+
+## Expected result (`repeated_triple_support_diagnostic.py`)
+
+```text
+rank(B) = 2
+rank(delta0) = 3
+dim(im(B) ∩ im(delta0)) = 1
+dim(quotient) = 1
+verdict = genuinely_partial_nontrivial_quotient
+```
+
+The first positive linear/rational realisability witness; see RESULTS.md
+R9 and `docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md`. It does
+not prove Candidate 3b is unique, universal, or final.

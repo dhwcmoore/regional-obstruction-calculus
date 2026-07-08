@@ -1,7 +1,7 @@
 PYTHON ?= python3
 PYTEST ?= $(PYTHON) -m pytest
 
-.PHONY: test check clean check-python check-residue check-refinements check-random check-rocq check-ocaml check-associator
+.PHONY: test check clean check-python check-residue check-refinements check-random check-rocq check-ocaml check-associator check-diagnostics check-certificates
 
 check: check-python
 
@@ -9,7 +9,21 @@ check-python:
 	$(PYTHON) residue_classifier.py examples/four_cycle.json
 	$(PYTHON) refinement_checker.py
 	$(PYTHON) run_associator_obstruction.py examples/four_cycle_associator.json
+	$(MAKE) check-diagnostics
 	$(PYTEST) -q
+
+check-diagnostics:
+	$(PYTHON) realisability_diagnostic.py
+	$(PYTHON) coupled_realisability_diagnostic.py
+	$(PYTHON) boolean_crossing_diagnostic.py
+	$(PYTHON) lattice_ie_diagnostic.py
+	$(PYTHON) candidate_discipline_diagnostic.py
+	$(PYTHON) repeated_triple_support_diagnostic.py
+
+check-certificates:
+	$(PYTHON) run_associator_obstruction.py examples/four_cycle_associator.json --json /tmp/roc_cert_check.json
+	$(PYTHON) first_order_certificate_checker.py /tmp/roc_cert_check.json
+	rm -f /tmp/roc_cert_check.json
 
 check-residue:
 	$(PYTHON) residue_classifier.py examples/four_cycle.json
