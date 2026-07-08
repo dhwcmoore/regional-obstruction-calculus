@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: "Regional Obstruction Calculus"
+message: "If you use this repository, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: Moore
+    given-names: Duston
+repository-code: "https://github.com/dhwcmoore/regional-obstruction-calculus"
+license: MIT
