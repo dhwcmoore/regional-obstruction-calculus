@@ -72,3 +72,4 @@ All compile clean with no `Admitted`/`Axiom`/`sorry` (`make check-rocq`):
 ## 7. Paper
 
 - `paper/associator_fields_ACS_revised.tex` — the associator-fields manuscript. See `paper/README.md` for how it relates to the current repository state.
+- `paper/finite_obstruction_calculus_for_regional_warrant.tex` — the second manuscript: the realisability-line theorem ladder, including the Candidate 3b classification (§4) and refinement-witness composition (§5, Theorems 5.1-5.3: `N0_composes`, `A4_composes`, `E0_composes`). See `paper/README.md`.

@@ -71,3 +71,65 @@ regardless of which specific cover realises the distinctness.
 ```
 
 **What this does not show**: it is one rule (Candidate 3b), not a general theorem about linear couplings generally; it does not replace R8's non-linear Boolean witness, which is a different mechanism entirely; it does not claim Candidate 3b is the final, unique, or most natural coupling discipline — only that its behavior on these two support regimes is now fully characterised, not merely observed on isolated covers. See `docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md` for the diagnostic-level account.
+
+## R10. Refinement-witness composition
+
+A separate question from R1-R9: given two refinement witnesses $P \to
+Q$ and $Q \to R$, each individually admissible, descent-safe (N0), and
+exactness-reflecting (E0), does the composite $P \to R$ inherit those
+properties? Not addressed by the original refinement-persistence result
+(item 10/R4) at all — that concerns a single witness, not composing two.
+
+Tested first: 26 composed witnesses from genuine graph refinements
+(subdividing a vertex, inserting a bridge), then ~175,000 from an
+adversarial search dropping all graph structure — small arbitrary
+rational coboundary maps and edge-level pullbacks, constrained only by
+the actual hypotheses. Zero (A4)/(E0) counterexamples in either search.
+A real methodological mistake was caught and corrected along the way:
+an early, unfiltered version of the adversarial search reported
+thousands of spurious composite (E0) "failures" that turned out to be
+individual-step failures inherited by the composite, not composition
+failures.
+
+That evidence was then turned into three Rocq theorems
+(`rocq/RefinementWitnessComposition.v`, `rocq/
+RefinementWitnessVerdictComposition.v`), each needing less than the
+search's own framing suggested:
+
+```text
+N0_composes:  needs both steps' own N0 -- pure associativity of
+              function composition.
+A4_composes:  needs only step 2's own A4, applied to the residue step 2
+              actually receives -- near-definitional, once the composite
+              is defined as function composition. Step 1's A4 is not a
+              hypothesis; neither is N0.
+E0_composes:  needs both steps' own E0, chained through linearity of the
+              pushforward maps (minimal span/linear-map infrastructure
+              built from scratch for this proof) -- does NOT need
+              either step's N0, contrary to an earlier hand derivation
+              that reached for it unnecessarily.
+```
+
+**The headline fact**: the three conditions compose with three
+*different* dependency profiles, not uniformly — "the composite is
+verdict-safe" is the conjunction of three separately-justified facts,
+not one fact. This is also the precise, now-proved mechanism behind the
+caught mistake above:
+
+```text
+A composite failure is not automatically a compositional failure; it
+may be inherited warrant debt from a defective component step.
+```
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`. See
+`docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md` for the full
+search-then-proof account and `paper/finite_obstruction_calculus_for_
+regional_warrant.tex` §5 (Theorems 5.1-5.3) for the formal statements.
+
+**What this does not show**: that a different formalisation of "the
+composite witness" (not reusing the same declared cycle at the
+composite level) behaves the same way; that three-step or longer
+composition needs nothing beyond repeated two-step application; or
+anything about the sequential/parallel/restriction/failure composition
+axes proposed (not proved) in `veribound-fce`'s
+`docs/design/CERTIFICATE_COMPOSITION_SPEC.md`.

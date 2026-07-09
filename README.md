@@ -45,6 +45,7 @@ See [RESULTS.md](RESULTS.md) for the full account. Headline items:
 
 - **R1-R5**: the four-cycle obstruction is classified, generated from associator data, shown not repairable, shown to persist under refinement, and independently certificate-checked — all in exact rational arithmetic, with Rocq proofs for the repair-impossibility and refinement-persistence claims.
 - **R6-R9**: a ladder of realisability diagnostics for what data a coupled associator generator must share to produce structurally-forced (rather than merely constructible) obstructions, ending in **R9**, the first positive linear/rational witness: a repeated-triple-support coupling with `rank(B)=2`, `dim(im(B) ∩ im δ⁰)=1`, `dim(quotient)=1` — neither too free nor collapsed — also formalised as a machine-checked Rocq theorem (`rocq/RepeatedTripleSupportCandidate3b.v`).
+- **R10**: refinement-witness composition is theorem-grade for all three governing conditions — `N0_composes`, `A4_composes`, `E0_composes` (`rocq/RefinementWitnessComposition.v`, `rocq/RefinementWitnessVerdictComposition.v`) — reached only after a ~175,000-case search, with three different dependency profiles per condition, not a single "safe witnesses compose" fact.
 
 ## Repository map
 
@@ -54,7 +55,7 @@ See [PROJECT_MAP.md](PROJECT_MAP.md) for the full file-by-file map. Top level:
 README.md            this file
 PROJECT_MAP.md        where to start, by layer
 STATUS.md             what is proved / computed / diagnostic / not claimed
-RESULTS.md            the results, R1-R9
+RESULTS.md            the results, R1-R10
 REPRODUCIBILITY.md    exact commands to reproduce every check
 CHANGELOG.md
 LICENSE
@@ -107,7 +108,7 @@ Three distinct kinds of evidence appear in this repository, and they are not int
 
 ## Relation to the associator-fields paper
 
-This repository originated as the companion code to *Associator Fields and Local-to-Global Failure in Finite Compositional Structures* (`paper/associator_fields_ACS_revised.tex`). The repository has since grown beyond that paper — in particular, the realisability diagnostics (R6-R9) and the Candidate 3b classification are post-paper developments. A second manuscript, *A Finite Cohomological Obstruction Calculus for Regional Warrant* (`paper/finite_obstruction_calculus_for_regional_warrant.tex`), packages that later work into its own theorem ladder, with the Candidate 3b classification as its actual new content. See `paper/README.md` for how the two manuscripts and the repository now relate.
+This repository originated as the companion code to *Associator Fields and Local-to-Global Failure in Finite Compositional Structures* (`paper/associator_fields_ACS_revised.tex`). The repository has since grown beyond that paper — in particular, the realisability diagnostics (R6-R9), the Candidate 3b classification, and refinement-witness composition (R10) are post-paper developments. A second manuscript, *A Finite Cohomological Obstruction Calculus for Regional Warrant* (`paper/finite_obstruction_calculus_for_regional_warrant.tex`), packages that later work into its own theorem ladder, with the Candidate 3b classification (§4) and refinement-witness composition (§5) as its actual new content. See `paper/README.md` for how the two manuscripts and the repository now relate.
 
 The prior repository, `admissible-refinement-persistence`, is retained as historical/paper-companion material; this repository is the current, active one.
 
