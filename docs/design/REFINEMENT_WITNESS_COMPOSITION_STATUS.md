@@ -636,7 +636,9 @@ code in `veribound-fce` implements any of it yet.
   declared cycle, or downstream target) has no preservation candidate at
   all, probed or proved — `PARALLEL_WITNESS_COMPOSITION_SPEC.md` §4
   names it a possible *source* of obstruction, not something to assume
-  safe.
+  safe. `docs/design/COUPLED_PARALLEL_COMPOSITION_PROBLEM.md` now poses a
+  first concrete question (shared seam / shared declared cycle) but
+  contains no probe or proof yet.
 - Three-or-more-branch disjoint parallel composition (Phase 4c/4d prove
   exactly two branches) has not been attempted.
 - Whether `A4_parallel_disjoint_branchwise`'s report structure is the
@@ -667,15 +669,16 @@ pytest tests/test_refinement_witness_parallel_disjoint_probe.py
   list/vector machinery this project has not built; the three-step
   pattern is expected to continue but is not proved to.
 - Coupled parallel composition — no preservation candidate exists at
-  all, not attempted; the natural next question if this resumes is
-  whether *any* useful positive statement can be made, or whether the
-  right result is a demonstrated obstruction (in the spirit of
-  Candidate 3b's repeated-support case). Once the disjoint case's full
-  classification (Phase 4d) is in hand, the sharper framing is: coupled
-  parallel is not merely disjoint parallel plus noise, it is the case
-  where even *branchwise* preservation may fail, because the branches
-  share certificate obligations that a branchwise report has no way to
-  represent as separate.
+  all, not attempted as a probe or proof. `docs/design/COUPLED_PARALLEL_
+  COMPOSITION_PROBLEM.md` (Phase 5a) settles the problem framing: picks
+  shared seam / shared declared cycle as the first concrete case (over
+  policy authority, downstream fusion targets, and cross-branch pairing
+  constraints, named but deferred), and separates two sub-cases —
+  consistent shared data (conjectured to degenerate to the disjoint
+  case) versus conflicting shared data (no obvious combined value; the
+  live open question). The natural next step is a small probe testing
+  both sub-cases, mirroring `refinement_witness_parallel_disjoint_
+  probe.py`'s role for Phase 4b — not started.
 - Three-or-more-branch disjoint parallel composition: would need the
   same kind of generalisation as the sequential four-or-more-step case,
   not attempted.
@@ -718,3 +721,16 @@ pytest tests/test_refinement_witness_parallel_disjoint_probe.py
   machine-checked witness (`A4_parallel_aggregate_can_fail_despite_
   branchwise`) that branchwise success does not imply aggregate success.
   `coqchk`-clean.
+- ~~Release checkpoint for the disjoint parallel classification~~ —
+  done, tagged `v0.12-disjoint-parallel-classification`. Also found and
+  fixed a real gap: `make check-rocq` had never compiled four
+  already-proved files (`CochainNaturalityDescent.v`,
+  `CommonSubdivisionAgreement.v`, `ExactnessReflection.v`,
+  `FirstOrderClassifierCertificate.v`), documented but deferred in
+  `REPRODUCIBILITY.md`; now wired in, full 13-file chain `coqchk`-clean.
+- ~~Pose the coupled parallel composition problem~~ — done, Phase 5a,
+  `docs/design/COUPLED_PARALLEL_COMPOSITION_PROBLEM.md`: picks shared
+  seam / shared declared cycle as the first case, over policy authority,
+  downstream fusion targets, and cross-branch pairing constraints
+  (named, deferred). No probe or proof yet — that is the next step, not
+  taken here.
