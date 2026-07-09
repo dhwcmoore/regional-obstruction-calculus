@@ -648,6 +648,125 @@ code in `veribound-fce` implements any of it yet.
   different structured report is more useful once real transformation
   diagnostics are built in `veribound-fce` — not decided, no
   implementation exists yet in either repository.
+- **Whether shared-seam compatibility and aggregate-A4 cancellation can
+  co-occur.** Phase 5b's probe (below) never observed a case where a
+  compatible (glued) shared seam still produced aggregate A4
+  cancellation — but it also did not construct one deliberately, and for
+  the single-cycle-space witnesses used there, compatibility (agreement
+  at the shared edge) constrains the whole declared cycle up to scale,
+  which may make independent cancellation harder to arrange than in the
+  disjoint case. Not established either way; left as a genuinely open
+  question, not a claim that compatibility rules out cancellation.
+
+## Phase 5b: shared-seam coupled parallel probe
+
+Per `docs/design/COUPLED_PARALLEL_COMPOSITION_PROBLEM.md`'s framing
+(Phase 5a): the first question about coupled parallel composition is not
+whether it preserves (N0)/(A4)/(E0) — it is **whether the glued
+composite witness is even well-defined**. This phase probes exactly that
+boundary, and only that boundary; no preservation claim is attempted for
+this phase's own sake, and none should be inferred beyond what §"What
+this settles" below states.
+
+`refinement_witness_coupled_parallel_probe.py` builds a genuinely
+different construction from the disjoint case (`refinement_witness_
+parallel_disjoint_probe.py`): both branches sit over the **same** coarse
+complex (`COARSE`, unprefixed and used once — not duplicated), and only
+their refined complexes are otherwise independently renamed, *except*
+for one designated shared seam (one refined edge name and its two
+endpoint vertices), which is deliberately kept identical between
+branches rather than renamed. This matches "two refinements of the same
+regional situation, agreeing to share exactly one seam," a different
+premise from disjoint composition's "two completely independent regional
+situations placed side by side."
+
+**The compatibility gate, deliberately conservative, exactly as
+directed**: no merge rule (averaging, summing, branch-preference) is
+attempted. A shared seam is well-defined only if both branches' own
+declarations for it agree *exactly* — the edge's structural data
+(`src`, `tgt`, `over`, `over_sign`), the declared-cycle (`z'`) value
+assigned to it, and the coarse parent (`vertex_over`) for each endpoint.
+If they agree, the combined witness is built and checked with the same
+real machinery every prior probe in this project uses. If they do not,
+**no combined witness is built at all** — the case is reported as
+`interface_conflict`, not as an (N0)/(A4)/(E0) failure, since there is
+no composite object for those conditions to be tested against. This
+distinction (composite *undefined* vs. composite *defined but failing*)
+is kept explicit throughout the script and its report.
+
+**Five cases, checked, not merely argued:**
+
+```text
+Case 1 (SUBDIVIDE_U1 self-paired, sharing 'e23', no perturbation):
+    interface_consistent -> disjoint_like_preserved
+    (both branches' own declaration for the shared seam is identical by
+    construction -- the simplest possible consistent case)
+
+Case 2 (SUBDIVIDE_U1 + SUBDIVIDE_U2, sharing 'e34', no perturbation):
+    interface_consistent -> disjoint_like_preserved
+    (an ORGANIC agreement between two genuinely different witnesses --
+    both independently declare the identical Edge('e34','U3','U4',
+    over='e34',sign=1) -- not a self-pairing artifact)
+
+Case 3 (SUBDIVIDE_U1 + SUBDIVIDE_U2, sharing edge-NAME 'e12p'):
+    interface_conflict
+    (an ORGANIC conflict: both witnesses happen to name an edge 'e12p',
+    but branch A's runs U1b->U2 and branch B's runs U1->U2a -- same
+    name, genuinely different edges, arising from the two witnesses'
+    own real declarations, not a constructed adversarial case)
+
+Case 4 (SUBDIVIDE_U1 self-paired, sharing 'e23', over_sign perturbed):
+    interface_conflict
+    (deliberately constructed: same name/src/tgt/over, sign flipped)
+
+Case 5 (SUBDIVIDE_U1 self-paired, sharing 'e23', z' entry perturbed):
+    interface_conflict
+    (deliberately constructed: edge data agrees, cycle coefficient does
+    not)
+```
+
+A sixth, unplanned but real finding surfaced while writing the test
+suite: `SUBDIVIDE_U1` and `INSERT_BRIDGE` (two of this project's own
+four canonical witnesses) organically disagree on `e23`'s `z'` value
+(`+1` vs. `-1`) — another naturally-arising conflict, not constructed,
+now locked in as `tests/test_refinement_witness_coupled_parallel_probe.
+py::test_organic_conflict_between_subdivide_u1_and_insert_bridge`.
+
+**What this settles, precisely.** When two branches' shared-seam
+declarations agree exactly, gluing introduces no new obstruction: the
+combined witness reduces to the *same* preservation pattern already
+proved for disjoint composition (N0/E0 match AND, A4 branchwise holds)
+— consistent with, but not the same claim as, `docs/design/
+COUPLED_PARALLEL_COMPOSITION_PROBLEM.md` §5's "consistent gluing
+degenerates to disjoint-style preservation" conjecture; this is
+evidence for that conjecture on 2 cases, not a proof of it in general.
+When declarations disagree, **no composite witness exists to test at
+all** — a category distinct from local failure, inherited failure, or
+composite failure in this project's existing vocabulary
+(`TRANSFORMATION_CERTIFICATE_VOCABULARY.md`), and worth keeping
+distinct in any future diagnostic status scheme.
+
+**Reproducing this**:
+
+```sh
+python refinement_witness_coupled_parallel_probe.py
+pytest tests/test_refinement_witness_coupled_parallel_probe.py
+```
+
+**Not done**: any merge/resolution rule for conflicting shared-seam
+data (averaging, branch-preference, or otherwise) — deliberately
+excluded per the design doc's explicit instruction; any Rocq
+formalisation of the compatibility gate or the consistent-case
+preservation pattern; any systematic sweep beyond the five cases above
+(kept narrow, per instruction, rather than testing all pairs of all
+witnesses against all shared-edge choices); shared declared-cycle
+coupling *without* a shared seam (this probe's construction ties the
+two together at one edge; a cycle shared across otherwise-disjoint
+seams is a different, untested construction); any of the other six
+coupling sources named in `docs/design/COUPLED_PARALLEL_COMPOSITION_
+PROBLEM.md` §2 (policy authority, downstream fusion target, common
+restriction/downgrade, cross-branch pairing constraint, shared vertex/
+region carrier without a shared edge).
 
 ## Reproducing this
 
@@ -661,6 +780,8 @@ coqc rocq/RefinementWitnessSequentialComposition.v
 coqc rocq/RefinementWitnessParallelComposition.v
 python refinement_witness_parallel_disjoint_probe.py
 pytest tests/test_refinement_witness_parallel_disjoint_probe.py
+python refinement_witness_coupled_parallel_probe.py
+pytest tests/test_refinement_witness_coupled_parallel_probe.py
 ```
 
 ## Next steps
@@ -668,17 +789,19 @@ pytest tests/test_refinement_witness_parallel_disjoint_probe.py
 - Arbitrary finite chains (four-or-more steps): would need dependent
   list/vector machinery this project has not built; the three-step
   pattern is expected to continue but is not proved to.
-- Coupled parallel composition — no preservation candidate exists at
-  all, not attempted as a probe or proof. `docs/design/COUPLED_PARALLEL_
-  COMPOSITION_PROBLEM.md` (Phase 5a) settles the problem framing: picks
-  shared seam / shared declared cycle as the first concrete case (over
-  policy authority, downstream fusion targets, and cross-branch pairing
-  constraints, named but deferred), and separates two sub-cases —
-  consistent shared data (conjectured to degenerate to the disjoint
-  case) versus conflicting shared data (no obvious combined value; the
-  live open question). The natural next step is a small probe testing
-  both sub-cases, mirroring `refinement_witness_parallel_disjoint_
-  probe.py`'s role for Phase 4b — not started.
+- Coupled parallel composition, beyond the shared-seam compatibility gate
+  (Phase 5b): still no preservation candidate of any kind, probed or
+  proved. Concretely open: (a) a conflict-resolution rule — this
+  project has deliberately not chosen one (averaging, branch-preference,
+  or otherwise), and picking one is itself a design decision, not yet
+  made; (b) whether the "consistent gluing degenerates to disjoint-style
+  preservation" finding (2 cases, Phase 5b) generalises, or is a
+  small-sample artifact; (c) a Rocq formalisation of the compatibility
+  gate itself (a purely definitional/structural theorem — "the glued
+  witness is well-typed iff declarations agree" — likely easy, not yet
+  attempted); (d) shared declared-cycle coupling *without* a shared seam,
+  and the other six coupling sources named in `docs/design/COUPLED_
+  PARALLEL_COMPOSITION_PROBLEM.md` §2 — none attempted.
 - Three-or-more-branch disjoint parallel composition: would need the
   same kind of generalisation as the sequential four-or-more-step case,
   not attempted.
@@ -734,3 +857,12 @@ pytest tests/test_refinement_witness_parallel_disjoint_probe.py
   downstream fusion targets, and cross-branch pairing constraints
   (named, deferred). No probe or proof yet — that is the next step, not
   taken here.
+- ~~Probe the shared-seam compatibility boundary~~ — done, Phase 5b,
+  `refinement_witness_coupled_parallel_probe.py`, 5 hand-picked cases (2
+  consistent, 3 conflicting, one conflict arising organically from two
+  of this project's own canonical witnesses' own declarations). Found:
+  consistent declarations glue cleanly and reduce to disjoint-style
+  preservation; conflicting declarations correctly refuse a composite
+  entirely (`interface_conflict`, not an (N0)/(A4)/(E0) failure). No
+  merge/resolution rule attempted — deliberately excluded, per
+  instruction.

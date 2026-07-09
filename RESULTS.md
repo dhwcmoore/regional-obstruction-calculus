@@ -215,3 +215,44 @@ Not addressed at all: coupled parallel composition (branches sharing a
 vertex, seam, declared cycle, or downstream target) — no preservation
 candidate exists for it, probed or proved; three-or-more-branch disjoint
 parallel composition.
+
+**Coupled parallel composition — the first boundary, not preservation
+(Phase 5b).** Released as `v0.12-disjoint-parallel-classification`
+covered only Phases 4a-4d above; coupled parallel composition was
+posed as a problem afterward (`docs/design/COUPLED_PARALLEL_
+COMPOSITION_PROBLEM.md`, Phase 5a) and then probed
+(`refinement_witness_coupled_parallel_probe.py`, Phase 5b) — deliberately
+answering a prior question, not the preservation question:
+
+> When two branches share one refined-level seam rather than being fully
+> independent, is the glued composite witness even well-defined?
+
+Both branches sit over the *same* coarse complex (unlike the disjoint
+case, which duplicates it), with one designated shared edge and its two
+endpoint vertices kept identical between branches instead of
+independently renamed. A deliberately conservative compatibility gate —
+no averaging, summing, or branch-preference merge rule — requires both
+branches' own declarations for the shared seam (edge data, declared-cycle
+value, and coarse parent) to agree *exactly* before any composite is
+built at all.
+
+Five cases, checked: two consistent-declaration cases (one a self-pairing,
+one a genuine cross-witness agreement between `SUBDIVIDE_U1` and
+`SUBDIVIDE_U2` sharing edge `e34`) glue cleanly and reduce to the
+disjoint case's own preservation pattern (N0/E0 match AND, A4 branchwise
+holds). Three conflicting-declaration cases — two deliberately
+constructed (a flipped pullback sign; a mismatched declared-cycle
+coefficient), one arising *organically* between `SUBDIVIDE_U1` and
+`SUBDIVIDE_U2`'s own real declarations for an edge both happen to name
+`e12p` but mean differently — correctly refuse a composite entirely,
+reported as `interface_conflict`, never as an (N0)/(A4)/(E0) failure,
+since no composite object exists for those conditions to be tested
+against.
+
+Not addressed: any conflict-resolution rule (deliberately excluded);
+whether the consistent-case finding generalises beyond 2 hand-picked
+cases; any Rocq formalisation; the other six coupling sources named in
+the problem document's taxonomy (policy authority, downstream fusion
+target, common restriction/downgrade, cross-branch pairing constraint,
+shared vertex/region carrier without a shared edge, shared declared
+cycle without a shared seam).
