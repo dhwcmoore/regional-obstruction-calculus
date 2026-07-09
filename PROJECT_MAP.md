@@ -29,7 +29,8 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `rocq/CochainNaturalityDescent.v` — Rocq proof of the (N0)-descent theorem.
 - `rocq/CommonSubdivisionAgreement.v` — two-map common-subdivision certificate agreement.
 - `rocq/ExactnessReflection.v` — Rocq proof of the (E0)-reflection theorem.
-- `refinement_witness_composition_probe.py` — open question, probed not proved: do two composed refinement witnesses' A1-A4/N0/E0 verdicts compose? See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`.
+- `rocq/RefinementWitnessComposition.v` — (N0)-composability, proved abstractly: `N0_composes`.
+- `refinement_witness_composition_probe.py` — (A4)/(E0)-composability: probed, not proved. See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`.
 
 ## 4. Certificate layer
 
@@ -64,6 +65,7 @@ All compile clean with no `Admitted`/`Axiom`/`sorry` (`make check-rocq`):
 - `rocq/FirstOrderClassifierCertificate.v`
 - `rocq/RepeatedTripleSupportCandidate3b.v`
 - `rocq/CandidateThreeBDistinctSupportClassification.v`
+- `rocq/RefinementWitnessComposition.v`
 
 ## 7. Paper
 

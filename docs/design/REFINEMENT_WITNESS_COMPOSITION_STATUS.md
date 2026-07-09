@@ -1,9 +1,12 @@
 # Status: Refinement Witness Composition
 
-**Status: probed, not proved.** Two concrete composed witnesses tested
-against the real code; one sub-fact (N0-composability) is provably true
-in general; the two conditions that matter most for a real composition
-theorem (A4, E0) remain open. No tag, no theorem, no release milestone.
+**Status: mixed, and that is the actual result.** (N0)-composability is
+now **proved** (`rocq/RefinementWitnessComposition.v`, `coqchk`-clean, no
+`Admitted`/`Axiom`/`sorry`). (A4) and (E0) composability remain
+**probed, not proved** — two concrete composed witnesses tested against
+the real code, both positive, no counterexample found and none shown
+impossible. No tag, no release milestone; one real theorem plus two open
+questions, not a composition theory yet.
 
 ## The question
 
@@ -20,7 +23,21 @@ with another.
 
 ## What is now known
 
-### N0-composability is provable, not empirical
+### N0-composability: proved, not just probable
+
+Machine-checked in `rocq/RefinementWitnessComposition.v`: given three
+complexes' worth of vertex/edge cochain types and coboundary maps, and
+two witnesses' worth of pullbacks each satisfying (N0), the theorem
+`N0_composes` proves the composite pullbacks satisfy (N0) too. The proof
+needs no linear algebra or matrix type at all — (N0) is an equality of
+two composed *functions*, and the composite case is the same equality
+one level up, closed by two `rewrite`s using associativity of function
+composition. This is strictly more general than the matrix-level
+argument below (which is the special case where every type involved is
+`Q^n` and every map is `mat_vec` applied to a matrix): the theorem holds
+for *any* pullback/coboundary maps between *any* types, linear or not.
+
+### The matrix-level version of the same argument
 
 If both individual steps satisfy (N0) -- $\delta'^0 \rho_0^{*} =
 \rho_1^{*} \delta^0$ -- the composite provably satisfies (N0) too,
@@ -40,8 +57,8 @@ This needs no empirical support -- it is a one-line algebraic identity.
 associativity()` checks the underlying associativity identity itself
 against 20 random rational matrix triples, as a sanity check of
 `mat_mat`'s own correctness, not as evidence for the argument (which
-needs none). This is a genuine, general, provable fact -- worth a small
-Rocq lemma alongside the existing chain, not yet written.
+needs none). Machine-checked, abstractly, in
+`rocq/RefinementWitnessComposition.v` (see above).
 
 **Caveat, stated precisely:** this shows N0 composes *when both steps
 individually satisfy it*. It does not show the converse (that a
@@ -117,18 +134,21 @@ silently producing a wrong "witness."
 
 ```sh
 python refinement_witness_composition_probe.py
+coqc rocq/RefinementWitnessComposition.v
 ```
 
-## Next steps, not started
+## Next steps
 
-- Try harder to break A4 or E0: construct a composed witness
-  deliberately designed to make the composite pairing cancel to zero
-  despite both individual pairings being nonzero, or a case where a
-  pushed-forward cycle set shrinks under composition. A failing example
-  would be exactly as valuable as a proof that none exists.
+- **In progress**: reclassify (A4)/(E0) as a conjecture-or-counterexample
+  search rather than a positive-example generator --
+  `refinement_witness_a4_e0_counterexample_search.py`. The question is
+  not "do A4 and E0 compose" but "under which additional hypotheses do
+  they compose, and where do they fail without those hypotheses" --
+  including whether A4 can pass while E0 fails (or vice versa) at the
+  composite level, and whether both can fail while N0 still composes.
 - If A4/E0 continue to survive adversarial construction attempts, that
   would be evidence (not proof) worth escalating to an actual proof
-  attempt, at which point this document's status line should change from
-  "probed, not proved" to something stronger, and only then.
-- Write the N0-composability lemma into the Rocq chain -- it is cheap
-  and already fully justified by the associativity argument above.
+  attempt, at which point this document's status line should change
+  again, and only then.
+- ~~Write the N0-composability lemma into the Rocq chain~~ — done,
+  `rocq/RefinementWitnessComposition.v`.
