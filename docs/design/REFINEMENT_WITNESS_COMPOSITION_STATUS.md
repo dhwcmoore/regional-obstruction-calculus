@@ -285,6 +285,86 @@ step's domain type) not built anywhere in this project; whether the
 "apply the lemma once per additional step" pattern continues to hold for
 $n > 3$ is expected, by the shape of the three proofs, but not checked.
 
+## Phase 4b: disjoint parallel composition (probe only, no proof yet)
+
+A genuinely different question from Phases 2-4a, all of which concern
+one witness followed by another (function composition). **Disjoint
+parallel composition** combines two independent witnesses side by side
+-- a direct-sum / disjoint-union construction, per
+`veribound-fce`'s `docs/design/PARALLEL_WITNESS_COMPOSITION_SPEC.md`,
+which defines "certificate-disjoint" as sharing no vertex, edge, seam,
+declared cycle, or downstream target.
+
+`refinement_witness_parallel_disjoint_probe.py` makes this concrete: two
+witnesses over completely independent vertex/edge name universes (one
+renamed with a prefix), combined by literal list concatenation of the
+coarse complex, refined complex, coarse residue, and declared cycle --
+then run through the real machinery (`coboundary_0`, `pullback_matrix`,
+`vertex_pullback_matrix`, `nullspace_over_Q`, `in_span_over_Q`), not a
+hand-derived block-matrix argument trusted on its own. Following the
+order used for every prior phase of this line -- probe before proof --
+no Rocq file exists for this yet.
+
+**Result, checked over 32 cases (all 16 ordered pairs from
+`ALL_WITNESSES`, with and without the second branch's declared cycle
+negated):**
+
+```text
+N0 always equals AND(branch A's own N0, branch B's own N0): 32/32.
+E0 always equals AND(branch A's own E0, branch B's own E0): 32/32.
+A4 equals AND(branch A's own A4, branch B's own A4) in 16/32 cases --
+    and DIFFERS in the other 16, always exactly the cases where the two
+    branches' pairings have opposite sign, always producing a combined
+    pairing of exactly 0.
+```
+
+**Why N0 and E0 are safe and A4 is not, worked out by hand and then
+checked, not the other way round.** Under a direct-sum construction, the
+combined coboundary/pullback matrices are block-diagonal: no cross-block
+entries exist at all, so (N0) (a matrix *equality*) and (E0) (a subspace
+*containment*, itself decomposing into block-diagonal cycle spaces)
+reduce to "holds in the A block and holds in the B block" with no way
+for the two blocks to interact -- a genuine, safe "AND". (A4) is
+different in kind, not degree: the combined declared cycle is the
+concatenation of both branches' own cycles, so the combined pairing is
+literally the *sum* of the two branches' own pairings. A sum of two
+nonzero numbers can be zero. This was demonstrated, not merely argued:
+taking `SUBDIVIDE_U1` twice, with the second copy's declared cycle
+negated, gives branch pairings $+5$ and $-5$ -- both individually
+nonzero, satisfying each branch's own (A4) -- and a combined pairing of
+exactly $0$, failing the composite's (A4), while (N0) and (E0) remain
+fully intact on both branches and the composite throughout.
+
+**What this means for the eventual theorem, and for
+`PARALLEL_WITNESS_COMPOSITION_SPEC.md`'s candidate names.** This is not
+evidence that "certificate-disjoint" is the wrong definition -- every
+condition it was designed to rule out (shared vertices, seams, cycles)
+plays no role in the cancellation above; the two branches really are
+disjoint by that definition, and (A4) still fails to compose. The
+lesson is narrower and sharper: `N0_parallel_disjoint` and
+`E0_parallel_disjoint` are reasonable theorem targets essentially as
+originally named. `A4_parallel_disjoint`, if attempted, cannot be stated
+as "both branches' own (A4) implies the composite's (A4)" -- that
+statement is false, demonstrated above, not merely unproved. Any real
+`A4_parallel_disjoint` theorem needs an additional hypothesis ruling out
+sign cancellation (e.g. that the two branches' pairings are of the
+*same* sign, or some other condition on their combination) -- exactly
+the kind of "additional hypothesis" question this whole composition line
+has been built to surface precisely rather than paper over.
+
+**Reproducing this**:
+
+```sh
+python refinement_witness_parallel_disjoint_probe.py
+pytest tests/test_refinement_witness_parallel_disjoint_probe.py
+```
+
+**Not done**: any Rocq attempt for parallel composition (per the
+established order, probe first); coupled parallel composition (no
+preservation candidate exists for it at all --
+`PARALLEL_WITNESS_COMPOSITION_SPEC.md` §4); parallel-then-merge (a
+separate operation, per that document's §5).
+
 ## Applied translation
 
 `veribound-fce` (the applied layer built on this repository) has since

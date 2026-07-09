@@ -23,11 +23,12 @@ Verified with `make check-rocq`. Requires a Rocq/`coqc` toolchain; not assumed a
 - Repair solver / obstruction language (`repair_solver.py`).
 - Refinement witness checks: (A1)-(A4), (N0), (E0), `descent_safe`, `verdict_safe` (`refinement_checker.py`).
 - Refinement witness composition search scripts (`refinement_witness_composition_probe.py`, `refinement_witness_a4_e0_counterexample_search.py`, `refinement_witness_composition_boundary_search.py`): computational evidence — ~175,000 cases, 0 counterexamples — that predates and independently corroborates the composition theorems now proved in §1.
+- Disjoint parallel composition probe (`refinement_witness_parallel_disjoint_probe.py`, Phase 4b, no Rocq proof yet): over 32 cases of two certificate-disjoint refinement witnesses combined by direct sum, (N0) and (E0) always equal AND(branch A, branch B); (A4) does not — 16/32 cases mismatch, always because the combined pairing (a *sum* of the two branches' own pairings, not an AND) cancels to exactly 0 even though both branches individually satisfy their own (A4). This is a finding about the shape a future `A4_parallel_disjoint` theorem would need (an explicit non-cancellation hypothesis), not a proof, and not yet reflected in any `verdict_safe`-style composite claim. See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`, Phase 4b.
 - First-order proof-carrying certificate emission and independent checking (`certificate_emitter.py`, `first_order_certificate_checker.py`).
 - 1000-case random-residue regression (`tests/test_random_residue_regression.py`).
 - Coupled realisability diagnostics: independent generator, shared adjacent-overlap coupling, ordered inclusion-exclusion, Candidate 3b on both distinct- and repeated-support covers.
 
-Verified with `make check-python` — 124 tests, all passing. This is the default reproducibility path; see [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
+Verified with `make check-python` — 140 tests, all passing. This is the default reproducibility path; see [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 
 ## 3. Diagnostic witnesses, not general theorems
 
@@ -49,3 +50,4 @@ This repository does not claim:
 - that every associator residue is structurally meaningful — the independent generator (§3) is a counterexample to that on its own;
 - that every coupled generator produces a nontrivial obstruction quotient — most tried so far do not (§3);
 - that Candidate 3b is the final, unique, or general coupling principle — it is one rule, verified on one family of covers.
+- that disjoint parallel composition preserves (A4) in general — the Phase 4b probe (§2) exhibits a concrete case where two certificate-disjoint witnesses each individually satisfy (A4) but their direct-sum composite does not.
