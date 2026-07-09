@@ -139,3 +139,55 @@ steps behave the same way (expected, by the shape of the three-step
 proofs, but not checked); or anything about the
 sequential/parallel/restriction/failure composition axes proposed (not
 proved) in `veribound-fce`'s `docs/design/CERTIFICATE_COMPOSITION_SPEC.md`.
+
+**Disjoint parallel composition — a genuinely different construction,
+a genuinely different result.** All of the above concerns *sequential*
+composition, $P \to Q \to R$: the composite is built by function
+composition. Disjoint parallel composition combines two *independent*
+witnesses side by side — a direct sum, not a composition — per
+`veribound-fce`'s `docs/design/PARALLEL_WITNESS_COMPOSITION_SPEC.md`.
+
+Probed first (`refinement_witness_parallel_disjoint_probe.py`, 32
+cases, all 16 ordered pairs from `ALL_WITNESSES` with and without a
+sign-negated declared cycle): N0 and E0 always equal AND(branch A,
+branch B); A4 does not — 16/32 cases mismatch. The mechanism, worked
+out by hand and then checked: under a direct sum, the combined
+coboundary/pullback structure is block-diagonal, so N0 (matrix
+equality) and E0 (subspace containment) reduce cleanly to "holds in
+block A and holds in block B." A4 is different in kind — the combined
+declared cycle's pairing is the *sum* of the two branches' own
+pairings, not an AND, and two nonzero numbers can sum to zero.
+Demonstrated concretely: `SUBDIVIDE_U1` paired against a sign-negated
+copy of itself gives branch pairings $+5$/$-5$, both individually
+satisfying each branch's own (A4), and a combined pairing of exactly
+$0$, failing the composite's (A4).
+
+That probe result was then turned into two Rocq theorems
+(`rocq/RefinementWitnessParallelComposition.v`), built from a genuine
+direct-sum (product-type) construction rather than function
+composition, reusing the E0 proof's `VSpace`/`InSpan`/`IsLinear`
+infrastructure plus a new direct-sum constructor and a
+span-monotonicity lemma:
+
+```text
+N0_parallel_disjoint:  pure case analysis on the product type, no
+                        vector-space structure needed.
+E0_parallel_disjoint:  each branch's own E0 transports through a linear
+                        embedding into the combined space; a
+                        monotonicity lemma glues the two branch results
+                        together.
+```
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`. **No A4 theorem is
+stated** — the probe showed the natural statement ("both branches' own
+A4 implies the composite's A4") is false, not merely unproved, so no
+`verdict_safe_parallel_disjoint` claim can be made either (it would
+require A4). `veribound-fce`'s spec doc names two non-interchangeable
+candidate replacements for A4 (an aggregate statement with an explicit
+non-cancellation hypothesis, or a branchwise reformulation reporting
+per-branch witness presence) — deciding between them is an open design
+question, not a proof-difficulty question.
+
+Not addressed at all: coupled parallel composition (branches sharing a
+vertex, seam, declared cycle, or downstream target) — no preservation
+candidate exists for it, probed or proved.

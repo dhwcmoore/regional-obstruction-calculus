@@ -1,17 +1,28 @@
 # Status: Refinement Witness Composition
 
-**Status: proved for two and three steps.** (N0), (A4), and (E0)
-composability are theorems for binary composition
+**Status: proved for two and three sequential steps; proved for N0/E0
+under two-branch disjoint parallel composition; A4 does not compose
+under disjoint parallel composition as naively stated, demonstrated by
+probe, not merely unproved.** (N0), (A4), and (E0) composability are
+theorems for binary sequential composition
 (`rocq/RefinementWitnessComposition.v`,
 `rocq/RefinementWitnessVerdictComposition.v`) and for three-step
-composition (`rocq/RefinementWitnessSequentialComposition.v`),
+sequential composition (`rocq/RefinementWitnessSequentialComposition.v`),
 `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`. Released as
 `v0.11-refinement-witness-composition`. The ~175,000-case adversarial
 search (Phase 2b) turned out to be evidence for something that was, in
 fact, provable — see "Phase 2c: the proof attempt" below for what each
 proof actually needed, which is less than the search's own framing
 suggested; "Phase 4a: sequential composition" extends this to three
-steps with the same discipline. Arbitrary finite chains remain open —
+steps with the same discipline. Disjoint *parallel* composition (a
+genuinely different construction — direct sum, not function composition)
+was probed first (Phase 4b) and found to split: `N0_parallel_disjoint`
+and `E0_parallel_disjoint` are now proved
+(`rocq/RefinementWitnessParallelComposition.v`, Phase 4c), `coqchk`-clean;
+`A4_parallel_disjoint` as naively stated is **false**, demonstrated
+computationally, and is deliberately not attempted until a corrected
+statement (see Phase 4c) is settled. Arbitrary finite sequential chains,
+coupled parallel composition, and any A4-parallel theorem remain open —
 see "What is still not known."
 
 ## The question
@@ -285,7 +296,7 @@ step's domain type) not built anywhere in this project; whether the
 "apply the lemma once per additional step" pattern continues to hold for
 $n > 3$ is expected, by the shape of the three proofs, but not checked.
 
-## Phase 4b: disjoint parallel composition (probe only, no proof yet)
+## Phase 4b: disjoint parallel composition (probe)
 
 A genuinely different question from Phases 2-4a, all of which concern
 one witness followed by another (function composition). **Disjoint
@@ -303,7 +314,9 @@ then run through the real machinery (`coboundary_0`, `pullback_matrix`,
 `vertex_pullback_matrix`, `nullspace_over_Q`, `in_span_over_Q`), not a
 hand-derived block-matrix argument trusted on its own. Following the
 order used for every prior phase of this line -- probe before proof --
-no Rocq file exists for this yet.
+no Rocq file existed for this at the time the probe was written; see
+Phase 4c below for what was proved once the probe's findings were used
+to correct the theorem statement.
 
 **Result, checked over 32 cases (all 16 ordered pairs from
 `ALL_WITNESSES`, with and without the second branch's declared cycle
@@ -359,11 +372,77 @@ python refinement_witness_parallel_disjoint_probe.py
 pytest tests/test_refinement_witness_parallel_disjoint_probe.py
 ```
 
-**Not done**: any Rocq attempt for parallel composition (per the
-established order, probe first); coupled parallel composition (no
-preservation candidate exists for it at all --
+**Not done in this phase**: any Rocq attempt (per the established
+order, probe first -- see Phase 4c for what followed); coupled parallel
+composition (no preservation candidate exists for it at all --
 `PARALLEL_WITNESS_COMPOSITION_SPEC.md` §4); parallel-then-merge (a
 separate operation, per that document's §5).
+
+## Phase 4c: N0/E0 proved in Rocq; A4 deliberately not attempted
+
+Per the probe's finding, `rocq/RefinementWitnessParallelComposition.v`
+proves exactly `N0_parallel_disjoint` and `E0_parallel_disjoint` --
+the two conditions the probe supported -- and deliberately does **not**
+state or attempt an `A4_parallel_disjoint` theorem, since the probe
+showed the natural statement of that theorem ("both branches' own A4
+implies the composite's A4") is false, not merely unproved.
+
+**Construction.** Unlike every sequential-composition proof in this
+project (`RefinementWitnessComposition.v`,
+`RefinementWitnessVerdictComposition.v`,
+`RefinementWitnessSequentialComposition.v`), which build composite maps
+by literal function *composition*, disjoint parallel composition is
+built from a genuine direct sum. At the cochain-space level (as opposed
+to the vertex/edge index-set level the Python probe operates on), a
+function on a disjoint union of index sets is exactly a *pair* of
+functions, one per branch -- so the combined coboundary/pullback maps
+act on Rocq product types (`C0 * D0 -> C1 * D1`, etc.) componentwise,
+mirroring the probe's block-diagonal matrices exactly.
+
+**N0_parallel_disjoint**: pure case analysis on the product type,
+needing no vector-space structure at all -- the same flavor of proof as
+the original two-step `N0_composes` (`RefinementWitnessComposition.v`),
+just a pairing instead of a further composition.
+
+**E0_parallel_disjoint**: reuses the `VSpace`/`InSpan`/`IsLinear`
+infrastructure originally built for `RefinementWitnessVerdictComposition
+.v` (redeclared locally in the new file rather than imported, matching
+this project's existing pattern of small self-contained Rocq files), plus
+a new `VSpace_prod` direct-sum constructor and `embed_left`/`embed_right`
+linear embeddings. The combined cycle-space basis is the concatenation of
+each branch's own basis, embedded into the product space with a zero in
+the other component -- matching the actual mathematical fact that the
+kernel of a block-diagonal map is the direct sum of the two branches'
+kernels. Each branch's own (E0) transports through its own embedding
+(shown linear) into the combined space; a new monotonicity lemma
+(`InSpan_incl`, span is monotone under basis inclusion) glues the two
+branch-level results into the combined statement, since -- unlike the
+sequential case -- this proof needed *inclusion* into a larger basis
+rather than *transport* through a single composed map.
+
+Both `coqc`-clean and `coqchk`-clean (zero axioms across the full
+14-file dependency closure). No `Admitted`/`Axiom`/`sorry`.
+
+**A4 is not attempted, and this is a deliberate scope decision, not an
+oversight.** The probe demonstrated a genuine counterexample to naive
+componentwise A4 preservation, so no such theorem can be proved as
+stated. `veribound-fce`'s `docs/design/PARALLEL_WITNESS_COMPOSITION_SPEC
+.md` §7 now names two non-interchangeable candidate replacements
+(`A4_parallel_disjoint_nonzero_sum`, an aggregate statement with an
+explicit non-cancellation hypothesis; `A4_parallel_disjoint_branchwise`,
+a semantically different composite obligation reporting per-branch
+witness presence instead of one summed test) -- deciding between them is
+a design question, not yet settled, and is a precondition for any future
+A4 proof attempt in this repository.
+
+**Scope, stated precisely**: this proves disjoint parallel composition
+of exactly two branches, for N0 and E0 only. Not proved: three-or-more
+branch parallel composition (would need the same kind of dependent-list
+generalisation flagged as open for sequential composition); coupled
+parallel composition (no candidate exists, see Phase 4b); any A4
+statement for parallel composition (see above); interaction between
+parallel and sequential composition (e.g. two sequential chains combined
+in parallel) -- not modeled anywhere in this project.
 
 ## Applied translation
 
@@ -399,6 +478,21 @@ code in `veribound-fce` implements any of it yet.
   immediately by conjunction of the three, but nothing about
   presentation invariance or the broader open questions in the paper's
   "What is not claimed" section is affected by this result.
+- **Disjoint parallel `verdict_safe` composability does not hold**, even
+  though N0 and E0 do compose (Phase 4c) — because A4 is a required
+  conjunct of `verdict_safe` and the naive A4 statement is false (Phase
+  4b). Do not state or imply a combined
+  `verdict_safe_parallel_disjoint` result anywhere until an A4 statement
+  is proved.
+- Coupled parallel composition (branches sharing a vertex, seam,
+  declared cycle, or downstream target) has no preservation candidate at
+  all, probed or proved — `PARALLEL_WITNESS_COMPOSITION_SPEC.md` §4
+  names it a possible *source* of obstruction, not something to assume
+  safe.
+- Which of the two named A4 replacement candidates
+  (`A4_parallel_disjoint_nonzero_sum` vs.
+  `A4_parallel_disjoint_branchwise`) is the right one to formalise is an
+  open design question, not a proof-difficulty question — see Phase 4c.
 
 ## Reproducing this
 
@@ -409,6 +503,9 @@ python refinement_witness_composition_boundary_search.py
 coqc rocq/RefinementWitnessComposition.v
 coqc rocq/RefinementWitnessVerdictComposition.v
 coqc rocq/RefinementWitnessSequentialComposition.v
+coqc rocq/RefinementWitnessParallelComposition.v
+python refinement_witness_parallel_disjoint_probe.py
+pytest tests/test_refinement_witness_parallel_disjoint_probe.py
 ```
 
 ## Next steps
@@ -416,8 +513,19 @@ coqc rocq/RefinementWitnessSequentialComposition.v
 - Arbitrary finite chains (four-or-more steps): would need dependent
   list/vector machinery this project has not built; the three-step
   pattern is expected to continue but is not proved to.
-- Parallel composition (disjoint and coupled cases, kept explicitly
-  separate) is a new front, not attempted here.
+- Coupled parallel composition — no preservation candidate exists at
+  all, not attempted; the natural next question if this resumes is
+  whether *any* useful positive statement can be made, or whether the
+  right result is a demonstrated obstruction (in the spirit of
+  Candidate 3b's repeated-support case).
+- Settling and then proving an A4 statement for disjoint parallel
+  composition — needs a design decision between
+  `A4_parallel_disjoint_nonzero_sum` and
+  `A4_parallel_disjoint_branchwise` (Phase 4c) before any proof attempt;
+  not started.
+- Three-or-more-branch disjoint parallel composition: would need the
+  same kind of generalisation as the sequential four-or-more-step case,
+  not attempted.
 - A worked concrete instantiation of `A4_composes`/`E0_composes` against
   the actual matrix-shaped witnesses in `refinement_checker.py` (the way
   `CandidateThreeBDistinctSupportClassification.v` both proved
@@ -441,3 +549,11 @@ coqc rocq/RefinementWitnessSequentialComposition.v
 - ~~Three-step composition~~ — done, `rocq/
   RefinementWitnessSequentialComposition.v`, `N0_composes_three`,
   `A4_composes_three`, `E0_composes_three`, `coqchk`-clean.
+- ~~Probe disjoint parallel composition~~ — done, Phase 4b,
+  `refinement_witness_parallel_disjoint_probe.py`, 32 cases; found the
+  N0/E0-vs-A4 split.
+- ~~Prove the parts of disjoint parallel composition the probe
+  supports~~ — done, Phase 4c, `rocq/
+  RefinementWitnessParallelComposition.v`, `N0_parallel_disjoint` and
+  `E0_parallel_disjoint`, `coqchk`-clean. A4 deliberately not attempted
+  — see above.

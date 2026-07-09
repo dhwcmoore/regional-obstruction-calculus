@@ -33,7 +33,8 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `rocq/RefinementWitnessVerdictComposition.v` — (A4)/(E0)-composability, proved abstractly: `A4_composes`, `E0_composes`, with minimal span/linear-map infrastructure built from scratch.
 - `rocq/RefinementWitnessSequentialComposition.v` — three-step composition: `N0_composes_three`, `A4_composes_three`, `E0_composes_three`. Arbitrary finite chains not attempted.
 - `refinement_witness_composition_probe.py`, `refinement_witness_a4_e0_counterexample_search.py`, `refinement_witness_composition_boundary_search.py` — the ~175,000-case computational search that preceded and corroborates the proofs above. See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`.
-- `refinement_witness_parallel_disjoint_probe.py` — Phase 4b probe (no Rocq proof yet): does disjoint-parallel (direct-sum) composition of two refinement witnesses preserve (N0)/(A4)/(E0) componentwise? N0 and E0 always match AND across 32 cases; A4 does not (16/32 mismatches, via sign-cancellation of the combined pairing). See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`, Phase 4b.
+- `refinement_witness_parallel_disjoint_probe.py` — Phase 4b probe: does disjoint-parallel (direct-sum) composition of two refinement witnesses preserve (N0)/(A4)/(E0) componentwise? N0 and E0 always match AND across 32 cases; A4 does not (16/32 mismatches, via sign-cancellation of the combined pairing). See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`, Phase 4b.
+- `rocq/RefinementWitnessParallelComposition.v` — Phase 4c: proves exactly what the Phase 4b probe supports, `N0_parallel_disjoint` and `E0_parallel_disjoint`, built via a genuine direct-sum (product-type) construction, not function composition. Deliberately does *not* state an A4 theorem — the probe showed the naive statement is false; see the status doc for the two named (not yet formalised) replacement candidates.
 
 ## 4. Certificate layer
 
