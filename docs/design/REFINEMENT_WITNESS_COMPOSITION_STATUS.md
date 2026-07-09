@@ -424,7 +424,7 @@ sequential case -- this proof needed *inclusion* into a larger basis
 rather than *transport* through a single composed map.
 
 Both `coqc`-clean and `coqchk`-clean (zero axioms across the full
-14-file dependency closure). No `Admitted`/`Axiom`/`sorry`.
+13-file dependency closure). No `Admitted`/`Axiom`/`sorry`.
 
 **A4 is not attempted, and this is a deliberate scope decision, not an
 oversight.** The probe demonstrated a genuine counterexample to naive
@@ -566,6 +566,24 @@ case (a dot product is the relevant `pairing_*` function) but this
 correspondence is not separately checked in Rocq here; three-or-more
 branch parallel composition; coupled parallel composition, still with no
 preservation candidate at all.
+
+**A real gap found and fixed during this checkpoint.** `make check-rocq`
+had never actually compiled four already-proved files —
+`rocq/CochainNaturalityDescent.v`, `rocq/CommonSubdivisionAgreement.v`,
+`rocq/ExactnessReflection.v`, `rocq/FirstOrderClassifierCertificate.v`
+— even though `STATUS.md` §1 has listed them as verified since well
+before this composition line began, and `REPRODUCIBILITY.md` correctly
+documented the gap ("not yet wired into the `check-rocq` Makefile
+target") rather than hiding it. They were never broken; they just needed
+`coqc` invoked on them explicitly, which the make target never did.
+Confirmed all 13 `.v` files compile and `coqchk` together with zero
+axioms across the full closure, then fixed the `Makefile`'s `check-rocq`
+target to compile all 13 in dependency order and updated
+`REPRODUCIBILITY.md` to match. This is the same category of gap the
+Phase 3b traceability checkpoint (see `RESULTS.md`/`README.md`/
+`PROJECT_MAP.md` history) found and fixed for the *documentation*
+surface; this one was in the *verification tooling* surface instead —
+worth checking for again at the next release-style checkpoint.
 
 ## Applied translation
 

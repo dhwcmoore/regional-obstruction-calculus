@@ -61,7 +61,7 @@ what each result means.
 make check-rocq
 ```
 
-which compiles, in dependency order:
+which compiles all 13 `.v` files, in dependency order:
 
 ```sh
 coqc rocq/AdmissibleRefinementPersistence.v
@@ -69,14 +69,26 @@ cd rocq
 coqc AssociatorResidueRepair.v
 coqc FourCycleObstruction.v
 coqc RepeatedTripleSupportCandidate3b.v
+coqc CandidateThreeBDistinctSupportClassification.v
+coqc CochainNaturalityDescent.v
+coqc CommonSubdivisionAgreement.v
+coqc ExactnessReflection.v
+coqc FirstOrderClassifierCertificate.v
+coqc RefinementWitnessComposition.v
+coqc RefinementWitnessVerdictComposition.v
+coqc RefinementWitnessSequentialComposition.v
+coqc RefinementWitnessParallelComposition.v
 ```
 
-`rocq/CochainNaturalityDescent.v`, `rocq/CommonSubdivisionAgreement.v`,
-`rocq/ExactnessReflection.v`, and `rocq/FirstOrderClassifierCertificate.v`
-compile standalone with `coqc <file>.v` from the `rocq/` directory (not
-yet wired into the `check-rocq` Makefile target). All eight `.v` files
-contain no `Admitted`, `Axiom`, or `sorry` — grep them yourself to check;
-nothing here depends on taking this file's word for it.
+All 13 `.v` files contain no `Admitted`, `Axiom`, or `sorry` — grep them
+yourself to check; nothing here depends on taking this file's word for
+it. `coqchk` confirms zero axioms across the full 13-file dependency
+closure. (Until the `v0.12-disjoint-parallel-classification` checkpoint,
+four of these files -- `CochainNaturalityDescent.v`,
+`CommonSubdivisionAgreement.v`, `ExactnessReflection.v`,
+`FirstOrderClassifierCertificate.v` -- were valid and already claimed as
+verified in `STATUS.md` §1, but not actually wired into the `check-rocq`
+Makefile target; that gap is fixed as of this checkpoint.)
 
 ## OCaml parity (optional, requires `ocamlopt`)
 
