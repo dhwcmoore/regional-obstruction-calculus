@@ -1,14 +1,18 @@
 # Status: Refinement Witness Composition
 
-**Status: proved, all three.** (N0), (A4), and (E0) composability are
-now all **theorems** (`rocq/RefinementWitnessComposition.v`,
-`rocq/RefinementWitnessVerdictComposition.v`, `coqchk`-clean, no
-`Admitted`/`Axiom`/`sorry`). The ~175,000-case adversarial search (Phase
-2b) turned out to be evidence for something that was, in fact, provable
-— see "Phase 2c: the proof attempt" below for what each proof actually
-needed, which is less than the search's own framing suggested. No tag,
-no release milestone; this is a small composition theory now, not a
-diagnostic chain.
+**Status: proved for two and three steps.** (N0), (A4), and (E0)
+composability are theorems for binary composition
+(`rocq/RefinementWitnessComposition.v`,
+`rocq/RefinementWitnessVerdictComposition.v`) and for three-step
+composition (`rocq/RefinementWitnessSequentialComposition.v`),
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`. Released as
+`v0.11-refinement-witness-composition`. The ~175,000-case adversarial
+search (Phase 2b) turned out to be evidence for something that was, in
+fact, provable — see "Phase 2c: the proof attempt" below for what each
+proof actually needed, which is less than the search's own framing
+suggested; "Phase 4a: sequential composition" extends this to three
+steps with the same discipline. Arbitrary finite chains remain open —
+see "What is still not known."
 
 ## The question
 
@@ -246,6 +250,41 @@ corrected search bug.
 `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 12-file Rocq chain
 and the 136+-test Python suite verified green before this was recorded.
 
+## Phase 4a: sequential (three-step) composition
+
+`rocq/RefinementWitnessSequentialComposition.v` extends the binary
+result to three composed steps, $P \to Q \to R \to S$. Each proof is a
+direct restatement of its binary predecessor's technique, applied once
+more, not a new argument — and each condition keeps its own distinct
+dependency profile, sharper than "safe chains compose":
+
+```text
+N0_composes_three : needs ALL THREE steps' own N0 -- pure iterated
+                     function-composition rewriting.
+A4_composes_three : needs ONLY the LAST step's own A4, applied to the
+                     fully-pushed-forward residue -- steps 1 and 2's own
+                     A4 are not hypotheses at all, exactly as step 1's
+                     A4 was not needed in the binary case.
+E0_composes_three : needs ALL THREE steps' own E0 (and none of their
+                     N0) -- InSpan_transport applied twice, chaining
+                     step1's coverage through step2's through step3's.
+```
+
+This confirms the predicted pattern exactly: N0 and E0 both require
+*every* component step's own obligation (though for different
+mechanical reasons — N0 by direct substitution, E0 by span-transport
+chaining), while A4 requires only the *final* step's, regardless of
+chain length. `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`; full
+13-file Rocq chain and the Python suite verified green before this was
+recorded.
+
+**Scope, stated precisely**: this proves exactly three steps, not an
+arbitrary finite chain. A general $n$-step theorem needs dependent
+list/vector machinery (each step's codomain type must match the next
+step's domain type) not built anywhere in this project; whether the
+"apply the lemma once per additional step" pattern continues to hold for
+$n > 3$ is expected, by the shape of the three proofs, but not checked.
+
 ## Applied translation
 
 `veribound-fce` (the applied layer built on this repository) has since
@@ -270,8 +309,11 @@ code in `veribound-fce` implements any of it yet.
   the same declared cycle at the composite level; compose pullbacks by
   function composition). A different formalisation could in principle
   behave differently.
-- Whether a three-step (or longer) composition needs anything beyond
-  repeated application of these two-step theorems has not been checked.
+- Three-step composition is now checked (Phase 4a, above) and needs
+  exactly repeated application, with the same per-condition dependency
+  profile. Whether this continues to hold for four-or-more-step (or
+  arbitrary finite) chains has *not* been checked — expected, by the
+  shape of the proofs, but not proved.
 - No general theorem for refinement-witness composition beyond (N0),
   (A4), (E0) is attempted — full `verdict_safe` composability follows
   immediately by conjunction of the three, but nothing about
@@ -286,13 +328,16 @@ python refinement_witness_a4_e0_counterexample_search.py
 python refinement_witness_composition_boundary_search.py
 coqc rocq/RefinementWitnessComposition.v
 coqc rocq/RefinementWitnessVerdictComposition.v
+coqc rocq/RefinementWitnessSequentialComposition.v
 ```
 
 ## Next steps
 
-- Three-step (or longer) composition: check whether repeated application
-  of the two-step theorems is really all that is needed, or whether
-  something new appears at three steps.
+- Arbitrary finite chains (four-or-more steps): would need dependent
+  list/vector machinery this project has not built; the three-step
+  pattern is expected to continue but is not proved to.
+- Parallel composition (disjoint and coupled cases, kept explicitly
+  separate) is a new front, not attempted here.
 - A worked concrete instantiation of `A4_composes`/`E0_composes` against
   the actual matrix-shaped witnesses in `refinement_checker.py` (the way
   `CandidateThreeBDistinctSupportClassification.v` both proved
@@ -313,3 +358,6 @@ coqc rocq/RefinementWitnessVerdictComposition.v
 - ~~Attempt the A4/E0 proof~~ — done, `rocq/
   RefinementWitnessVerdictComposition.v`, `A4_composes` and
   `E0_composes`, `coqchk`-clean.
+- ~~Three-step composition~~ — done, `rocq/
+  RefinementWitnessSequentialComposition.v`, `N0_composes_three`,
+  `A4_composes_three`, `E0_composes_three`, `coqchk`-clean.

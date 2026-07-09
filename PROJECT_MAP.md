@@ -31,6 +31,7 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `rocq/ExactnessReflection.v` — Rocq proof of the (E0)-reflection theorem.
 - `rocq/RefinementWitnessComposition.v` — (N0)-composability, proved abstractly: `N0_composes`.
 - `rocq/RefinementWitnessVerdictComposition.v` — (A4)/(E0)-composability, proved abstractly: `A4_composes`, `E0_composes`, with minimal span/linear-map infrastructure built from scratch.
+- `rocq/RefinementWitnessSequentialComposition.v` — three-step composition: `N0_composes_three`, `A4_composes_three`, `E0_composes_three`. Arbitrary finite chains not attempted.
 - `refinement_witness_composition_probe.py`, `refinement_witness_a4_e0_counterexample_search.py`, `refinement_witness_composition_boundary_search.py` — the ~175,000-case computational search that preceded and corroborates the proofs above. See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`.
 
 ## 4. Certificate layer
@@ -68,6 +69,7 @@ All compile clean with no `Admitted`/`Axiom`/`sorry` (`make check-rocq`):
 - `rocq/CandidateThreeBDistinctSupportClassification.v`
 - `rocq/RefinementWitnessComposition.v`
 - `rocq/RefinementWitnessVerdictComposition.v`
+- `rocq/RefinementWitnessSequentialComposition.v`
 
 ## 7. Paper
 

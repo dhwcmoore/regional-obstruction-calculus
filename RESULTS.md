@@ -126,10 +126,16 @@ may be inherited warrant debt from a defective component step.
 search-then-proof account and `paper/finite_obstruction_calculus_for_
 regional_warrant.tex` §5 (Theorems 5.1-5.3) for the formal statements.
 
+**Extended to three steps** (`rocq/RefinementWitnessSequentialComposition.v`,
+$P \to Q \to R \to S$): the same dependency profile, applied once more,
+not a new argument. `N0_composes_three` and `E0_composes_three` need
+*all three* steps' own condition; `A4_composes_three` needs *only the
+last* step's own (A4), regardless of chain length. `coqchk`-clean.
+
 **What this does not show**: that a different formalisation of "the
 composite witness" (not reusing the same declared cycle at the
-composite level) behaves the same way; that three-step or longer
-composition needs nothing beyond repeated two-step application; or
-anything about the sequential/parallel/restriction/failure composition
-axes proposed (not proved) in `veribound-fce`'s
-`docs/design/CERTIFICATE_COMPOSITION_SPEC.md`.
+composite level) behaves the same way; that chains of four or more
+steps behave the same way (expected, by the shape of the three-step
+proofs, but not checked); or anything about the
+sequential/parallel/restriction/failure composition axes proposed (not
+proved) in `veribound-fce`'s `docs/design/CERTIFICATE_COMPOSITION_SPEC.md`.
