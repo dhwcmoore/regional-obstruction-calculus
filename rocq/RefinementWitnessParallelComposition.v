@@ -11,15 +11,20 @@
    account, including why a plain A4_parallel_disjoint statement is
    FALSE, not merely unproved.
 
-   This file proves exactly the two conditions the probe supports:
-   N0_parallel_disjoint and E0_parallel_disjoint. It deliberately does
-   NOT attempt A4_parallel_disjoint -- that statement is false as a bare
-   claim (demonstrated computationally by the probe), and any true
-   replacement needs an additional hypothesis (non-cancellation of the
-   summed pairing, or a branchwise reformulation) that has not yet been
-   designed, let alone proved. Do not add an A4 theorem to this file
-   without first settling which of those two replacement statements is
-   intended.
+   This file proves N0_parallel_disjoint and E0_parallel_disjoint (Parts
+   1 and 3), and deliberately does NOT state a bare "A4_parallel_disjoint"
+   -- that name belongs to a FALSE claim, per the probe. Part 4 instead
+   formalises the two-branch A4 story precisely, following the design
+   settled in docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md's
+   "Branchwise A4 semantics" subsection (Phase 4d): a branchwise
+   preservation theorem (each branch's own A4 evidence survives combining
+   them, individually), a scalar bridge theorem (the aggregate/summed
+   pairing test succeeds exactly when an explicit non-cancellation
+   hypothesis holds, nothing more, nothing hidden), and a concrete,
+   machine-checked witness that branchwise success does NOT imply
+   aggregate success on its own -- upgrading the probe's Python-level
+   +5/-5 cancellation example to a Rocq-checked fact, not merely a
+   Python-checked one.
 
    UNLIKE the sequential-composition files (RefinementWitnessComposition
    .v, RefinementWitnessVerdictComposition.v, RefinementWitnessSequential
@@ -352,3 +357,104 @@ Section E0Parallel.
   Qed.
 
 End E0Parallel.
+
+(* ------------------------------------------------------------------ *)
+(* Part 4: (A4) under disjoint parallel composition -- branchwise,     *)
+(* the scalar (aggregate) bridge, and a machine-checked witness that   *)
+(* branchwise success does not imply aggregate success on its own.     *)
+(* ------------------------------------------------------------------ *)
+
+Section A4Parallel.
+
+  (* C1_A/C1_B: the type where "the already-pushed-forward residue,
+     ready to be dotted with the declared cycle" lives for each branch
+     -- the same level of abstraction as RefinementWitnessVerdict
+     Composition.v's A4Composes section (its `pairing_R : C1_R -> Q`,
+     `r : C1_P`). *)
+  Variables C1_A C1_B : Type.
+  Variable pairing_A : C1_A -> Q.
+  Variable pairing_B : C1_B -> Q.
+  Variable a : C1_A.
+  Variable b : C1_B.
+
+  (* The aggregate (scalar) pairing test the ORIGINAL, now-known-false
+     "A4_parallel_disjoint" claim was about: dot-product-of-a-
+     concatenation IS the sum of the two sub-dot-products -- this is not
+     an extra assumption, it is the faithful abstract encoding of what
+     `dot()` on a concatenated vector actually computes
+     (refinement_witness_parallel_disjoint_probe.py's `combined pairing`
+     field). *)
+  Definition pairing_parallel (p : C1_A * C1_B) : Q := pairing_A (fst p) + pairing_B (snd p).
+
+  Definition combined_residue : C1_A * C1_B := (a, b).
+
+  Hypothesis branch_A_A4 : ~ (pairing_A a == 0).
+  Hypothesis branch_B_A4 : ~ (pairing_B b == 0).
+
+  (* Branchwise (A4): each branch's own evidence survives combination,
+     reported separately rather than collapsed into one scalar test.
+     Near-definitional once stated this way -- the honest content is the
+     DESIGN DECISION to report two obligations instead of one, not any
+     proof difficulty; see the status doc's "Branchwise A4 semantics"
+     subsection for why this is the more diagnostic replacement. *)
+  Theorem A4_parallel_disjoint_branchwise :
+    ~ (pairing_A (fst combined_residue) == 0) /\
+    ~ (pairing_B (snd combined_residue) == 0).
+  Proof.
+    unfold combined_residue. simpl. split; [exact branch_A_A4 | exact branch_B_A4].
+  Qed.
+
+  (* The scalar bridge: aggregate (A4) holds exactly when the summed
+     pairing is nonzero -- an explicit non-cancellation hypothesis, nothing
+     more. This theorem does NOT need branch_A_A4/branch_B_A4 at all; the
+     non-cancellation hypothesis alone carries the whole proof. Recorded
+     honestly in the corollary below, which bundles this with branchwise
+     evidence for presentation purposes only, not because branchwise adds
+     proof-theoretic content to this direction. *)
+  Theorem A4_parallel_disjoint_nonzero_sum :
+    ~ (pairing_A a + pairing_B b == 0) ->
+    ~ (pairing_parallel combined_residue == 0).
+  Proof.
+    intro Hsum. unfold pairing_parallel, combined_residue. simpl. exact Hsum.
+  Qed.
+
+  (* Item 6 of the classification ladder: branchwise evidence together
+     with an explicit non-cancellation hypothesis gives BOTH the
+     branchwise report and the aggregate test. Stated precisely: the
+     aggregate half is carried entirely by the non-cancellation
+     hypothesis (see the theorem above); branchwise success is
+     independently guaranteed by branch_A_A4/branch_B_A4. Combining them
+     is bookkeeping, not a deeper fact -- recorded as its own corollary
+     because the classification ladder in the status doc names it
+     explicitly, not because it needed a new argument. *)
+  Corollary A4_parallel_disjoint_branchwise_and_nonzero_sum :
+    ~ (pairing_A a + pairing_B b == 0) ->
+    (~ (pairing_A (fst combined_residue) == 0) /\ ~ (pairing_B (snd combined_residue) == 0)) /\
+    ~ (pairing_parallel combined_residue == 0).
+  Proof.
+    intro Hsum.
+    split.
+    - exact A4_parallel_disjoint_branchwise.
+    - exact (A4_parallel_disjoint_nonzero_sum Hsum).
+  Qed.
+
+End A4Parallel.
+
+(* A concrete, machine-checked witness that branchwise (A4) success does
+   NOT imply aggregate (A4) success on its own -- the Rocq-level
+   counterpart of refinement_witness_parallel_disjoint_probe.py's
+   SUBDIVIDE_U1 / sign-negated-SUBDIVIDE_U1 case (branch pairings +5 and
+   -5). This makes "the naive aggregate A4_parallel_disjoint statement is
+   false" a fact checked by coqchk, not only by the Python probe. *)
+Example A4_parallel_aggregate_can_fail_despite_branchwise :
+  exists (pA pB : Q), ~ (pA == 0) /\ ~ (pB == 0) /\ (pA + pB == 0).
+Proof.
+  exists (5#1), (-(5#1)).
+  repeat split.
+  (* `repeat split` already discharges the third conjunct (the sum
+     equation) via reflexivity, since Qeq unfolds to a decidable Z
+     equation that computes directly for these concrete literals --
+     leaving exactly the two disequality goals below. *)
+  - intro H. discriminate H.
+  - intro H. discriminate H.
+Qed.

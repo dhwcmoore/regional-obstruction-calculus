@@ -1,9 +1,8 @@
 # Status: Refinement Witness Composition
 
 **Status: proved for two and three sequential steps; proved for N0/E0
-under two-branch disjoint parallel composition; A4 does not compose
-under disjoint parallel composition as naively stated, demonstrated by
-probe, not merely unproved.** (N0), (A4), and (E0) composability are
+and for a full branchwise/aggregate A4 classification under two-branch
+disjoint parallel composition.** (N0), (A4), and (E0) composability are
 theorems for binary sequential composition
 (`rocq/RefinementWitnessComposition.v`,
 `rocq/RefinementWitnessVerdictComposition.v`) and for three-step
@@ -17,13 +16,17 @@ suggested; "Phase 4a: sequential composition" extends this to three
 steps with the same discipline. Disjoint *parallel* composition (a
 genuinely different construction — direct sum, not function composition)
 was probed first (Phase 4b) and found to split: `N0_parallel_disjoint`
-and `E0_parallel_disjoint` are now proved
+and `E0_parallel_disjoint` are proved
 (`rocq/RefinementWitnessParallelComposition.v`, Phase 4c), `coqchk`-clean;
-`A4_parallel_disjoint` as naively stated is **false**, demonstrated
-computationally, and is deliberately not attempted until a corrected
-statement (see Phase 4c) is settled. Arbitrary finite sequential chains,
-coupled parallel composition, and any A4-parallel theorem remain open —
-see "What is still not known."
+the naive scalar `A4_parallel_disjoint` is **false**, demonstrated by
+probe and then, in Phase 4d, by a machine-checked Rocq witness too — and
+Phase 4d proves the corrected replacement classification in full:
+`A4_parallel_disjoint_branchwise` (unconditional), `A4_parallel_disjoint_
+nonzero_sum` (the scalar test, exactly under an explicit non-cancellation
+hypothesis), and the fact that branchwise success alone does not imply
+the aggregate. Arbitrary finite sequential chains, three-or-more-branch
+parallel composition, and coupled parallel composition remain open — see
+"What is still not known."
 
 ## The question
 
@@ -436,13 +439,133 @@ a design question, not yet settled, and is a precondition for any future
 A4 proof attempt in this repository.
 
 **Scope, stated precisely**: this proves disjoint parallel composition
-of exactly two branches, for N0 and E0 only. Not proved: three-or-more
-branch parallel composition (would need the same kind of dependent-list
-generalisation flagged as open for sequential composition); coupled
-parallel composition (no candidate exists, see Phase 4b); any A4
-statement for parallel composition (see above); interaction between
-parallel and sequential composition (e.g. two sequential chains combined
-in parallel) -- not modeled anywhere in this project.
+of exactly two branches, for N0 and E0 only. Not proved (at the time
+Phase 4c landed): three-or-more branch parallel composition (would need
+the same kind of dependent-list generalisation flagged as open for
+sequential composition); coupled parallel composition (no candidate
+exists, see Phase 4b); any A4 statement for parallel composition (see
+Phase 4d below); interaction between parallel and sequential composition
+(e.g. two sequential chains combined in parallel) -- not modeled
+anywhere in this project.
+
+## Phase 4d: branchwise A4 semantics — design, then proof
+
+Phase 4c deliberately left A4 unaddressed rather than proving a false
+statement. This phase settles a semantics for A4 under disjoint parallel
+composition and proves the parts of it that are actually true, following
+the same discipline as every other phase: design first (a short spec, no
+proof), then formalise.
+
+### Branchwise A4 semantics (design)
+
+The naive statement treated the composite's (A4) as one scalar test: dot
+the combined declared cycle against the combined pushed residue, check
+nonzero. That single number is an *aggregate* — literally the sum of the
+two branches' own pairings, since the combined vectors are
+concatenations. Aggregation is exactly what allows cancellation, and
+cancellation is exactly what the probe found.
+
+The alternative is not to fix the aggregate but to change what is being
+asked. **Branchwise A4** reports each branch's own pairing test
+separately, instead of collapsing them into one number first:
+
+```text
+A4_branchwise(WA (+) WB) :=
+    left_pairing  <> 0    -- branch A's own pairing, unchanged by combination
+    right_pairing <> 0    -- branch B's own pairing, unchanged by combination
+```
+
+with the aggregate retained alongside it as a third, explicitly
+*derived* fact, not the primary report:
+
+```text
+aggregate_pairing := left_pairing + right_pairing
+aggregate_pairing <> 0   -- may fail even when both branchwise tests hold
+```
+
+This gives a three-valued diagnostic outcome instead of one boolean:
+
+```text
+branchwise_preserved   -- both left_pairing <> 0 and right_pairing <> 0
+aggregate_preserved    -- branchwise_preserved AND aggregate_pairing <> 0
+aggregate_cancelled    -- branchwise_preserved AND aggregate_pairing == 0
+```
+
+`aggregate_cancelled` is the case the probe exhibited concretely
+(`SUBDIVIDE_U1` against a sign-negated copy of itself): a real,
+nameable outcome, not an error state — the evidence from both branches
+is intact, but the scalar summary that used to encode "is there a
+nonzero pairing" has genuinely lost information by summing. Branchwise
+semantics keeps that information; aggregate semantics discards it.
+
+**Why branchwise first, not the scalar patch.** `A4_parallel_disjoint_
+nonzero_sum` (aggregate pairing plus an explicit non-cancellation
+hypothesis) is a valid theorem but a thin one — it says the old scalar
+test works *if* it happens not to cancel, without saying anything new.
+Branchwise semantics is the sharper diagnostic: it says the individual
+evidence always survives combination, and separately names cancellation
+as its own classified outcome rather than an unexplained aggregate
+failure. This mirrors a preference already established elsewhere in this
+project (e.g. Candidate 3b's classification keeping "cover-inert" and
+"genuinely shared" as two named outcomes rather than one collapsed
+verdict) — a structured report over a single collapsed boolean, when the
+underlying mathematics genuinely has more than one case.
+
+### Proved in Rocq
+
+`rocq/RefinementWitnessParallelComposition.v`, Part 4, proves all of the
+following, `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`:
+
+```text
+A4_parallel_disjoint_branchwise :
+    each branch's own (A4) survives combination, reported separately.
+    Near-definitional once stated this way -- the honest content is the
+    DESIGN DECISION to report two obligations instead of one, not proof
+    difficulty.
+
+A4_parallel_disjoint_nonzero_sum :
+    the aggregate (summed) pairing is nonzero exactly when the explicit
+    non-cancellation hypothesis holds. Needs ONLY that hypothesis --
+    neither branch's own (A4) is used in this proof at all, a fact
+    stated plainly in the file rather than glossed over.
+
+A4_parallel_disjoint_branchwise_and_nonzero_sum :
+    a corollary bundling the two theorems above. Recorded because the
+    classification ladder names it explicitly, not because combining
+    them adds mathematical content beyond what each already proves
+    separately -- branchwise success and the non-cancellation hypothesis
+    are logically independent facts about the same two branches, not two
+    halves of one argument.
+
+A4_parallel_aggregate_can_fail_despite_branchwise (Example) :
+    a concrete, machine-checked witness (Q values 5 and -5) that
+    branchwise success does NOT imply aggregate success. This upgrades
+    "the naive aggregate A4_parallel_disjoint statement is false" from a
+    Python-probe finding to a coqchk-verified fact -- the same numbers
+    the probe found (SUBDIVIDE_U1 against its own sign-negated copy),
+    now checked independently of the Python machinery entirely.
+```
+
+**What this settles, precisely.** The full two-branch A4 classification
+is now closed: branchwise preservation always holds when each branch's
+own (A4) holds (unconditionally); aggregate preservation holds exactly
+under an explicit non-cancellation hypothesis (no other condition
+needed); and aggregate preservation can genuinely fail even when
+branchwise preservation holds (proved by witness, not left as an
+open possibility). Nothing here weakens Phase 4c's N0/E0 results or
+revives a "verdict_safe_parallel_disjoint" claim — `verdict_safe` in
+this project's existing vocabulary means the single aggregate (A4), and
+that condition is still not unconditionally guaranteed by the two
+branches' own admissibility.
+
+**Not attempted**: connecting branchwise/aggregate A4 to a concrete
+matrix-shaped instantiation (mirroring how `CandidateThreeBDistinct
+SupportClassification.v` was both proved abstractly and instantiated
+concretely) — the abstract statement is intended to cover the matrix
+case (a dot product is the relevant `pairing_*` function) but this
+correspondence is not separately checked in Rocq here; three-or-more
+branch parallel composition; coupled parallel composition, still with no
+preservation candidate at all.
 
 ## Applied translation
 
@@ -478,21 +601,33 @@ code in `veribound-fce` implements any of it yet.
   immediately by conjunction of the three, but nothing about
   presentation invariance or the broader open questions in the paper's
   "What is not claimed" section is affected by this result.
-- **Disjoint parallel `verdict_safe` composability does not hold**, even
-  though N0 and E0 do compose (Phase 4c) — because A4 is a required
-  conjunct of `verdict_safe` and the naive A4 statement is false (Phase
-  4b). Do not state or imply a combined
-  `verdict_safe_parallel_disjoint` result anywhere until an A4 statement
-  is proved.
+- **Disjoint parallel `verdict_safe` composability, in this project's
+  existing sense of that word (the single aggregate `verdict_safe`
+  including the scalar A4 test), still does not hold unconditionally**,
+  even though N0 and E0 do compose (Phase 4c) and even though the full
+  branchwise/aggregate A4 classification is now proved (Phase 4d) —
+  because `verdict_safe` as defined elsewhere in this project means the
+  *aggregate* (A4), and `A4_parallel_disjoint_nonzero_sum` needs an
+  explicit non-cancellation hypothesis that is not implied by either
+  branch's own admissibility. A *branchwise* `verdict_safe`-style
+  statement (using `A4_parallel_disjoint_branchwise` in place of the
+  scalar test) is not stated anywhere either — it would require deciding
+  whether `verdict_safe`'s existing definition should be extended or a
+  new parallel-specific notion introduced, which has not been decided.
 - Coupled parallel composition (branches sharing a vertex, seam,
   declared cycle, or downstream target) has no preservation candidate at
   all, probed or proved — `PARALLEL_WITNESS_COMPOSITION_SPEC.md` §4
   names it a possible *source* of obstruction, not something to assume
   safe.
-- Which of the two named A4 replacement candidates
-  (`A4_parallel_disjoint_nonzero_sum` vs.
-  `A4_parallel_disjoint_branchwise`) is the right one to formalise is an
-  open design question, not a proof-difficulty question — see Phase 4c.
+- Three-or-more-branch disjoint parallel composition (Phase 4c/4d prove
+  exactly two branches) has not been attempted.
+- Whether `A4_parallel_disjoint_branchwise`'s report structure is the
+  right shape to expose in an eventual applied diagnostic (three
+  outcomes: `branchwise_preserved` / `aggregate_preserved` /
+  `aggregate_cancelled`, per Phase 4d's design subsection) or whether a
+  different structured report is more useful once real transformation
+  diagnostics are built in `veribound-fce` — not decided, no
+  implementation exists yet in either repository.
 
 ## Reproducing this
 
@@ -517,12 +652,12 @@ pytest tests/test_refinement_witness_parallel_disjoint_probe.py
   all, not attempted; the natural next question if this resumes is
   whether *any* useful positive statement can be made, or whether the
   right result is a demonstrated obstruction (in the spirit of
-  Candidate 3b's repeated-support case).
-- Settling and then proving an A4 statement for disjoint parallel
-  composition — needs a design decision between
-  `A4_parallel_disjoint_nonzero_sum` and
-  `A4_parallel_disjoint_branchwise` (Phase 4c) before any proof attempt;
-  not started.
+  Candidate 3b's repeated-support case). Once the disjoint case's full
+  classification (Phase 4d) is in hand, the sharper framing is: coupled
+  parallel is not merely disjoint parallel plus noise, it is the case
+  where even *branchwise* preservation may fail, because the branches
+  share certificate obligations that a branchwise report has no way to
+  represent as separate.
 - Three-or-more-branch disjoint parallel composition: would need the
   same kind of generalisation as the sequential four-or-more-step case,
   not attempted.
@@ -557,3 +692,11 @@ pytest tests/test_refinement_witness_parallel_disjoint_probe.py
   RefinementWitnessParallelComposition.v`, `N0_parallel_disjoint` and
   `E0_parallel_disjoint`, `coqchk`-clean. A4 deliberately not attempted
   — see above.
+- ~~Settle and prove a branchwise A4 semantics for disjoint parallel
+  composition~~ — done, Phase 4d, `rocq/
+  RefinementWitnessParallelComposition.v` Part 4:
+  `A4_parallel_disjoint_branchwise`, `A4_parallel_disjoint_nonzero_sum`,
+  `A4_parallel_disjoint_branchwise_and_nonzero_sum`, and a
+  machine-checked witness (`A4_parallel_aggregate_can_fail_despite_
+  branchwise`) that branchwise success does not imply aggregate success.
+  `coqchk`-clean.

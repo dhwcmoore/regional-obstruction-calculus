@@ -178,16 +178,40 @@ E0_parallel_disjoint:  each branch's own E0 transports through a linear
                         together.
 ```
 
-`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`. **No A4 theorem is
-stated** — the probe showed the natural statement ("both branches' own
-A4 implies the composite's A4") is false, not merely unproved, so no
-`verdict_safe_parallel_disjoint` claim can be made either (it would
-require A4). `veribound-fce`'s spec doc names two non-interchangeable
-candidate replacements for A4 (an aggregate statement with an explicit
-non-cancellation hypothesis, or a branchwise reformulation reporting
-per-branch witness presence) — deciding between them is an open design
-question, not a proof-difficulty question.
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`. **No bare A4 theorem is
+stated** — that name (`A4_parallel_disjoint`) belongs to a false claim.
+
+**A4's full classification, proved, not left as an open design
+question.** The natural statement ("both branches' own A4 implies the
+composite's A4") is false, and the follow-up work settled which of the
+two candidate replacements to prove, and proved both:
+
+```text
+A4_parallel_disjoint_branchwise:
+    each branch's own A4 survives combination, reported separately --
+    proved unconditionally, no extra hypothesis needed.
+A4_parallel_disjoint_nonzero_sum:
+    the aggregate (summed) pairing is nonzero exactly when an explicit
+    non-cancellation hypothesis holds -- needs ONLY that hypothesis,
+    neither branch's own A4.
+A4_parallel_aggregate_can_fail_despite_branchwise (Example):
+    a concrete, machine-checked witness (Q values +5/-5, the same
+    numbers the probe found) that branchwise success does not imply
+    aggregate success -- upgrading "the naive claim is false" from a
+    Python-probe finding to a coqchk-verified fact.
+```
+
+Branchwise semantics was deliberately pursued first (not the scalar
+`_nonzero_sum` patch): it is the more diagnostic replacement, since it
+preserves the fact of each branch's own evidence rather than collapsing
+it into one number that can silently cancel. `verdict_safe`, as already
+defined elsewhere in this project, uses the *aggregate* (A4); no
+`verdict_safe_parallel_disjoint` claim is made using that existing
+definition, since the aggregate needs the explicit non-cancellation
+hypothesis. A branchwise-flavored `verdict_safe` variant is not defined
+anywhere either — an open question, not a proved or refuted one.
 
 Not addressed at all: coupled parallel composition (branches sharing a
 vertex, seam, declared cycle, or downstream target) — no preservation
-candidate exists for it, probed or proved.
+candidate exists for it, probed or proved; three-or-more-branch disjoint
+parallel composition.
