@@ -107,7 +107,7 @@ Three distinct kinds of evidence appear in this repository, and they are not int
 
 ## Relation to the associator-fields paper
 
-This repository originated as the companion code to *Associator Fields and Local-to-Global Failure in Finite Compositional Structures* (`paper/associator_fields_ACS_revised.tex`). The repository has since grown beyond the paper — in particular, the realisability diagnostics (R6-R9) and the repeated-triple-support Candidate 3b result are post-paper developments, not yet incorporated into any manuscript revision. See `paper/README.md` for how the two now relate.
+This repository originated as the companion code to *Associator Fields and Local-to-Global Failure in Finite Compositional Structures* (`paper/associator_fields_ACS_revised.tex`). The repository has since grown beyond that paper — in particular, the realisability diagnostics (R6-R9) and the Candidate 3b classification are post-paper developments. A second manuscript, *A Finite Cohomological Obstruction Calculus for Regional Warrant* (`paper/finite_obstruction_calculus_for_regional_warrant.tex`), packages that later work into its own theorem ladder, with the Candidate 3b classification as its actual new content. See `paper/README.md` for how the two manuscripts and the repository now relate.
 
 The prior repository, `admissible-refinement-persistence`, is retained as historical/paper-companion material; this repository is the current, active one.
 
