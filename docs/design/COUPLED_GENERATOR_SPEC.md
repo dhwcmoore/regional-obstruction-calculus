@@ -233,6 +233,44 @@ one seam context, when the cover is chosen so that sharing is possible at
 all. It does not settle which sharing discipline is "the right one" —
 see that document's "What this does not show" section.
 
+**A framing note for the next design conversation: what "genuinely
+regional" should mean.** The open question at the top of this section —
+what data must be shared for an associator residue to count as
+structurally regional rather than seam-local — has, in retrospect, a
+cleaner target than "find a matrix with rank drop." Stratify candidate
+rules by what kind of defect their surviving residue expresses:
+
+```text
+seam-local defect:
+    generated independently on a single overlap; no shared data at all
+    (item 14's independent generator).
+
+pairwise-compatibility defect:
+    generated from data shared between adjacent overlaps, but reducing
+    to a discrete gradient once composed — a coboundary by construction
+    (item 15's adjacent-overlap coupling).
+
+higher-coherence / regional defect:
+    support depends on shared carrier data across MULTIPLE overlaps in a
+    way that survives composition, so its non-removability expresses a
+    failure of global coherence rather than an isolated pairwise
+    mismatch (Candidate 3b on a repeated-support cover, item 18).
+```
+
+This is a specification tool, not new machinery: it does not add a
+result beyond what the diagnostic chain already established, and it does
+not claim the underlying calculus is a literal higher category (it
+remains Čech/cochain-complex-level throughout — see `docs/theory/
+THEOREM_CONCORDANCE.md` and RESULTS.md for the proved/computed content).
+What it does is name, for the *next* candidate rule, the property that
+distinguishes items 14/15 (seam-local or merely pairwise) from item 18
+(genuinely regional): a residue counts as regional exactly when it is a
+cohomological witness of a higher-coherence failure — local validity and
+pairwise compatibility both hold, and the obstruction is visible only in
+how more than two overlaps' data compose. Any future candidate should be
+checked against this stratification before its rank/quotient numbers are
+computed, not after.
+
 ## 8. Rank and obstruction tests (for later, not defined here)
 
 Once a sharing discipline `S` is chosen and `RegionalCoverData` is given

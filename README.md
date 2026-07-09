@@ -18,6 +18,23 @@ Local compatibility does not guarantee global coherence. A finite regional syste
 
 Everything computational is exact-rational (Python `Fraction`, no floating point). Where a result is also formalised in Rocq, the proof scripts contain no `Admitted`, `Axiom`, or `sorry`.
 
+## Interpretation, not formalism
+
+The proved and computed content throughout this repository is entirely
+at the level of finite cochains, δ⁰/δ¹, cocycles, and coboundaries — a
+Čech-style obstruction calculus, not a higher category. It is useful to
+read the surviving classes as failures of *higher coherence*: local
+validity (object-level data on a single region) and pairwise
+compatibility (seam-level agreement across an overlap) can both hold
+while the data still fail to assemble into a globally warranted
+structure. That reading motivates why the obstruction calculus matters;
+it is not a formal claim proved anywhere in this repository. The
+refinement-persistence results (item 10 onward) can likewise be read as
+a finite, cochain-level form of coherence under change of presentation —
+an obstruction that survives admissible refinement was not an artefact
+of how the system happened to be described. See RESULTS.md and STATUS.md
+for exactly what is proved versus interpreted.
+
 ## Central example
 
 A four-region cyclic cover `U1-U2-U3-U4-U1`, coboundary map `delta^0`, and a residue `r = (1, 1, 1, -2)` on the induced 1-cochains. Pairing `r` against the cycle `z = (-1, -1, -1, 1)` gives `<z, r> = -5 != 0`, so `r` is not a coboundary: a genuine `H^1` obstruction, not a bookkeeping artefact. See [RESULTS.md](RESULTS.md) R1-R2 for how this residue is both declared and independently generated from associator data.
