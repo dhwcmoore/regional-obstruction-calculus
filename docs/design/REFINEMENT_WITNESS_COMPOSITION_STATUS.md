@@ -3,9 +3,12 @@
 **Status: mixed, and that is the actual result.** (N0)-composability is
 now **proved** (`rocq/RefinementWitnessComposition.v`, `coqchk`-clean, no
 `Admitted`/`Axiom`/`sorry`). (A4) and (E0) composability remain
-**probed, not proved** — two concrete composed witnesses tested against
-the real code, both positive, no counterexample found and none shown
-impossible. No tag, no release milestone; one real theorem plus two open
+**probed, not proved** — but the probe is now a genuinely adversarial
+search over ~175,000 small arbitrary (not geometrically-natural) linear
+witnesses, not two hand-picked examples, and it found zero
+counterexamples after correcting a real methodological mistake made and
+caught along the way (see "Phase 2b" below). No tag, no release
+milestone; one real theorem plus two open, now well-stress-tested,
 questions, not a composition theory yet.
 
 ## The question
@@ -142,6 +145,53 @@ still evidence, not a proof. Nothing in this search's coverage rules out
 a counterexample existing outside the two generic operations tried
 (subdivision, bridge insertion) or beyond a two-step composition.
 
+## Phase 2b: the adversarial boundary search
+
+Phase 2's search, however systematic, only tried witnesses built from
+genuine graph refinements (subdividing a vertex, inserting a bridge) —
+well-behaved by construction. `refinement_witness_composition_boundary_
+search.py` drops the graph structure entirely: small, otherwise-
+arbitrary rational coboundary maps and edge-level pullbacks, constrained
+only by the actual hypotheses (vertex-level pullbacks fixed to the
+identity throughout — a real, stated scope limitation, not a hidden
+one — so all freedom is in the coboundary maps and edge pullbacks, which
+is where A4/E0 actually live).
+
+Two searches:
+
+```text
+Exhaustive (n1=2, entries in {-1,0,1}):
+    162,816 fully verdict-safe composite witnesses tested
+    0 A4 counterexamples
+    0 E0 counterexamples
+    completed within time budget -- genuinely exhaustive over these bounds
+
+Randomized (n1 in [1,4), entries in [-3,3], NOT exhaustive):
+    12,921 fully verdict-safe composite witnesses tested
+    0 A4 counterexamples
+    0 E0 counterexamples
+```
+
+**A caught mistake, worth recording exactly like the others in this
+project.** The first version of this search checked only (A3)/(A4)/(N0)
+at each individual step, not (E0), before testing the composite. It
+found over 24,000 apparent "E0 counterexamples." Every single one turned
+out to be a case where an individual *step* already failed (E0) on its
+own terms — the composite was inheriting a pre-existing failure, not
+demonstrating anything about composition. Once each step was required to
+be fully verdict-safe (A3+A4+N0+E0, not just admissible) before the
+composite was even examined, **every one of those apparent
+counterexamples disappeared.** This was checked, not assumed, before
+being reported here — see `refinement_witness_composition_boundary_
+search.py`'s module docstring for the same account in the code itself.
+
+This is materially stronger evidence than phase 2: ~175,000 witnesses,
+not 26, none tied to any geometric refinement structure, one genuine
+methodological bug caught and fixed rather than silently producing a
+false positive. Still not a proof, and still scoped: vertex-level
+pullbacks were held at the identity throughout (see the module
+docstring) — a genuinely unrestricted search would vary that too.
+
 ## What is not known
 
 - **A4 composability has no algebraic argument**, unlike N0. Nothing
@@ -149,39 +199,45 @@ a counterexample existing outside the two generic operations tried
   individual steps' pairings were nonzero — the composite pairing is a
   different quantity (paired against the fully-composed pullback of the
   *original* coarse residue, not against either intermediate step's own
-  residue). No counterexample has been found across 26 systematic cases;
-  none has been proved impossible.
+  residue). No counterexample has been found across ~175,000 adversarial
+  cases (plus the 26 geometric ones); none has been proved impossible.
 - **E0 composability likewise has no algebraic argument** — E0's own
   definition (a subspace-inclusion condition on cycle spaces, not a
   simple matrix identity) gives no obvious associativity argument the
-  way N0 has. Same result: 0 counterexamples across 26 cases, not a
-  proof.
+  way N0 has. Same result: 0 counterexamples, not a proof.
+- The adversarial search fixed vertex-level pullbacks to the identity.
+  Nothing here rules out a counterexample that requires genuinely
+  varying vertex-level structure (which the phase 2 geometric search did
+  vary, without finding one either, but not adversarially).
 - No general theorem for A4 or E0 is stated or attempted here. This
-  document deliberately stops at "probed."
+  document deliberately stops at "probed" — strongly probed, not proved.
 
 ## Reproducing this
 
 ```sh
 python refinement_witness_composition_probe.py
 python refinement_witness_a4_e0_counterexample_search.py
+python refinement_witness_composition_boundary_search.py
 coqc rocq/RefinementWitnessComposition.v
 ```
 
 ## Next steps
 
-- Widen the search further: more second-step operations beyond
-  subdivision and bridge-insertion (e.g. simultaneous multi-vertex
-  subdivision, three-step compositions rather than two), and try to
-  construct a case *designed* to make the composite pairing cancel or a
-  pushed-forward cycle set shrink, rather than relying on a systematic
-  but still generic sweep to stumble onto one.
-- If A4/E0 continue to survive adversarial construction attempts, that
-  would be evidence (not proof) worth escalating to an actual proof
-  attempt, at which point this document's status line should change
-  again, and only then.
+- Widen the adversarial search: vary vertex-level pullbacks too (not
+  fixed to the identity), larger dimensions, three-step compositions
+  rather than two.
+- If A4/E0 continue to survive wider adversarial search, that would be
+  evidence (not proof) worth escalating to an actual proof attempt --
+  Phase 2b's ~175,000-case null result is a meaningfully stronger prior
+  toward that than phase 2's 26 cases were, but still not a trigger for
+  claiming a theorem on its own.
 - ~~Write the N0-composability lemma into the Rocq chain~~ — done,
   `rocq/RefinementWitnessComposition.v`.
 - ~~Reclassify A4/E0 as a counterexample search rather than a
   positive-example generator~~ — done,
   `refinement_witness_a4_e0_counterexample_search.py`, 26 cases, 0
-  counterexamples so far.
+  counterexamples.
+- ~~Adversarial boundary search over small arbitrary (non-geometric)
+  witness data~~ — done, `refinement_witness_composition_boundary_
+  search.py`, ~175,000 cases, 0 counterexamples after correcting a
+  caught methodological mistake.
