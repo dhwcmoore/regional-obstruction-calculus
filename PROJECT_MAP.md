@@ -48,6 +48,7 @@ The diagnostic ladder — see `docs/diagnostics/REALISABILITY_ROADMAP.md` for th
 - `candidate_discipline_diagnostic.py` — Candidate 3b on the standard (distinct-support) cover: cover-inert.
 - `repeated_triple_support_diagnostic.py` — Candidate 3b on a repeated-triple-support cover: **first positive linear/rational witness**.
 - `rocq/RepeatedTripleSupportCandidate3b.v` — the same result, machine-checked: `RepeatedTripleSupport` incidence condition, partial-support impossibility, Candidate 3b's induced map, shared-column and repairable/non-repairable-residue theorems.
+- `rocq/CandidateThreeBDistinctSupportClassification.v` — the negative-direction half of the classification: under pairwise-distinct triple support (abstracted over any type with decidable equality, not tied to a specific cover), no two seams can ever reference the same carrier coordinate, and the induced map is full rank — machine-checked, plus a concrete instantiation matching the actual distinct-support cover.
 
 ## 6. Rocq proof artefacts
 
@@ -61,6 +62,7 @@ All compile clean with no `Admitted`/`Axiom`/`sorry` (`make check-rocq`):
 - `rocq/ExactnessReflection.v`
 - `rocq/FirstOrderClassifierCertificate.v`
 - `rocq/RepeatedTripleSupportCandidate3b.v`
+- `rocq/CandidateThreeBDistinctSupportClassification.v`
 
 ## 7. Paper
 

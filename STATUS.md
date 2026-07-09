@@ -11,6 +11,7 @@ What is proved, what is computed, what is diagnostic, and what is not claimed. S
 - (E0) exactness reflection (`rocq/ExactnessReflection.v`).
 - Soundness of the two proof-carrying certificate forms (`rocq/FirstOrderClassifierCertificate.v`).
 - Repeated triple-support incidence condition and Candidate 3b's induced-map theorems (`rocq/RepeatedTripleSupportCandidate3b.v`): the `RepeatedTripleSupport` record, the partial-support impossibility lemma, genuinely-shared-column theorem, and exhibited repairable/non-repairable residue witnesses — checked with `coqchk`.
+- Candidate 3b's distinct-support classification, the other half of the same result (`rocq/CandidateThreeBDistinctSupportClassification.v`): under pairwise-distinct triple support (abstracted over any type with decidable equality, no `Point`/finiteness assumption, only the support values need be distinct), no two seams can ever reference the same carrier coordinate, and the induced map is full rank — plus a concrete instantiation confirming this specialises correctly to the cover `candidate_discipline_diagnostic.py` actually uses. Together with the row above, this makes the full Candidate 3b classification (distinct support ⟹ cover-inert; repeated support ⟹ genuinely partial nontrivial quotient) machine-checked at the same level, not diagnostic-only in either direction.
 
 Verified with `make check-rocq`. Requires a Rocq/`coqc` toolchain; not assumed available in every environment.
 
@@ -34,7 +35,7 @@ These establish that one specific candidate rule does or does not do something o
 - **Shared adjacent-overlap coupling** (`coupled_realisability_diagnostic.py`): rank drops but the image collapses entirely into `im(delta^0)` — cohomological collapse.
 - **Boolean proper-crossing diagnostic** (`boolean_crossing_diagnostic.py`): a deterministic, parameter-free rule that produces a non-degenerate residue outside `im(delta^0)` on one specific cover. Non-linear — no rank or quotient to compute.
 - **Ordered inclusion-exclusion** (`lattice_ie_diagnostic.py`): globally-indexed but the associator formula cancels exactly the shared terms — full rank, disguised independence.
-- **Candidate 3b, distinct-support cover** (`candidate_discipline_diagnostic.py`): cover-inert — the cover never lets two triple overlaps coincide, so nothing can be shared.
+- **Candidate 3b, distinct-support cover** (`candidate_discipline_diagnostic.py`, `rocq/CandidateThreeBDistinctSupportClassification.v`): cover-inert — the cover never lets two triple overlaps coincide, so nothing can be shared. Now machine-checked (§1) as a general fact about any pairwise-distinct-support assignment, not just the one concrete cover the diagnostic ran.
 - **Candidate 3b, repeated-support cover** (`repeated_triple_support_diagnostic.py`, `rocq/RepeatedTripleSupportCandidate3b.v`): the first positive linear/rational witness — `rank(B)=2`, neither full rank nor coboundary collapse. Also machine-checked in Rocq, which upgrades the *incidence condition and the induced-map facts* to proved status (§1) while the underlying claim — that this is a structurally meaningful or unique coupling discipline — remains diagnostic.
 
 ## 4. Not claimed

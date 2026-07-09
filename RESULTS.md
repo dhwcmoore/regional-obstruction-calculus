@@ -42,9 +42,9 @@ A genuinely coupled generator (one shared point universe, no private per-seam da
 - **Boolean proper-crossing** (`boolean_crossing_diagnostic.py`): a deterministic, parameter-free rule (correction slots derived from region containment/crossing, not shared scalars) produces a genuine non-degenerate residue outside `im(delta^0)`, verified through six gates against the real code on one specific non-degenerate cover. Positive, but non-linear — no rank or quotient to compute, so it does not answer the linear coupling question.
 - **Ordered inclusion-exclusion** (`lattice_ie_diagnostic.py`): `mu` indexed globally by lattice-derived support pairs. The associator formula cancels exactly the genuinely-shared adjacent-pair terms, leaving only composite terms that never coincide across theta-triples in this cover — full rank, disguised independence. A parameter can be globally indexed and still fail to impose structural dependence if the formula cancels exactly the shared coordinates.
 
-## R9. Repeated triple-support positive witness (Candidate 3b)
+## R9. Candidate 3b classification: distinct support is cover-inert, repeated support is selective
 
-**Candidate 3b** (`mu_UV=mu_VW=0`, outer slots `rho_{X,T}`/`rho_{Z,T}` keyed by region and triple support `T=X∩Y∩Z`) is cover-inert on the standard distinct-support cover (`candidate_discipline_diagnostic.py`: 8 parameters, all `private_residual`, full rank 4 — not because the rule is too free, but because the cover never lets two triple overlaps coincide).
+**Candidate 3b** (`mu_UV=mu_VW=0`, outer slots `rho_{X,T}`/`rho_{Z,T}` keyed by region and triple support `T=X∩Y∩Z`) is cover-inert on the standard distinct-support cover (`candidate_discipline_diagnostic.py`: 8 parameters, all `private_residual`, full rank 4 — not because the rule is too free, but because the cover never lets two triple overlaps coincide). This negative direction is now machine-checked in general, not just on that one concrete cover: `rocq/CandidateThreeBDistinctSupportClassification.v` proves that whenever the four triple supports are pairwise distinct — abstracted over any type with decidable equality, no `Point` model or finiteness assumption required, only the four support *values* need differ — no two seams can ever reference the same carrier coordinate, and the induced map achieves every standard basis direction (hence full rank 4). A concrete instantiation confirms this specialises correctly to the actual cover the diagnostic uses.
 
 Proved structurally (both computationally and, later, in Rocq) that in a four-theta-cycle, any two triples sharing a support point are forced to share it across **all four** — so the only repeated-support cover consistent with every triple overlap remaining a genuine singleton has all four supports equal to one global point. On such a cover (`repeated_triple_support_diagnostic.py`):
 
@@ -61,4 +61,13 @@ verdict = genuinely_partial_nontrivial_quotient
 
 Machine-checked in `rocq/RepeatedTripleSupportCandidate3b.v`: the `RepeatedTripleSupport` incidence record, the partial-support impossibility lemma, the genuinely-shared-columns theorem, and explicit repairable (`g1`) and non-repairable (`g2`) residue witnesses — `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`.
 
-**What this does not show**: it is one rule (Candidate 3b) on one cover family, not a general theorem about linear couplings; it does not apply to distinct-support covers; it does not replace R8's non-linear Boolean witness, which is a different mechanism entirely. See `docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md` for the full account.
+**Together, the two Rocq files give a full classification, both directions machine-checked at the same level:**
+
+```text
+Candidate 3b is structurally selective only when triple support is
+genuinely forced to repeat (all four supports collapse to one point).
+Distinct support degenerates into independent seam-local freedom,
+regardless of which specific cover realises the distinctness.
+```
+
+**What this does not show**: it is one rule (Candidate 3b), not a general theorem about linear couplings generally; it does not replace R8's non-linear Boolean witness, which is a different mechanism entirely; it does not claim Candidate 3b is the final, unique, or most natural coupling discipline — only that its behavior on these two support regimes is now fully characterised, not merely observed on isolated covers. See `docs/diagnostics/REPEATED_TRIPLE_SUPPORT_DIAGNOSTIC.md` for the diagnostic-level account.
