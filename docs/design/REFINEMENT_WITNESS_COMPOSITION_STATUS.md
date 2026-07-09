@@ -113,42 +113,75 @@ plausible-looking vector would still work. This is exactly the
 discipline the rest of this project insists on, caught here rather than
 silently producing a wrong "witness."
 
+## The systematic search (phase 2)
+
+`refinement_witness_a4_e0_counterexample_search.py` replaces "more
+positive examples" with an actual search: two generic second-step
+operations (subdividing an arbitrary vertex; inserting a bridge between
+an arbitrary pair of vertices — the general form of what
+`refinement_witnesses.py`'s four hand-built witnesses do for one
+specific vertex/pair each), applied to the resulting complex of *every*
+one of the four base witnesses (`SUBDIVIDE_U1`, `SUBDIVIDE_U2`,
+`SUBDIVIDE_ALL`, `INSERT_BRIDGE`), with *every* basis cycle of the
+resulting complex's own cycle space tried as the declared witness cycle
+(a complex can have more than one independent cycle once bridges
+accumulate — `nullspace_over_Q`, not one hand-picked vector).
+
+Current result: **26 systematically-generated composed witnesses, 0 A4
+counterexamples, 0 E0 counterexamples.** All 8 composite N0 failures
+found trace to `INSERT_BRIDGE` as step 1 (whose own N0 already fails) —
+`verify_n0_theorem_consistency()` checks this automatically against
+`N0_composes`'s hypotheses (both steps must individually satisfy N0),
+so the search's own data is consistent with, and gives an independent
+empirical cross-check of, the proved Rocq theorem, not just the two
+witnesses `N0_composes` was written to cover.
+
+Twenty-six systematically generated cases surviving with no
+counterexample is stronger evidence than two hand-picked ones, but it is
+still evidence, not a proof. Nothing in this search's coverage rules out
+a counterexample existing outside the two generic operations tried
+(subdivision, bridge insertion) or beyond a two-step composition.
+
 ## What is not known
 
-- **A4 composability is untested beyond two positive examples.** Nothing
-  in the algebra guarantees the composite pairing is nonzero just
-  because both individual steps' pairings were nonzero -- the composite
-  pairing is a different quantity (paired against the fully-composed
-  pullback of the *original* coarse residue, not against either
-  intermediate step's own residue). No counterexample has been found;
-  none has been proved impossible. Two positive examples is a start, not
-  a theorem.
-- **E0 composability is likewise untested beyond two positive
-  examples**, and E0's own definition (a subspace-inclusion condition on
-  cycle spaces, not a simple matrix identity) gives no obvious
-  associativity argument the way N0 has.
-- No general theorem is stated or attempted here. This document
-  deliberately stops at "probed."
+- **A4 composability has no algebraic argument**, unlike N0. Nothing
+  guarantees the composite pairing is nonzero just because both
+  individual steps' pairings were nonzero — the composite pairing is a
+  different quantity (paired against the fully-composed pullback of the
+  *original* coarse residue, not against either intermediate step's own
+  residue). No counterexample has been found across 26 systematic cases;
+  none has been proved impossible.
+- **E0 composability likewise has no algebraic argument** — E0's own
+  definition (a subspace-inclusion condition on cycle spaces, not a
+  simple matrix identity) gives no obvious associativity argument the
+  way N0 has. Same result: 0 counterexamples across 26 cases, not a
+  proof.
+- No general theorem for A4 or E0 is stated or attempted here. This
+  document deliberately stops at "probed."
 
 ## Reproducing this
 
 ```sh
 python refinement_witness_composition_probe.py
+python refinement_witness_a4_e0_counterexample_search.py
 coqc rocq/RefinementWitnessComposition.v
 ```
 
 ## Next steps
 
-- **In progress**: reclassify (A4)/(E0) as a conjecture-or-counterexample
-  search rather than a positive-example generator --
-  `refinement_witness_a4_e0_counterexample_search.py`. The question is
-  not "do A4 and E0 compose" but "under which additional hypotheses do
-  they compose, and where do they fail without those hypotheses" --
-  including whether A4 can pass while E0 fails (or vice versa) at the
-  composite level, and whether both can fail while N0 still composes.
+- Widen the search further: more second-step operations beyond
+  subdivision and bridge-insertion (e.g. simultaneous multi-vertex
+  subdivision, three-step compositions rather than two), and try to
+  construct a case *designed* to make the composite pairing cancel or a
+  pushed-forward cycle set shrink, rather than relying on a systematic
+  but still generic sweep to stumble onto one.
 - If A4/E0 continue to survive adversarial construction attempts, that
   would be evidence (not proof) worth escalating to an actual proof
   attempt, at which point this document's status line should change
   again, and only then.
 - ~~Write the N0-composability lemma into the Rocq chain~~ — done,
   `rocq/RefinementWitnessComposition.v`.
+- ~~Reclassify A4/E0 as a counterexample search rather than a
+  positive-example generator~~ — done,
+  `refinement_witness_a4_e0_counterexample_search.py`, 26 cases, 0
+  counterexamples so far.
