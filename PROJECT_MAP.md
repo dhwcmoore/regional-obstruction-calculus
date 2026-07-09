@@ -30,7 +30,8 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `rocq/CommonSubdivisionAgreement.v` — two-map common-subdivision certificate agreement.
 - `rocq/ExactnessReflection.v` — Rocq proof of the (E0)-reflection theorem.
 - `rocq/RefinementWitnessComposition.v` — (N0)-composability, proved abstractly: `N0_composes`.
-- `refinement_witness_composition_probe.py`, `refinement_witness_a4_e0_counterexample_search.py`, `refinement_witness_composition_boundary_search.py` — (A4)/(E0)-composability: probed, not proved (~175,000-case adversarial search, 0 counterexamples). See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`.
+- `rocq/RefinementWitnessVerdictComposition.v` — (A4)/(E0)-composability, proved abstractly: `A4_composes`, `E0_composes`, with minimal span/linear-map infrastructure built from scratch.
+- `refinement_witness_composition_probe.py`, `refinement_witness_a4_e0_counterexample_search.py`, `refinement_witness_composition_boundary_search.py` — the ~175,000-case computational search that preceded and corroborates the proofs above. See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`.
 
 ## 4. Certificate layer
 
@@ -66,6 +67,7 @@ All compile clean with no `Admitted`/`Axiom`/`sorry` (`make check-rocq`):
 - `rocq/RepeatedTripleSupportCandidate3b.v`
 - `rocq/CandidateThreeBDistinctSupportClassification.v`
 - `rocq/RefinementWitnessComposition.v`
+- `rocq/RefinementWitnessVerdictComposition.v`
 
 ## 7. Paper
 

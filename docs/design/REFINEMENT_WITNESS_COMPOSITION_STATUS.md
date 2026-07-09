@@ -1,15 +1,14 @@
 # Status: Refinement Witness Composition
 
-**Status: mixed, and that is the actual result.** (N0)-composability is
-now **proved** (`rocq/RefinementWitnessComposition.v`, `coqchk`-clean, no
-`Admitted`/`Axiom`/`sorry`). (A4) and (E0) composability remain
-**probed, not proved** — but the probe is now a genuinely adversarial
-search over ~175,000 small arbitrary (not geometrically-natural) linear
-witnesses, not two hand-picked examples, and it found zero
-counterexamples after correcting a real methodological mistake made and
-caught along the way (see "Phase 2b" below). No tag, no release
-milestone; one real theorem plus two open, now well-stress-tested,
-questions, not a composition theory yet.
+**Status: proved, all three.** (N0), (A4), and (E0) composability are
+now all **theorems** (`rocq/RefinementWitnessComposition.v`,
+`rocq/RefinementWitnessVerdictComposition.v`, `coqchk`-clean, no
+`Admitted`/`Axiom`/`sorry`). The ~175,000-case adversarial search (Phase
+2b) turned out to be evidence for something that was, in fact, provable
+— see "Phase 2c: the proof attempt" below for what each proof actually
+needed, which is less than the search's own framing suggested. No tag,
+no release milestone; this is a small composition theory now, not a
+diagnostic chain.
 
 ## The question
 
@@ -192,25 +191,79 @@ false positive. Still not a proof, and still scoped: vertex-level
 pullbacks were held at the identity throughout (see the module
 docstring) — a genuinely unrestricted search would vary that too.
 
-## What is not known
+## Phase 2c: the proof attempt
 
-- **A4 composability has no algebraic argument**, unlike N0. Nothing
-  guarantees the composite pairing is nonzero just because both
-  individual steps' pairings were nonzero — the composite pairing is a
-  different quantity (paired against the fully-composed pullback of the
-  *original* coarse residue, not against either intermediate step's own
-  residue). No counterexample has been found across ~175,000 adversarial
-  cases (plus the 26 geometric ones); none has been proved impossible.
-- **E0 composability likewise has no algebraic argument** — E0's own
-  definition (a subspace-inclusion condition on cycle spaces, not a
-  simple matrix identity) gives no obvious associativity argument the
-  way N0 has. Same result: 0 counterexamples, not a proof.
-- The adversarial search fixed vertex-level pullbacks to the identity.
-  Nothing here rules out a counterexample that requires genuinely
-  varying vertex-level structure (which the phase 2 geometric search did
-  vary, without finding one either, but not adversarially).
-- No general theorem for A4 or E0 is stated or attempted here. This
-  document deliberately stops at "probed" — strongly probed, not proved.
+`rocq/RefinementWitnessVerdictComposition.v` proves `A4_composes` and
+`E0_composes`. Both succeed, and both need *less* than the adversarial
+search's own framing suggested.
+
+### A4_composes: near-definitional, not a coherence fact
+
+The composite's pairing test, once the composite pullback is defined as
+literal function composition (`composite_rho1 p := rho1_QR (rho1_PQ
+p)`), is the *same expression* as step 2's own pairing test applied to
+the already-once-pushed-forward residue — `unfold; exact`, no
+computation beyond recognising two things are the same thing. The only
+real hypothesis is step 2's own (A4), stated against `rho1_QR (rho1_PQ
+r)` (the residue step 2 actually receives); **step 1's own (A4) is not
+needed at all**, and neither is (N0). This precisely explains why the
+adversarial search never found a counterexample: under the "reuse the
+same witness cycle at the composite level" reading of composition (what
+every search script here did), an A4 counterexample was never possible
+in the first place.
+
+### E0_composes: a real argument, needing less than first suspected
+
+An earlier hand derivation (attempted before writing any Rocq) reached
+for step 2's (N0) as well as its (E0), via a "pushforward of Z1(R) spans
+exactly Z1(Q)" detour. The Rocq proof does not need that detour, or
+(N0), at all: minimal finite-dimensional span/linear-map infrastructure
+(`VSpace`, `InSpan`, `linear_maps_preserve_span`, `InSpan_transport`) is
+enough to chain step 1's own (E0) — every coarse cycle is in the span of
+the pushforward of `Z1(Q)` — through step 2's own (E0) — every `Z1(Q)`
+element is itself in the span of the pushforward of `Z1(R)` — using only
+linearity of the two pushforward maps. The composite coverage falls out
+as `InSpan_transport` applied once. **Only step 1's (E0) and step 2's
+(E0) are needed; neither step's (N0) is a hypothesis of `E0_composes`.**
+
+### What this settles about the adversarial search's own question
+
+Phase 2b asked whether A4/E0 are "pure preservation predicates" (nearly
+formal, like N0) or "coherence predicates requiring extra
+naturality/commutation hypotheses." The answer, now proved rather than
+inferred from absence of counterexamples: **both are pure preservation
+predicates** — A4 trivially so (definitional), E0 via a short but real
+span argument — and *neither needs an extra hypothesis beyond what the
+individual steps already assert about themselves*. No hidden coherence
+condition was found because none was required. This is also the
+mechanism behind the caught mistake in Phase 2b: a composite E0 failure
+is not automatically a compositional failure — it may be inherited
+warrant debt from a defective component step, exactly the sentence
+recorded in the paper's Theorem~5.1 remark, now with its E0 analogue
+proved rather than just illustrated by one corrected search bug.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 12-file Rocq chain
+and the 136+-test Python suite verified green before this was recorded.
+
+## What is still not known
+
+- **The scope of the *statement*, not the proof.** `A4_composes` and
+  `E0_composes` are proved for arbitrary linear pullback maps between
+  arbitrary (abstract, not dimension-bounded) vector spaces — strictly
+  more general than anything the searches covered. What is *not* claimed
+  is that this is the only possible formalisation of "composition" for
+  refinement witnesses, or that every notion of "the composite witness"
+  one might reasonably define coincides with the one used here (reuse
+  the same declared cycle at the composite level; compose pullbacks by
+  function composition). A different formalisation could in principle
+  behave differently.
+- Whether a three-step (or longer) composition needs anything beyond
+  repeated application of these two-step theorems has not been checked.
+- No general theorem for refinement-witness composition beyond (N0),
+  (A4), (E0) is attempted — full `verdict_safe` composability follows
+  immediately by conjunction of the three, but nothing about
+  presentation invariance or the broader open questions in the paper's
+  "What is not claimed" section is affected by this result.
 
 ## Reproducing this
 
@@ -219,18 +272,21 @@ python refinement_witness_composition_probe.py
 python refinement_witness_a4_e0_counterexample_search.py
 python refinement_witness_composition_boundary_search.py
 coqc rocq/RefinementWitnessComposition.v
+coqc rocq/RefinementWitnessVerdictComposition.v
 ```
 
 ## Next steps
 
-- Widen the adversarial search: vary vertex-level pullbacks too (not
-  fixed to the identity), larger dimensions, three-step compositions
-  rather than two.
-- If A4/E0 continue to survive wider adversarial search, that would be
-  evidence (not proof) worth escalating to an actual proof attempt --
-  Phase 2b's ~175,000-case null result is a meaningfully stronger prior
-  toward that than phase 2's 26 cases were, but still not a trigger for
-  claiming a theorem on its own.
+- Three-step (or longer) composition: check whether repeated application
+  of the two-step theorems is really all that is needed, or whether
+  something new appears at three steps.
+- A worked concrete instantiation of `A4_composes`/`E0_composes` against
+  the actual matrix-shaped witnesses in `refinement_checker.py` (the way
+  `CandidateThreeBDistinctSupportClassification.v` both proved
+  abstractly and instantiated concretely) — not done here; the abstract
+  theorems are stated to cover the matrix case as a special case (a
+  matrix is a linear function of its argument) but that correspondence
+  is not separately verified in Rocq the way `N0_composes`'s was.
 - ~~Write the N0-composability lemma into the Rocq chain~~ — done,
   `rocq/RefinementWitnessComposition.v`.
 - ~~Reclassify A4/E0 as a counterexample search rather than a
@@ -241,3 +297,6 @@ coqc rocq/RefinementWitnessComposition.v
   witness data~~ — done, `refinement_witness_composition_boundary_
   search.py`, ~175,000 cases, 0 counterexamples after correcting a
   caught methodological mistake.
+- ~~Attempt the A4/E0 proof~~ — done, `rocq/
+  RefinementWitnessVerdictComposition.v`, `A4_composes` and
+  `E0_composes`, `coqchk`-clean.
