@@ -239,11 +239,24 @@ condition was found because none was required. This is also the
 mechanism behind the caught mistake in Phase 2b: a composite E0 failure
 is not automatically a compositional failure — it may be inherited
 warrant debt from a defective component step, exactly the sentence
-recorded in the paper's Theorem~5.1 remark, now with its E0 analogue
-proved rather than just illustrated by one corrected search bug.
+recorded in the paper's remark after Theorem~5.3 (`thm:e0composes`), now
+with its E0 analogue proved rather than just illustrated by one
+corrected search bug.
 
 `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 12-file Rocq chain
 and the 136+-test Python suite verified green before this was recorded.
+
+## Applied translation
+
+`veribound-fce` (the applied layer built on this repository) has since
+translated the obligation-dependency structure this section describes
+into applied vocabulary — `docs/design/TRANSFORMATION_CERTIFICATE_
+VOCABULARY.md` there: transformation witness, certificate obligation,
+local/inherited/composite failure, preservation theorem, and five
+diagnostic statuses (`preserved`/`inherited-failure`/`local-failure`/
+`unresolved`/`out-of-scope`), grounded directly in `N0_composes`,
+`A4_composes`, and `E0_composes`. Vocabulary/spec only there too — no
+code in `veribound-fce` implements any of it yet.
 
 ## What is still not known
 
