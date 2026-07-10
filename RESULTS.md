@@ -807,3 +807,84 @@ R14's representation soundness to certificate soundness, for the
 already-settled two-branch, one-seam domain specifically; it is not
 claimed to generalise to multi-region composition, where cycle-level
 obstructions may remain after every pairwise interface agrees (see R1-R9).
+
+## R16. The global coherence certificate: packaging R1-R5's cohomology as proof-carrying evidence
+
+R15 asked which semantic evidence authorises which diagnostic
+constructor for *pairwise* compatibility. R16 asks the same question for
+*global* coherence — a structurally different obstruction theory, not a
+generalisation of R15's. Where R15 packaged `CoupledParallelCompatibility
+.v`'s gluing theorems, R16 packages `AssociatorResidueRepair.v`'s Layer
+1 (`nonzero_pairing_blocks_repair_mod_ceq`), already fully abstract over
+any `C0`, `C1`, `Z1`, `delta0`, `pairing`, and `cycle` — no new
+cohomology is proved, only evidence-carrying certificate constructors
+built around what was already there.
+
+**Why global coherence gets its own type, not `ConflictDiagnostic`**: R14's
+vocabulary is intrinsically pairwise (two declarations, `SoundL`/`SoundR`
+governing their separate recoverability). The global problem has one
+residue, one possible repair potential, one possible obstruction cycle —
+no left/right declarations, no role for `SoundL`/`SoundR`. Forcing it
+into `ConflictDiagnostic V C` would overload `RefuseDiagnostic` with two
+genuinely different obstruction theories — exactly the conflation
+`docs/design/CERTIFICATE_COMPOSITION_SPEC.md`'s `pairwise_compatibility`/
+`global_coherence` split already exists to prevent. `docs/design/
+GLOBAL_COHERENCE_CERTIFICATE.md` records this decision in full.
+
+**The evidence duality**, exactly mirroring R15's asymmetry:
+
+```coq
+Inductive DecisiveGlobalEvidence (r : C1) : Type :=
+  | RepairEvidence :
+      forall b : C0, ceq (delta0 b) r -> DecisiveGlobalEvidence r
+  | ObstructionEvidence :
+      forall z : Z1, cycle z -> ~ (pairing z r == 0) -> DecisiveGlobalEvidence r.
+```
+
+Repairability carries a positive repair witness (`b`, checked by direct
+substitution: `ceq (delta0 b) r`); obstruction carries a positive cycle
+witness. There is no constructor for a bare "not repairable" claim
+independent of an actual cycle witness. `GlobalUnresolvedResult` lives
+outside decisive evidence, meaning only that no validated certificate is
+being presented — not that any search was exhaustive.
+
+**A naming discipline worth stating precisely**: `nonzero_pairing_
+blocks_repair_mod_ceq` proves `r` is not a coboundary. It does **not**
+require or establish `delta1 r = 0` (that `r` is a cocycle) — a genuine
+"`[r] != 0` in `H^1`" claim is strictly stronger (cocycle *and*
+not-coboundary). Nothing here is named `NontrivialH1Obstruction`; every
+obstruction fact is named *non-repairable*, never *nontrivial cohomology
+class*. Also deliberately not added: a fourth "already coherent"
+(zero-residue) status — the Layer-1 interface supplies no distinguished
+zero of `C1`, and the central theorem needs none.
+
+**The central theorem**, the no-repair conclusion *derived*, never
+stored:
+
+```text
+global_coherence_certificate_sound :
+    GlobalDecided (RepairEvidence b Hrepair)       ->  ceq (delta0 b) r
+    GlobalDecided (ObstructionEvidence z Hcyc Hnz)  ->  ~ exists b, ceq (delta0 b) r
+    GlobalUnresolvedResult                           ->  True
+```
+
+Four supporting theorems: `decisive_global_evidence_is_repair_or_
+obstruction` (any constructed evidence testifies to one or the other —
+two originally-proposed separate theorems merged into this one honest
+fact rather than padded to a target count with vacuous restatements of
+a constructor's own hypothesis); `obstruction_certificate_blocks_every_
+repair`; `unresolved_result_carries_no_decisive_evidence` (a
+constructor-distinctness fact); and **`repairable_and_obstructed_are_
+disjoint`** — the consistency property this bridge earns: no residue can
+simultaneously have a checked repair witness and a checked obstruction
+witness, following immediately from the obstruction theorem applied to
+the repair witness itself.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 20-file dependency
+closure. Scoped to the abstract Layer-1 interface exactly as it already
+exists — neither limited to the concrete four-cycle nor generalised to a
+new `n`-region cover; a caller instantiating this bridge for a real
+cover still owes their own proof of `coboundaries_pair_zero`, the same
+shape of per-domain obligation R15 left to `CoupledParallelCompatibility
+.v`'s own `Key`/`Value` instantiation. No decidability claim; no policy
+obstruction, certificate JSON, or `veribound-fce` change.
