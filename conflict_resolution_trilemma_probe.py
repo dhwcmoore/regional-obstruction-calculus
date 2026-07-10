@@ -107,6 +107,27 @@ def check_symmetric(resolve: Resolver) -> bool:
     return all(resolve(x, y) == resolve(y, x) for (x, y) in TEST_PAIRS)
 
 
+def pair_resolver(x: F, y: F) -> tuple:
+    """The structured (non-lossy) resolver: keep both declarations
+    verbatim rather than collapsing them into one value of the same
+    type. Codomain is (Q, Q), not Q -- deliberately outside the
+    V x V -> V shape the impossibility theorem and the five checks
+    above are about; not run through `classify()`."""
+    return (x, y)
+
+
+def check_pair_resolver_preserves_both_claims() -> bool:
+    """Mirrors rocq/ConflictResolutionTrilemma.v's
+    pair_resolver_preserves_both_claims: both projections recover the
+    original values exactly, for every tested pair, including the
+    disagreeing ones every lossy resolver in NAMED_RESOLVERS fails on in
+    at least one direction."""
+    return all(
+        pair_resolver(x, y) == (x, y)
+        for (x, y) in TEST_PAIRS
+    )
+
+
 def classify(resolve: Resolver) -> Dict[str, bool]:
     return {
         "agreement": check_agreement(resolve),
@@ -169,6 +190,14 @@ def print_report() -> None:
     sum_result = classify(total_sum)
     print(f"  sum(1, 1) = {total_sum(F(1), F(1))}  (agreement would require this to equal 1)")
     print(f"  sum agreement={sum_result['agreement']}  idempotent={sum_result['idempotent']}")
+
+    print()
+    print("=== Structured (non-lossy) resolution: pair_resolver ===")
+    ok = check_pair_resolver_preserves_both_claims()
+    print(f"  pair_resolver(x, y) == (x, y) for every tested pair, including "
+          f"disagreeing ones: {ok}")
+    print(f"  example: pair_resolver(5, -5) = {pair_resolver(F(5), F(-5))}  "
+          f"(every lossy resolver above loses at least one side on this pair)")
 
 
 if __name__ == "__main__":

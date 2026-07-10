@@ -457,3 +457,38 @@ other six are (not a pure function of the two declared values alone —
 the sacrifice is category-level, not property-level). No resolver is
 implemented in either `regional-obstruction-calculus` or
 `veribound-fce`.
+
+**Lossy versus structured resolution.** The impossibility above is
+specifically about resolvers whose *output* is the same type `V` as the
+two declarations — a **lossy** resolver necessarily discards
+information on disagreement, since §3's minimal fact rules out any
+value of type `V` recovering both sides. Nothing forces the output to
+stay in `V`, though: a **structured** resolver's codomain can be a
+different type carrying both original declarations, recoverable by
+projection. Proved, not merely asserted, in
+`rocq/ConflictResolutionTrilemma.v`:
+
+```text
+pair_resolver_preserves_both_claims :
+    forall x y : V, fst (pair_resolver x y) = x /\ snd (pair_resolver x y) = y.
+    (pair_resolver x y := (x, y) -- both projections recover the original
+    values exactly, for every pair, including disagreeing ones.)
+
+structure_does_not_exempt_the_resolved_field :
+    forall (resolved : V -> V -> V) (a b : V), a <> b ->
+      ~ ((forall x y, resolved x y = x) /\ (forall x y, resolved x y = y)).
+    (literally the same theorem as no_resolver_has_both_fidelities_
+    on_nontrivial_domain, restated at a structured object's own scalar
+    summary field to make explicit that structure does not exempt it.)
+```
+
+Existence, not a second impossibility: this shows the original
+impossibility is about single-value (same-type) resolution
+specifically, not about preserving information as such — but a
+structured resolver that also exposes one scalar "resolved" summary
+field (for a consumer that wants a single value) still owes that field
+to the same trilemma as before. Preserving both claims and having one
+faithful combined scalar are different goals; structure achieves only
+the first. Checked computationally too
+(`conflict_resolution_trilemma_probe.py`'s `pair_resolver`), `coqchk`
+-clean, no `Admitted`/`Axiom`/`sorry`, full 15-file dependency closure.

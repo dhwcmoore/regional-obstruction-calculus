@@ -81,3 +81,49 @@ Section ConflictResolutionTrilemma.
   Qed.
 
 End ConflictResolutionTrilemma.
+
+(* ------------------------------------------------------------------ *)
+(* Lossy versus structured resolvers.                                  *)
+(*                                                                       *)
+(* The impossibility above is specifically about resolvers whose OUTPUT *)
+(* is the same type V as the two disagreeing declarations ("lossy"      *)
+(* resolvers). Nothing forces that. A resolver can instead be           *)
+(* "structured": its codomain is some other type carrying both original *)
+(* declarations, recoverable by projection. This section shows such a   *)
+(* resolver always exists (trivially, by pairing) -- existence, not     *)
+(* impossibility -- and that wrapping a scalar summary field inside a   *)
+(* structured object does not exempt THAT field from the theorems       *)
+(* above: it is still a plain V -> V -> V function on its own terms.    *)
+(* ------------------------------------------------------------------ *)
+
+Section StructuredResolvers.
+
+  Variable V : Type.
+
+  (* The simplest possible non-lossy resolver: keep both declarations,
+     verbatim, rather than collapsing them. Not a proposed
+     implementation -- an existence witness that structured resolution
+     is possible at all, at essentially no cost. *)
+  Definition pair_resolver (x y : V) : V * V := (x, y).
+
+  Theorem pair_resolver_preserves_both_claims :
+    forall x y : V, fst (pair_resolver x y) = x /\ snd (pair_resolver x y) = y.
+  Proof.
+    intros x y. split; reflexivity.
+  Qed.
+
+  (* What structure does NOT buy you: if a structured resolver also
+     exposes a single "resolved" scalar field of type V, that field is
+     still governed by the original impossibility, unchanged. This is
+     literally no_resolver_has_both_fidelities_on_nontrivial_domain,
+     restated at this scalar field to make the point explicit rather
+     than left implicit. *)
+  Theorem structure_does_not_exempt_the_resolved_field :
+    forall (resolved : V -> V -> V) (a b : V),
+      a <> b ->
+      ~ ((forall x y, resolved x y = x) /\ (forall x y, resolved x y = y)).
+  Proof.
+    exact (no_resolver_has_both_fidelities_on_nontrivial_domain V).
+  Qed.
+
+End StructuredResolvers.

@@ -3,7 +3,8 @@ Regression tests for conflict_resolution_trilemma_probe.py. Locks in
 docs/design/CONFLICT_RESOLUTION_TRILEMMA.md §4's classification table
 and the two claims that table depends on: idempotence is not
 independent of agreement (they always coincide), and no named resolver
-has both fidelities.
+has both fidelities. Also locks in §8's structured (non-lossy)
+resolver finding.
 """
 
 from fractions import Fraction as F
@@ -11,6 +12,7 @@ from fractions import Fraction as F
 from conflict_resolution_trilemma_probe import (
     NAMED_RESOLVERS, classify, check_no_resolver_has_both_fidelities,
     left_wins, right_wins, average, total_sum, erase,
+    pair_resolver, check_pair_resolver_preserves_both_claims, DISTINCT_PAIRS,
 )
 
 
@@ -69,3 +71,21 @@ def test_idempotence_never_independent_of_agreement():
 
 def test_no_named_resolver_has_both_fidelities():
     assert check_no_resolver_has_both_fidelities() is None
+
+
+def test_pair_resolver_preserves_both_claims_on_every_pair():
+    """The structured (non-lossy) resolver recovers both original
+    values exactly, including on disagreeing pairs -- unlike every
+    lossy resolver in NAMED_RESOLVERS, none of which can."""
+    assert check_pair_resolver_preserves_both_claims() is True
+    for (x, y) in DISTINCT_PAIRS:
+        assert pair_resolver(x, y) == (x, y)
+
+
+def test_pair_resolver_codomain_is_not_the_lossy_shape():
+    """Sanity check that pair_resolver's output is a pair, not a Q --
+    it is deliberately outside the V x V -> V shape the impossibility
+    theorem is about."""
+    result = pair_resolver(F(5), F(-5))
+    assert isinstance(result, tuple)
+    assert len(result) == 2

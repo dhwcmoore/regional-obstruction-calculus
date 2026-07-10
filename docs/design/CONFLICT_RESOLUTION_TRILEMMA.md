@@ -231,7 +231,64 @@ no_resolver_has_both_fidelities_on_nontrivial_domain :
 `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 15-file dependency
 closure. See `RESULTS.md` (R11) for the full account.
 
-## 8. What is not claimed
+## 8. Lossy versus structured resolvers
+
+§3's impossibility is sharper than "conflicts cannot be resolved." It
+is specifically about resolvers whose *output* is the same type `V` as
+the two disagreeing declarations — call these **lossy** resolvers,
+since committing to one value of type `V` necessarily discards
+information whenever `x ≠ y` (§3 shows there is no value of type `V`
+that could avoid discarding something). Nothing forces the output to be
+`V`, though. A resolver can instead be **structured**: its codomain is
+some other type `S`, equipped with projections recovering each original
+declaration. When `S := V * V` and the resolver is simply
+`fun x y => (x, y)`, both projections recover `x` and `y` exactly, for
+*every* pair, not only the ones that happened to agree.
+
+```text
+pair_resolver_preserves_both_claims :
+    forall x y : V, fst (pair_resolver x y) = x /\ snd (pair_resolver x y) = y.
+```
+
+This is existence, not impossibility, and it is nearly definitional —
+the point is not that the construction is deep, but that it exists at
+all and costs nothing beyond widening the output type. **The earlier
+impossibility is therefore about single-value (same-type) resolution
+specifically, not about preserving information as such**: nothing
+prevents a system from keeping both declarations, only from collapsing
+them into one value of the original type without loss.
+
+**What structure does not buy you.** If a structured resolver also
+exposes a single scalar "resolved" summary field of type `V` (for
+compatibility with a consumer that only wants one value), that field is
+still a plain `V -> V -> V` function on its own terms, and §3/§7's
+impossibility applies to it completely unchanged — wrapping it inside a
+larger structure that also happens to carry `x` and `y` alongside it
+does not exempt the summary field itself from the trilemma:
+
+```text
+structure_does_not_exempt_the_resolved_field :
+    forall (resolved : V -> V -> V) (a b : V), a <> b ->
+      ~ ((forall x y, resolved x y = x) /\ (forall x y, resolved x y = y)).
+```
+
+This is literally the same theorem as
+`no_resolver_has_both_fidelities_on_nontrivial_domain` (§7), restated
+to make the point explicit: **preserving both claims and having one
+faithful combined scalar are different goals, and a structured resolver
+achieves only the first.** Choosing what the "resolved" field should
+actually contain — `left_wins`, `average`, or anything else from §4's
+table — remains exactly as open a question as before; structure changes
+what is preserved *alongside* a scalar summary, not the summary's own
+fidelity properties.
+
+Checked computationally, not only stated, in
+`conflict_resolution_trilemma_probe.py`: `pair_resolver`'s two
+projections recover the original test pairs exactly, for every pair
+tested, including the disagreeing ones §4's lossy resolvers all fail on
+in one direction or the other.
+
+## 9. What is not claimed
 
 - That §4's seven resolver shapes are exhaustive. They are the
   candidates named in this document's own opening discussion, not a
@@ -250,3 +307,16 @@ closure. See `RESULTS.md` (R11) for the full account.
   `veribound-fce` should eventually implement. It narrows the design
   space by ruling out one specific hope (a resolver faithful to both
   branches at once) — nothing more.
+- That §8's `pair_resolver` is a proposed implementation. It is an
+  existence witness only, showing structured (non-lossy) resolution is
+  possible in principle — it says nothing about what a real diagnostic
+  layer should store, in what format, or under what field names, and
+  does not itself decide what the "resolved" scalar field of a
+  structured object should compute.
+- That widening the output type "solves" conflict resolution. §8 shows
+  only that it avoids the specific impossibility of §3/§7 for the
+  *claims themselves*; a structured resolver still owes its consumer
+  some scalar summary in most real use cases, and that summary is still
+  fully subject to §3/§7 — structure changes what can be preserved
+  alongside a decision, not whether a decision, once reduced to one
+  value, can honour both sides.
