@@ -37,7 +37,12 @@ shared-seam compatibility does **not** force non-cancellation — a
 compatible, branchwise-A4-preserved, aggregate-A4-cancelling case was
 found and verified (`refinement_witness_coupled_a4_cancellation_probe.
 py`), so the disjoint case's branchwise/aggregate split survives fully
-into the compatible-coupled case, at least for one witness family. No
+into the compatible-coupled case, at least for one witness family. Phase
+5e turns that finding into a machine-checked `Example`
+(`compatible_glue_can_cancel_aggregate_A4`,
+`rocq/CoupledParallelCompatibility.v`, `coqchk`-clean), and proves the
+general single-counting correction between a glued aggregate and the
+naive disjoint-style sum (`glued_aggregate_vs_naive_sum`, by `ring`). No
 merge rule and no general (N0)/(A4)/(E0) preservation claim exists yet
 for the coupled case. Arbitrary finite sequential chains,
 three-or-more-branch parallel composition, and any conflict-resolution
@@ -1000,18 +1005,90 @@ python refinement_witness_coupled_a4_cancellation_probe.py
 pytest tests/test_refinement_witness_coupled_a4_cancellation_probe.py
 ```
 
-**Not done**: any conflict-resolution rule (still deliberately excluded
-— resolving this open question was never a precondition for one, and
-remains the user's call, not a default); any Rocq formalisation of the
-cancellation phenomenon itself; testing witnesses beyond this project's
-existing four (a witness family with more/richer higher-dimensional
-cycle spaces might show cancellation is *common*, not just possible —
-untested); any claim about whether `A4_parallel_disjoint_branchwise`'s
-diagnostic report structure (§Phase 4d) needs revision in light of this
-— it does not need revision to remain correct (branchwise preservation
-is exactly what this phase confirms still holds), but whether the
-*aggregate_cancelled* outcome should be expected routinely rather than
-treated as a rare edge case is an open framing question, not decided.
+**Not done in this phase**: any conflict-resolution rule (still
+deliberately excluded — resolving this open question was never a
+precondition for one, and remains the user's call, not a default); a
+Rocq formalisation of the cancellation phenomenon (see Phase 5e, which
+*was* done next); testing witnesses beyond this project's existing four
+(a witness family with more/richer higher-dimensional cycle spaces might
+show cancellation is *common*, not just possible — untested); any claim
+about whether `A4_parallel_disjoint_branchwise`'s diagnostic report
+structure (§Phase 4d) needs revision in light of this — it does not need
+revision to remain correct (branchwise preservation is exactly what this
+phase confirms still holds), but whether the *aggregate_cancelled*
+outcome should be expected routinely rather than treated as a rare edge
+case is an open framing question, not decided.
+
+## Phase 5e: compatible aggregate-A4 cancellation, formalised in Rocq
+
+Per the explicit instruction not to move to a conflict-resolution rule
+yet, and instead to turn Phase 5d's probe finding into a verified
+example: `rocq/CoupledParallelCompatibility.v` gained a second section,
+`CompatibleAggregateCancellation`, proving exactly the fact the probe
+discovered — not a general theorem, an `Example`, matching the same
+"candidate/example before theorem" discipline used for the disjoint
+case's own `A4_parallel_aggregate_can_fail_despite_branchwise`.
+
+**The single-counting correction, made a proved fact rather than a
+comment.** A branch's own (A4) pairing, once a shared seam is agreed,
+splits into a piece contributed by data unique to that branch and a
+piece contributed by the shared seam itself (the *same* value in both
+branches, by agreement):
+
+```text
+left_total  = left_unique  + shared
+right_total = right_unique + shared
+```
+
+The glued composite's **aggregate** pairing is *not* `left_total +
+right_total`: in the glued complex the shared seam appears **once**, not
+twice (unlike disjoint parallel composition, where nothing is shared and
+the naive sum is exactly right), so
+
+```text
+glued_aggregate = left_unique + right_unique + shared
+                = left_total + right_total - shared
+```
+
+— proved as `glued_aggregate_vs_naive_sum`, a one-line `ring` fact once
+stated this way, but the exact correction the Python probe caught and
+fixed mid-search (Phase 5d): a first solve that assumed
+`glued_aggregate = left_total + right_total` was silently correct only
+when `shared = 0`, and wrong everywhere else.
+
+**`compatible_glue_can_cancel_aggregate_A4`** (`Example`): grounded in
+the probe's own computed numbers (`INSERT_BRIDGE`, shared edge `e23`),
+not invented — the shared seam's own contribution is `-1` (its declared-
+cycle coefficient there, times the pulled-back residue, both `-1` and
+`1` respectively), branch A's off-seam contribution is `-4` (giving
+`left_total = -5`, matching the probe's `branch_a` pairing exactly),
+branch B's off-seam contribution is `5` (giving `right_total = 4`,
+matching the probe's `branch_b` pairing exactly). Both totals nonzero
+(branchwise (A4) holds on both, exactly as computed); `glued_aggregate`
+exactly zero. The same fact the probe found computationally is now
+checked independently of the Python machinery entirely.
+
+`coqc`-clean and `coqchk`-clean (zero axioms, full 14-file dependency
+closure). No `Admitted`/`Axiom`/`sorry`. Still no conflict-resolution
+rule anywhere in this file, or this project.
+
+**Scope, stated precisely.** This proves that the specific numbers the
+probe found genuinely satisfy the claimed inequalities/equality — it
+does not generalise the *existence* of a cancelling case to an abstract
+statement over arbitrary `shared`/`left_unique`/`right_unique` (that
+would be trivial to prove — the existence of *some* zero of a linear
+function is not the interesting content here; the interesting content
+was finding a concrete instance grounded in real refinement-witness data
+that the probe's earlier, buggy version got wrong before correction).
+`glued_aggregate_vs_naive_sum` *is* the general, abstract fact (proved
+for all `shared`/`left_unique`/`right_unique`, by `ring`) — the
+cancellation `Example` deliberately stays concrete.
+
+**Reproducing this**:
+
+```sh
+coqc rocq/CoupledParallelCompatibility.v
+```
 
 ## Reproducing this
 
@@ -1038,23 +1115,23 @@ pytest tests/test_refinement_witness_coupled_a4_cancellation_probe.py
   list/vector machinery this project has not built; the three-step
   pattern is expected to continue but is not proved to.
 - Coupled parallel composition, beyond the shared-seam compatibility gate
-  (Phase 5b/5c) and the cancellation finding (Phase 5d): still no
-  preservation candidate of any kind, probed or proved. Concretely open:
-  (a) a conflict-resolution rule — this project has deliberately not
-  chosen one (averaging, branch-preference, or otherwise), and picking
-  one is itself a design decision, not yet made, gated on the
-  compatibility semantics now being theorem-grade; (b) whether the
-  "consistent gluing degenerates to disjoint-style preservation" finding
-  (2 cases, Phase 5b) generalises, or is a small-sample artifact — Phase
-  5d confirms it is at least not *unconditional* (compatible cancellation
-  is real), but says nothing about how *common* it is across a wider
-  witness family this project has not built; (c) connecting
+  (Phase 5b/5c) and the cancellation finding, now Rocq-verified
+  (Phase 5d/5e): still no preservation candidate of any kind, probed or
+  proved. Concretely open: (a) a conflict-resolution rule — this project
+  has deliberately not chosen one (averaging, branch-preference, or
+  otherwise), and picking one is itself a design decision, not yet made,
+  gated on the compatibility semantics now being theorem-grade; (b)
+  whether the "consistent gluing degenerates to disjoint-style
+  preservation" finding (2 cases, Phase 5b) generalises, or is a
+  small-sample artifact — Phase 5d/5e confirm it is at least not
+  *unconditional* (compatible cancellation is real, and now
+  `coqchk`-verified), but say nothing about how *common* it is across a
+  wider witness family this project has not built; (c) connecting
   `CoupledParallelCompatibility.v`'s abstract `Key`/`Value` model back to
   the concrete `Edge`/`Witness` types in `refinement_witnesses.py` — not
-  attempted; (d) a Rocq formalisation of the Phase 5d cancellation
-  phenomenon itself; (e) shared declared-cycle coupling *without* a
-  shared seam, and the other six coupling sources named in `docs/design/
-  COUPLED_PARALLEL_COMPOSITION_PROBLEM.md` §2 — none attempted.
+  attempted; (d) shared declared-cycle coupling *without* a shared seam,
+  and the other six coupling sources named in `docs/design/COUPLED_
+  PARALLEL_COMPOSITION_PROBLEM.md` §2 — none attempted.
 - Three-or-more-branch disjoint parallel composition: would need the
   same kind of generalisation as the sequential four-or-more-step case,
   not attempted.
@@ -1138,3 +1215,9 @@ pytest tests/test_refinement_witness_coupled_a4_cancellation_probe.py
   non-cancellation. Caught and corrected a real mid-probe error (naively
   assuming the glued pairing sums like the disjoint case, which
   double-counts the shared edge). Still no merge rule.
+- ~~Formalise the cancellation phenomenon in Rocq~~ — done, Phase 5e,
+  `rocq/CoupledParallelCompatibility.v`'s `CompatibleAggregateCancellation`
+  section: `glued_aggregate_vs_naive_sum` (the general single-counting
+  correction, by `ring`) and `compatible_glue_can_cancel_aggregate_A4`
+  (an `Example`, grounded in the probe's own computed numbers, not
+  invented). `coqchk`-clean, full 14-file chain. Still no merge rule.

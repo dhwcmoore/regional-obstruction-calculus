@@ -348,3 +348,40 @@ family. Not a general theorem: evidence on the one witness with enough
 cycle-space freedom to test, not a statement about how common
 cancellation is across some wider class of witnesses this project has
 not built. Still no conflict-resolution rule, and none proposed.
+
+**The cancellation phenomenon, formalised in Rocq (Phase 5e).**
+`rocq/CoupledParallelCompatibility.v` gained a second section,
+`CompatibleAggregateCancellation`, proving the general mechanism as an
+abstract fact and the probe's specific finding as a concrete `Example`
+-- not a general existence theorem, matching the same "candidate/example
+before theorem" discipline the disjoint case's own
+`A4_parallel_aggregate_can_fail_despite_branchwise` used.
+
+The single-counting correction, proved rather than only argued in a
+comment: once a shared seam is agreed, a branch's own pairing splits
+into a piece unique to that branch plus the shared seam's own
+contribution (the *same* value in both branches, by agreement):
+
+```text
+left_total  = left_unique  + shared
+right_total = right_unique + shared
+```
+
+The glued composite's aggregate is *not* `left_total + right_total` --
+the shared seam appears once in the glued complex, not twice -- so
+
+```text
+glued_aggregate = left_unique + right_unique + shared
+                = left_total + right_total - shared      (glued_aggregate_vs_naive_sum, by `ring`)
+```
+
+`compatible_glue_can_cancel_aggregate_A4` (`Example`) instantiates this
+with the probe's own computed numbers (`INSERT_BRIDGE`, shared edge
+`e23`: shared contribution `-1`, branch A's off-seam contribution `-4`
+giving `left_total = -5`, branch B's off-seam contribution `5` giving
+`right_total = 4`) -- both totals nonzero, `glued_aggregate` exactly
+zero, matching the probe's computed result exactly, now checked
+independently of the Python machinery entirely.
+
+`coqchk`-clean, full 14-file dependency closure, no `Admitted`/`Axiom`/
+`sorry`. Still no conflict-resolution rule anywhere in this project.

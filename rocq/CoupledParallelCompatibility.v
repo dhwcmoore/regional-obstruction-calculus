@@ -31,6 +31,18 @@
    shared seam's key ever needs comparing; every other key is, by
    construction, disjoint and never checked).
 
+   A second section (CompatibleAggregateCancellation, below) formalises
+   refinement_witness_coupled_a4_cancellation_probe.py's (Phase 5d)
+   finding: shared-seam compatibility makes the glued composite
+   well-defined but does NOT force the aggregate (A4) to compose --
+   branchwise (A4) can hold on both branches while the aggregate still
+   cancels. This is an EXAMPLE (a concrete existential witness, grounded
+   in the probe's own computed numbers), not a general theorem, exactly
+   as Part 1's disjoint-parallel analogue
+   (RefinementWitnessParallelComposition.v's
+   A4_parallel_aggregate_can_fail_despite_branchwise) was. Still no
+   conflict-resolution rule anywhere in this file.
+
    No `Admitted`/`Axiom`/`sorry`.
 *)
 
@@ -180,4 +192,74 @@ Proof.
   unfold branch_A_declares, branch_B_declares.
   repeat split; try reflexivity.
   discriminate.
+Qed.
+
+(* ------------------------------------------------------------------ *)
+(* Compatible aggregate-A4 cancellation (Phase 5d).                    *)
+(*                                                                      *)
+(* A branch's own (A4) pairing, once a shared seam is agreed, splits    *)
+(* into a piece contributed by data unique to that branch and a piece   *)
+(* contributed by the shared seam itself (the SAME value in both        *)
+(* branches, by agreement):                                             *)
+(*                                                                       *)
+(*     left_total  = left_unique  + shared                              *)
+(*     right_total = right_unique + shared                              *)
+(*                                                                       *)
+(* The glued composite's AGGREGATE pairing is NOT left_total +           *)
+(* right_total: in the glued complex the shared seam appears ONCE, not   *)
+(* twice (unlike disjoint parallel composition's literal concatenation,  *)
+(* where nothing is shared and the naive sum is exactly right), so the   *)
+(* aggregate is                                                          *)
+(*                                                                        *)
+(*     glued_aggregate = left_unique + right_unique + shared             *)
+(*                     = left_total + right_total - shared.              *)
+(*                                                                        *)
+(* This single-counting correction is exactly the mistake the Python     *)
+(* probe caught and fixed mid-search (see docs/design/                   *)
+(* REFINEMENT_WITNESS_COMPOSITION_STATUS.md, Phase 5d): a first solve     *)
+(* that assumed glued_aggregate = left_total + right_total was silently   *)
+(* correct only when shared = 0, and wrong everywhere else.               *)
+(* ------------------------------------------------------------------ *)
+
+Section CompatibleAggregateCancellation.
+
+  Variables shared left_unique right_unique : Q.
+
+  Definition left_total : Q := left_unique + shared.
+  Definition right_total : Q := right_unique + shared.
+  Definition glued_aggregate : Q := left_unique + right_unique + shared.
+
+  (* The single-counting correction, made explicit and proved, not just
+     asserted in a comment: the glued aggregate is the naive disjoint-
+     style sum MINUS one extra copy of the shared contribution. *)
+  Theorem glued_aggregate_vs_naive_sum :
+    (glued_aggregate == left_total + right_total - shared)%Q.
+  Proof.
+    unfold glued_aggregate, left_total, right_total.
+    ring.
+  Qed.
+
+End CompatibleAggregateCancellation.
+
+(* The example itself, grounded in the probe's own computed numbers
+   (INSERT_BRIDGE, shared edge e23): the shared seam's own contribution
+   is -1 (the declared-cycle coefficient -1 at e23, times the pulled-back
+   residue 1 there); branch A's off-seam contribution is -4 (giving
+   left_total = -5, matching the probe's branch_a pairing exactly);
+   branch B's off-seam contribution is 5 (giving right_total = 4,
+   matching the probe's branch_b pairing exactly). Both branch totals are
+   nonzero (branchwise (A4) holds on both) yet the glued aggregate is
+   exactly zero -- the same fact the probe found computationally, now
+   checked independently of the Python machinery entirely. *)
+Example compatible_glue_can_cancel_aggregate_A4 :
+  exists (shared left_unique right_unique : Q),
+    ~ (left_total shared left_unique == 0) /\
+    ~ (right_total shared right_unique == 0) /\
+    (glued_aggregate shared left_unique right_unique == 0).
+Proof.
+  exists (-(1#1)), (-(4#1)), (5#1).
+  unfold left_total, right_total, glued_aggregate.
+  repeat split.
+  - intro H. discriminate H.
+  - intro H. discriminate H.
 Qed.
