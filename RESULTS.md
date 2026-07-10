@@ -558,3 +558,76 @@ remains entirely undecided.
 closure. No resolver, encoding format, or diagnostic schema is
 proposed, recommended, or implemented in either
 `regional-obstruction-calculus` or `veribound-fce`.
+
+## R13. Bounded conflict-diagnostic completeness
+
+R11 showed a single value cannot preserve two disagreeing declarations.
+R12 showed a non-lossy diagnostic must carry enough information to
+recover the ordered pair. R13 combines both into a closed
+classification, answering the question neither R11 nor R12 individually
+asked: once two declarations disagree, what are the honest things a
+diagnostic can even *be*?
+
+**"Bounded" is load-bearing.** This is completeness for one small,
+explicitly defined fragment (`docs/design/
+CONFLICT_DIAGNOSTIC_COMPLETENESS.md`), not for all possible fusion,
+policy, or coupled-composition systems. The fragment is formalised as a
+closed, four-constructor Coq inductive type, `rocq/
+ConflictDiagnosticCompleteness.v`:
+
+```coq
+Inductive ConflictDiagnostic (V C : Type) : Type :=
+  | RefuseDiagnostic
+  | ScalarDiagnostic (z : V)
+  | StructuredDiagnostic (c : C)
+  | UnresolvedDiagnostic.
+```
+
+matching, respectively: `interface_conflict` (no composite formed at
+all), any named resolver strategy (`left_wins`/`right_wins`/`average`/
+`sum`/`erase`), `NonLossyConflictDiagnostic`/R12's `encode`, and
+`ReportSource.UNRESOLVED`. Classification into four `DiagnosticClass`
+buckets (`no_composite`/`lossy_scalar`/`nonlossy_structured`/
+`unresolved_case`) is proved total and exclusive
+(`conflict_diagnostic_classification_total`,
+`..._exclusive`), and the four classes — along with the underlying
+`ConflictDiagnostic` constructors themselves — are proved pairwise
+distinct.
+
+**What makes this more than a restatement of Coq's own exhaustive
+pattern matching**: `ScalarDiagnostic` is pinned to R11 — it is always
+lossy once `x <> y`, imported directly rather than reproved
+(`scalar_summary_not_fully_faithful_on_conflict`, and its headline
+restatement `no_hidden_neutral_scalar_case`). `StructuredDiagnostic` is
+pinned to R12 — non-lossy exactly when its fixed projections recover
+both declarations (`structured_diagnostic_nonlossy`,
+`nonlossy_diagnostic_injective`), with pairing achieving the bound
+exactly (`pair_diagnostic_is_nonlossy`, `pair_encoding_injective`).
+Every theorem in `rocq/ConflictDiagnosticCompleteness.v` either imports
+R11/R12 directly or is a thin corollary of one of them — no new
+mathematical machinery, only a vocabulary that closes the space of
+honest diagnostics into four named, semantically pinned shapes.
+
+**The disturbing sentence this licenses**: there is no fifth, neutral
+scalar case. A system that claims to resolve a conflict with a single
+scalar output is, within this fragment, either losing information
+(`lossy_scalar`), refusing composition (`no_composite`), or hiding
+additional structure it has not admitted to (in which case it is really
+`nonlossy_structured` wearing a scalar-shaped label).
+
+Checked computationally, not only stated, in
+`conflict_diagnostic_completeness_probe.py`: every named strategy
+(`refuse`/`left_wins`/`right_wins`/`average`/`sum`/`erase`/`pair`/
+`unresolved`) lands in exactly one of the four classes, with
+`left_wins`/`right_wins`/`erase` additionally confirmed lossy via the
+R12 pigeonhole argument specialised at codomain `= V`. `average`/`sum`
+are classified `lossy_scalar` by type alone, deliberately excluded from
+the confinement check — the same caveat R12's own probe already
+established, carried forward rather than silently dropped.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 17-file dependency
+closure. No resolver is chosen; §7 of the design doc states in detail
+what this does and does not claim — in particular, it does **not**
+claim R11's seven named resolver shapes are exhaustive (the trilemma
+doc's own §10 already disclaims that, at a different, finer level than
+this result's four structural classes).

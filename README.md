@@ -48,6 +48,7 @@ See [RESULTS.md](RESULTS.md) for the full account. Headline items:
 - **R10**: refinement-witness composition is theorem-grade for all three governing conditions, both for sequential composition (two and three steps: `N0_composes`, `A4_composes`, `E0_composes`, `rocq/RefinementWitnessComposition.v`, `rocq/RefinementWitnessVerdictComposition.v`, `rocq/RefinementWitnessSequentialComposition.v`) and for disjoint *parallel* composition (`N0_parallel_disjoint`, `E0_parallel_disjoint`, and a full branchwise/aggregate A4 classification -- `A4_parallel_disjoint_branchwise`, `A4_parallel_disjoint_nonzero_sum`, and a machine-checked witness that branchwise success does not imply aggregate success -- `rocq/RefinementWitnessParallelComposition.v`) -- reached only after searches/probes (~175,000 cases sequentially, 32 cases in parallel) that also found a genuine negative result: the naive scalar A4 does **not** compose under disjoint parallel composition, a demonstrated fact (in Rocq, not only Python), resolved by classification rather than left as an open question. Released as `v0.12-disjoint-parallel-classification`. A first step into *coupled* parallel composition (branches sharing a seam, not fully independent) asks a prior question instead of preservation -- is the glued composite even well-defined -- and answers it with a conservative compatibility gate, both probed (`refinement_witness_coupled_parallel_probe.py`) and proved (`rocq/CoupledParallelCompatibility.v`, `coqchk`-clean): agreement is necessary and sufficient for a glue to exist, agreeing declarations glue cleanly, conflicting ones are diagnosed and refused, never silently merged. Coupled-parallel well-definedness is now formalised; coupled-parallel preservation remains open -- except for one settled preservation-adjacent question, both probed (`refinement_witness_coupled_a4_cancellation_probe.py`) and proved (`rocq/CoupledParallelCompatibility.v`'s `CompatibleAggregateCancellation` section, `coqchk`-clean): shared-seam agreement does **not** force the aggregate (A4) to compose either -- a verified, compatible, branchwise-preserved, aggregate-cancelled case exists. Still no conflict-resolution rule anywhere in this project.
 - **R11**: the conflict-resolution trilemma -- a separate mathematical question from R10, about equality and resolver functions in the abstract, not about refinement witnesses at all. Proves no *lossy* (same-type) resolver can honour both disagreeing branches at once unless the whole value type is trivial (`rocq/ConflictResolutionTrilemma.v`, `coqchk`-clean), and classifies seven candidate resolver shapes (`left_wins`, `right_wins`, `average`, `sum`, `erase`, `refuse`, `external_authority`) by what each sacrifices (`conflict_resolution_trilemma_probe.py`). Also proves a *structured* (non-lossy) resolver preserving both declarations always exists -- the impossibility is about collapsing to one value of the same type, not about preserving information as such -- while showing structure does not exempt a structured object's own scalar summary field from the same impossibility. No resolver is proposed, recommended, or implemented.
 - **R12**: the non-lossy lower bound -- given R11's structured resolver exists, how much structure does non-lossy resolution actually require? Proves any encoding recoverable via fixed projections must be injective on `V x V` (`rocq/ConflictResolutionLowerBound.v`, `coqchk`-clean), so for finite `V` with `|V|=n`, a non-lossy codomain needs at least `n^2` elements -- a cardinality restatement of R11's impossibility, checked computationally for `n=1..6` (`conflict_resolution_lower_bound_probe.py`). Characterises the abstract shape a faithful conflict record must have, not a concrete schema.
+- **R13**: bounded conflict-diagnostic completeness -- combines R11 and R12 into a closed, four-constructor classification (`rocq/ConflictDiagnosticCompleteness.v`, `coqchk`-clean) of what a diagnostic about a conflicting shared interface can honestly be: refusal (`RefuseDiagnostic`), a lossy scalar summary (`ScalarDiagnostic`, always lossy once the declarations disagree -- R11, imported directly), a non-lossy structured diagnostic (`StructuredDiagnostic`, non-lossy exactly under R12's projection condition, imported directly), or an explicitly unresolved case (`UnresolvedDiagnostic`). Classification is proved total and exclusive, and the four classes are pairwise distinct. **Bounded** is the key word: this is completeness for the narrow fragment defined in `docs/design/CONFLICT_DIAGNOSTIC_COMPLETENESS.md`, not for all possible diagnostic systems -- it does not choose a resolver, and does not contradict R11's own §10 disclaimer that its seven named resolver *shapes* are not exhaustive (R13 classifies structural *shapes* of diagnostic, a coarser, different question). Checked computationally in `conflict_diagnostic_completeness_probe.py`: every named strategy lands in exactly one of the four classes.
 
 ## Repository map
 
@@ -57,14 +58,14 @@ See [PROJECT_MAP.md](PROJECT_MAP.md) for the full file-by-file map. Top level:
 README.md            this file
 PROJECT_MAP.md        where to start, by layer
 STATUS.md             what is proved / computed / diagnostic / not claimed
-RESULTS.md            the results, R1-R12
+RESULTS.md            the results, R1-R13
 REPRODUCIBILITY.md    exact commands to reproduce every check
 CHANGELOG.md
 LICENSE
 Makefile
 requirements.txt
 examples/             JSON witness data
-tests/                pytest suite (124 tests)
+tests/                pytest suite (181 tests)
 rocq/                 Rocq proof scripts (no Admitted/Axiom/sorry)
 ocaml/                OCaml parity mirror of the refinement checker
 docs/                 theory, diagnostics, design, and archive notes
@@ -80,7 +81,7 @@ pip install -r requirements.txt
 make check-python
 ```
 
-Expect `124 passed`. See [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the full command sequence, including the optional Rocq and OCaml checks.
+Expect `181 passed`. See [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the full command sequence, including the optional Rocq and OCaml checks.
 
 ## Verification status
 

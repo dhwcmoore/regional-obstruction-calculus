@@ -28,7 +28,7 @@ python run_associator_obstruction.py examples/four_cycle_associator.json
 python -m pytest -q
 ```
 
-Expected: `124 passed`.
+Expected: `181 passed`.
 
 ## Individual checks
 
@@ -61,7 +61,7 @@ what each result means.
 make check-rocq
 ```
 
-which compiles all 16 `.v` files, in dependency order:
+which compiles all 17 `.v` files, in dependency order:
 
 ```sh
 coqc rocq/AdmissibleRefinementPersistence.v
@@ -81,11 +81,12 @@ coqc RefinementWitnessParallelComposition.v
 coqc CoupledParallelCompatibility.v
 coqc ConflictResolutionTrilemma.v
 coqc ConflictResolutionLowerBound.v
+coqc ConflictDiagnosticCompleteness.v
 ```
 
-All 16 `.v` files contain no `Admitted`, `Axiom`, or `sorry` — grep them
+All 17 `.v` files contain no `Admitted`, `Axiom`, or `sorry` — grep them
 yourself to check; nothing here depends on taking this file's word for
-it. `coqchk` confirms zero axioms across the full 16-file dependency
+it. `coqchk` confirms zero axioms across the full 17-file dependency
 closure. (Until the `v0.12-disjoint-parallel-classification` checkpoint,
 four of these files -- `CochainNaturalityDescent.v`,
 `CommonSubdivisionAgreement.v`, `ExactnessReflection.v`,
