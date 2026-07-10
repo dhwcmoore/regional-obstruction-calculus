@@ -631,3 +631,7 @@ what this does and does not claim — in particular, it does **not**
 claim R11's seven named resolver shapes are exhaustive (the trilemma
 doc's own §10 already disclaims that, at a different, finer level than
 this result's four structural classes).
+
+`docs/theory/NO_NEUTRAL_SCALAR_FUSION.md` synthesises R11-R13 into one
+narrative note, with the headline sentence stated once, in full, rather
+than assembled from three separate documents.
