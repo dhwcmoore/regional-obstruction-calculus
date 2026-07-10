@@ -30,8 +30,16 @@ question first (Phase 5a), probed with a conservative compatibility gate
 (Phase 5b), and that gate itself is now proved
 (`rocq/CoupledParallelCompatibility.v`, Phase 5c, `coqchk`-clean):
 agreement is necessary and sufficient for a glued composite to exist at
-all. No preservation theorem, merge rule, or (N0)/(A4)/(E0) claim exists
-yet for the coupled case. Arbitrary finite sequential chains,
+all. Coupled-parallel *well-definedness* is now formalised; coupled-
+parallel *preservation* remains open. Phase 5d then answered the one
+preservation-adjacent question that was left deliberately deferred:
+shared-seam compatibility does **not** force non-cancellation — a
+compatible, branchwise-A4-preserved, aggregate-A4-cancelling case was
+found and verified (`refinement_witness_coupled_a4_cancellation_probe.
+py`), so the disjoint case's branchwise/aggregate split survives fully
+into the compatible-coupled case, at least for one witness family. No
+merge rule and no general (N0)/(A4)/(E0) preservation claim exists yet
+for the coupled case. Arbitrary finite sequential chains,
 three-or-more-branch parallel composition, and any conflict-resolution
 or preservation theorem for coupled parallel composition remain open —
 see "What is still not known."
@@ -656,15 +664,12 @@ code in `veribound-fce` implements any of it yet.
   different structured report is more useful once real transformation
   diagnostics are built in `veribound-fce` — not decided, no
   implementation exists yet in either repository.
-- **Whether shared-seam compatibility and aggregate-A4 cancellation can
-  co-occur.** Phase 5b's probe (below) never observed a case where a
-  compatible (glued) shared seam still produced aggregate A4
-  cancellation — but it also did not construct one deliberately, and for
-  the single-cycle-space witnesses used there, compatibility (agreement
-  at the shared edge) constrains the whole declared cycle up to scale,
-  which may make independent cancellation harder to arrange than in the
-  disjoint case. Not established either way; left as a genuinely open
-  question, not a claim that compatibility rules out cancellation.
+- ~~Whether shared-seam compatibility and aggregate-A4 cancellation can
+  co-occur.~~ **Resolved, Phase 5d: yes, they can.** See Phase 5d below —
+  it does not follow from the single-cycle-space witnesses Phase 5b used
+  (their cycle space is too rigid), but a witness with a higher-dimensional
+  cycle space (`INSERT_BRIDGE`) exhibits it directly, checked against the
+  real machinery, not merely argued.
 
 ## Phase 5b: shared-seam coupled parallel probe
 
@@ -895,6 +900,119 @@ theorem for the consistent case; any progress on the aggregate-A4
 cancellation question, which the user explicitly deferred until after
 this phase.
 
+## Phase 5d: compatible aggregate-A4 cancellation — found, not merely possible
+
+Phase 5b's probe never observed a compatible shared seam whose aggregate
+(A4) still cancelled, and flagged this explicitly as open rather than
+claiming compatibility rules cancellation out. This phase settles it:
+**it can, and does, for a witness this project already uses.**
+
+**The construction problem, worked out before any code.** Naive
+sign-negation (the disjoint case's mechanism) does not obviously carry
+over: for a witness whose refined complex has a 1-dimensional cycle
+space — every `SUBDIVIDE_*` witness in this project, each a single loop
+— the declared cycle is determined up to an overall scalar by any one of
+its own coordinates. Fixing agreement at one shared coordinate therefore
+pins down the *entire* vector, leaving no freedom to vary anything else.
+Cancellation needs independent variation **away from** the shared seam
+while the seam itself stays fixed — which needs a cycle space of
+dimension $\geq 2$, so that some cycle direction is exactly zero at the
+shared edge (never touches it) while still nonzero, and residue-
+carrying, elsewhere.
+
+**Checked, not assumed**: of this project's four canonical witnesses,
+computing each one's actual cycle space dimension
+(`nullspace_over_Q` on the refined coboundary's transpose) shows only
+`INSERT_BRIDGE` has dimension $2$ (the other three are exactly $1$).
+`INSERT_BRIDGE`'s refined complex has two parallel edges (`e12` and
+`b12`) between `U1` and `U2`, giving a "big loop" (around all four
+coarse edges) and a "small loop" (between the two parallel edges) as
+independent cycle directions. The small loop has a **zero** coefficient
+at `e23` (never touches it) but a **nonzero** coefficient at `e12`
+(which carries nonzero pulled-back residue) — exactly the needed shape.
+This narrows the search to one witness, honestly, not by choice.
+
+**Method**: for each (witness, edge) pair, compute the subspace of cycle
+vectors vanishing at that edge (`off_seam_directions`, itself a
+`nullspace_over_Q` call on the single linear constraint "coefficient at
+this edge is zero" — not hand-picked from the raw basis), then *exactly
+solve* (not scan) for the scalar multiple of an off-seam direction that
+zeroes the glued composite's aggregate pairing, and verify the result
+against the real `build_coupled_shared_seam`/`check()` machinery, not
+trusted from the algebra alone.
+
+**A real mid-probe correction, caught before results were reported.**
+The first solve assumed the glued complex's combined pairing equals
+`pairing_A + pairing_B`, exactly as in the *disjoint* case. It does not:
+in the glued complex the shared edge appears **once**, not twice, so
+that naive sum double-counts the shared edge's own contribution whenever
+it carries nonzero residue. This was caught by comparing the first
+(wrong) solve's predicted `lambda` against the real `check()` output on
+the combined complex, which disagreed for every shared edge except `b12`
+(where the shared edge's residue contribution happens to be exactly
+zero, since `b12` lies over no coarse edge — coincidentally making the
+naive formula correct there and nowhere else). Fixed by deriving and
+using the correct formula, `combined_pairing(lambda) = 2*pairing_own -
+shared_contrib + lambda*correction`, accounting for the single-counted
+shared edge explicitly.
+
+**Result: 5 of 5 candidate (witness, edge) pairs with off-seam freedom
+produced a compatible, branchwise-preserved, aggregate-cancelling
+case**, each independently solved and independently verified:
+
+```text
+insert_bridge, shared_edge=e12: branch pairings -5/4,  combined pairing 0
+insert_bridge, shared_edge=e23: branch pairings -5/4,  combined pairing 0
+insert_bridge, shared_edge=e34: branch pairings -5/4,  combined pairing 0
+insert_bridge, shared_edge=e14: branch pairings -5/3,  combined pairing 0
+insert_bridge, shared_edge=b12: branch pairings -5/5,  combined pairing 0
+```
+
+Every case: `glued_status = interface_consistent` (a genuine, checked
+compatible glue, not a constructed edge case bypassing the gate),
+`branch_a["A4"] = branch_b["A4"] = True`, `combined["A4"] = False`,
+`combined["pairing"] = 0`.
+
+**A side observation, worth stating precisely so it is not misread as a
+new finding.** Every found case shows `combined["N0"] = False`. This is
+**inherited, not caused by gluing**: `INSERT_BRIDGE` — the only witness
+this search could use at all — already fails its own (N0) individually
+(documented in `refinement_witnesses.py`'s own comment: "naturality
+fails at `b12`'s row"), confirmed directly against `refinement_checker.
+check_witness(INSERT_BRIDGE)` before writing this down. The combined
+(N0) failure is exactly the "a composite failure is not automatically a
+compositional failure; it may be inherited warrant debt from a defective
+component step" lesson this project has carried since Phase 2b, now
+recurring in a new construction.
+
+**What this settles, precisely.** Shared-seam compatibility does **not**
+force non-cancellation: the disjoint-parallel case's branchwise/aggregate
+A4 split survives fully into the compatible-coupled case, for this
+witness family. This is evidence on one witness (the only one with
+enough cycle-space freedom to test), not a general theorem — the
+possibility is demonstrated, not the frequency or inevitability of it
+across some wider class of witnesses this project has not built.
+
+**Reproducing this**:
+
+```sh
+python refinement_witness_coupled_a4_cancellation_probe.py
+pytest tests/test_refinement_witness_coupled_a4_cancellation_probe.py
+```
+
+**Not done**: any conflict-resolution rule (still deliberately excluded
+— resolving this open question was never a precondition for one, and
+remains the user's call, not a default); any Rocq formalisation of the
+cancellation phenomenon itself; testing witnesses beyond this project's
+existing four (a witness family with more/richer higher-dimensional
+cycle spaces might show cancellation is *common*, not just possible —
+untested); any claim about whether `A4_parallel_disjoint_branchwise`'s
+diagnostic report structure (§Phase 4d) needs revision in light of this
+— it does not need revision to remain correct (branchwise preservation
+is exactly what this phase confirms still holds), but whether the
+*aggregate_cancelled* outcome should be expected routinely rather than
+treated as a rare edge case is an open framing question, not decided.
+
 ## Reproducing this
 
 ```sh
@@ -910,6 +1028,8 @@ pytest tests/test_refinement_witness_parallel_disjoint_probe.py
 python refinement_witness_coupled_parallel_probe.py
 pytest tests/test_refinement_witness_coupled_parallel_probe.py
 coqc rocq/CoupledParallelCompatibility.v
+python refinement_witness_coupled_a4_cancellation_probe.py
+pytest tests/test_refinement_witness_coupled_a4_cancellation_probe.py
 ```
 
 ## Next steps
@@ -918,22 +1038,23 @@ coqc rocq/CoupledParallelCompatibility.v
   list/vector machinery this project has not built; the three-step
   pattern is expected to continue but is not proved to.
 - Coupled parallel composition, beyond the shared-seam compatibility gate
-  (Phase 5b/5c): still no preservation candidate of any kind, probed or
-  proved. Concretely open: (a) a conflict-resolution rule — this
-  project has deliberately not chosen one (averaging, branch-preference,
-  or otherwise), and picking one is itself a design decision, not yet
-  made, gated on the compatibility semantics now being theorem-grade;
-  (b) whether the "consistent gluing degenerates to disjoint-style
-  preservation" finding (2 cases, Phase 5b) generalises, or is a
-  small-sample artifact — the natural next probe, per the recommended
-  sequence, is searching for a COMPATIBLE case that still produces
-  aggregate-A4 cancellation, deliberately deferred until after Phase 5c;
-  (c) connecting `CoupledParallelCompatibility.v`'s abstract `Key`/
-  `Value` model back to the concrete `Edge`/`Witness` types in
-  `refinement_witnesses.py` — not attempted; (d) shared declared-cycle
-  coupling *without* a shared seam, and the other six coupling sources
-  named in `docs/design/COUPLED_PARALLEL_COMPOSITION_PROBLEM.md` §2 —
-  none attempted.
+  (Phase 5b/5c) and the cancellation finding (Phase 5d): still no
+  preservation candidate of any kind, probed or proved. Concretely open:
+  (a) a conflict-resolution rule — this project has deliberately not
+  chosen one (averaging, branch-preference, or otherwise), and picking
+  one is itself a design decision, not yet made, gated on the
+  compatibility semantics now being theorem-grade; (b) whether the
+  "consistent gluing degenerates to disjoint-style preservation" finding
+  (2 cases, Phase 5b) generalises, or is a small-sample artifact — Phase
+  5d confirms it is at least not *unconditional* (compatible cancellation
+  is real), but says nothing about how *common* it is across a wider
+  witness family this project has not built; (c) connecting
+  `CoupledParallelCompatibility.v`'s abstract `Key`/`Value` model back to
+  the concrete `Edge`/`Witness` types in `refinement_witnesses.py` — not
+  attempted; (d) a Rocq formalisation of the Phase 5d cancellation
+  phenomenon itself; (e) shared declared-cycle coupling *without* a
+  shared seam, and the other six coupling sources named in `docs/design/
+  COUPLED_PARALLEL_COMPOSITION_PROBLEM.md` §2 — none attempted.
 - Three-or-more-branch disjoint parallel composition: would need the
   same kind of generalisation as the sequential four-or-more-step case,
   not attempted.
@@ -1007,3 +1128,13 @@ coqc rocq/CoupledParallelCompatibility.v
   Value` model, no decidable-equality hypothesis needed. `coqchk`-clean,
   full 14-file chain. Deliberately no merge rule, no (N0)/(A4)/(E0)
   claim for a glued composite.
+- ~~Search for compatible aggregate-A4 cancellation~~ — done, Phase 5d,
+  `refinement_witness_coupled_a4_cancellation_probe.py`: found and
+  verified 5 cases (all using `INSERT_BRIDGE`, the only canonical
+  witness with a $\geq 2$-dimensional cycle space, hence the only one
+  offering the needed off-seam freedom) where a compatible shared-seam
+  glue has branchwise A4 preserved on both branches yet the aggregate
+  pairing is exactly zero — shared-seam compatibility does not force
+  non-cancellation. Caught and corrected a real mid-probe error (naively
+  assuming the glued pairing sums like the disjoint case, which
+  double-counts the shared edge). Still no merge rule.

@@ -287,3 +287,64 @@ by example (though `Compatible`'s own definition already generalises to
 that case), and does not attempt any preservation theorem or merge
 rule — both remain open, the merge rule intentionally so until the
 refusal semantics was theorem-grade.
+
+**Compatible aggregate-A4 cancellation — found, not merely possible
+(Phase 5d).** With the compatibility gate theorem-grade, the one
+preservation-adjacent question left deliberately deferred was: does
+shared-seam *agreement* force the aggregate (A4) to compose, the way it
+forces (N0)/(E0) to (Phase 5b)? Answer: no.
+
+The construction problem, worked out before any code: for a witness
+whose refined complex has a 1-dimensional cycle space (every
+`SUBDIVIDE_*` witness here, each a single loop), the declared cycle is
+determined up to an overall scalar by any one coordinate, so agreement
+at one shared coordinate pins the *entire* vector down — no room to vary
+anything else. Cancellation needs independent variation away from the
+shared seam while the seam stays fixed, which needs a cycle space of
+dimension $\geq 2$. Checked, not assumed: of this project's four
+canonical witnesses, only `INSERT_BRIDGE` has one (two parallel edges
+between `U1` and `U2` give a "big loop" and a "small loop" as
+independent cycle directions; the small loop is zero at `e23` but
+nonzero, and residue-carrying, at `e12`).
+
+`refinement_witness_coupled_a4_cancellation_probe.py` computes, for
+each (witness, edge) pair, the subspace of cycle vectors vanishing at
+that edge exactly (`nullspace_over_Q`, not hand-picked), then *exactly
+solves* for the scalar multiple that zeroes the glued composite's
+aggregate pairing, verified against the real `check()` machinery. A
+real mid-probe correction was caught along the way: the first solve
+assumed the glued pairing sums like the disjoint case (`pairing_A +
+pairing_B`), but in the glued complex the shared edge appears **once**,
+not twice — the naive formula double-counts it whenever it carries
+nonzero residue, silently correct only for the one shared edge (`b12`)
+that happens to carry none. Fixed by deriving the correct formula
+accounting for single-counting.
+
+Result: **5 of 5** candidate cases produced a compatible
+(`interface_consistent`), branchwise-A4-preserved, aggregate-A4-
+cancelled composite, each independently solved and independently
+verified against `check()`:
+
+```text
+insert_bridge, e12: branch pairings -5/4,  combined pairing 0, A4=False
+insert_bridge, e23: branch pairings -5/4,  combined pairing 0, A4=False
+insert_bridge, e34: branch pairings -5/4,  combined pairing 0, A4=False
+insert_bridge, e14: branch pairings -5/3,  combined pairing 0, A4=False
+insert_bridge, b12: branch pairings -5/5,  combined pairing 0, A4=False
+```
+
+Every found case also shows `N0=False` on the combined witness — flagged
+explicitly as **inherited, not new**: `INSERT_BRIDGE` already fails its
+own (N0) individually (documented in `refinement_witnesses.py`'s own
+comment), confirmed directly against `refinement_checker.check_witness`
+before being reported, the same "composite failure is not automatically
+a compositional failure" distinction this project has drawn since
+Phase 2b.
+
+**What this settles**: shared-seam compatibility does not force
+non-cancellation — the disjoint case's branchwise/aggregate A4 split
+survives fully into the compatible-coupled case, for this witness
+family. Not a general theorem: evidence on the one witness with enough
+cycle-space freedom to test, not a statement about how common
+cancellation is across some wider class of witnesses this project has
+not built. Still no conflict-resolution rule, and none proposed.
