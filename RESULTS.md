@@ -635,3 +635,92 @@ this result's four structural classes).
 `docs/theory/NO_NEUTRAL_SCALAR_FUSION.md` synthesises R11-R13 into one
 narrative note, with the headline sentence stated once, in full, rather
 than assembled from three separate documents.
+
+## R14. A typed diagnostic calculus for the R11-R13 fragment
+
+R13 is a classification: which of four shapes a diagnostic can be. It
+says nothing about *how* a diagnostic is built from evidence, *what*
+can soundly be extracted from one once built, or *how* an undecided
+case can be refined as evidence arrives. R14 turns R11-R13 into an
+explicit typed calculus over `ConflictDiagnostic V C`
+(`docs/design/TYPED_DIAGNOSTIC_CALCULUS.md`, `rocq/
+TypedDiagnosticCalculus.v`) answering exactly those questions, without
+proving anything new about `V`, `C`, or conflicting declarations that
+R11-R13 did not already establish.
+
+**Judgments.** `SoundL(d, x)` / `SoundR(d, y)` — "does `d` honestly let
+you recover the left/right declaration" — defined by cases on `d`'s
+constructor: literal equality for `ScalarDiagnostic` (the only honest
+reading of soundness for a bare value with no internal structure to
+project two things out of), the given projection for
+`StructuredDiagnostic`, and `False` (unconditionally unsatisfiable) for
+`RefuseDiagnostic` and `UnresolvedDiagnostic`.
+
+**Introduction and elimination**, proved by direct reuse of R11/R12,
+not by new argument:
+
+```text
+structured_intro, structured_left_elim, structured_right_elim
+    R12's structured_diagnostic_nonlossy, restated as rules.
+
+scalar_conflict_loss :
+    x <> y -> ~ (SoundL(scalar z, x) /\ SoundR(scalar z, y))
+    R11's no_single_value_matches_both_declarations, restated as an
+    ELIMINATION-INADMISSIBILITY fact -- a new reading, not new content.
+
+refuse_no_composite_left/right, unresolved_no_claim_left/right :
+    ~ exists x, SoundL(refuse, x)   (and the three siblings)
+    RefuseDiagnostic and UnresolvedDiagnostic have no sound elimination
+    of either kind at all -- two structurally identical rules kept
+    deliberately separate, since the underlying reasons differ (proved
+    impossibility once x<>y, versus mere absence of computation).
+```
+
+**The unifying theorem**, the calculus-level cash-out of R11+R12+R13
+together:
+
+```text
+elimination_soundness :
+    x <> y -> SoundL(d, x) -> SoundR(d, y) ->
+      exists c, d = structured c /\ left_read c = x /\ right_read c = y
+```
+
+Under a genuine conflict, the *only* diagnostic that can be both
+left-sound and right-sound is a `StructuredDiagnostic`, and its
+projections witness exactly the pair being diagnosed. This is the
+formal statement behind `docs/theory/NO_NEUTRAL_SCALAR_FUSION.md`'s
+headline sentence: there is no fifth, hidden way to be doubly sound
+under conflict.
+
+**Reduction.** `RefinesByEvidence` formalises `unresolved --> d` as a
+one-constructor relation (source always `Unresolved`, target never
+`Unresolved`). Two safety theorems:
+
+```text
+preservation_under_reduction :
+    RefinesByEvidence d d' -> d = Unresolved /\ d' <> Unresolved
+
+no_silent_soundness_gain :
+    x <> y -> RefinesByEvidence Unresolved (scalar z) ->
+      ~ (SoundL(scalar z, x) /\ SoundR(scalar z, y))
+```
+
+The second is the interesting one: refining `Unresolved` into a
+`ScalarDiagnostic` under conflict is *still* fully subject to
+`scalar_conflict_loss` — passing through `Unresolved` buys nothing.
+Proved narrowly at the scalar target deliberately, per the design
+doc's own instruction to prefer a narrow, honest version over an
+awkward general one.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 18-file dependency
+closure. A genuine judgment call, checked before writing any Rocq:
+`REFUSE-NO-COMPOSITE` is grounded only in R13's own stated
+correspondence between `RefuseDiagnostic` and `interface_conflict`, not
+derived from `CoupledParallelCompatibility.v`'s `interface_disagreement_
+blocks_glue` — that theorem concerns a specific `Key -> option Value`
+glue construction, a related but distinct object from this fragment's
+`ConflictDiagnostic V C`; collapsing the two would have introduced a
+false dependency. No resolver is chosen; `docs/design/
+TYPED_DIAGNOSTIC_CALCULUS.md` §10 states in full what this does and
+does not claim, including that it models neither time nor multiple
+rounds of refinement beyond the single `unresolved --> d` step.
