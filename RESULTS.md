@@ -724,3 +724,86 @@ false dependency. No resolver is chosen; `docs/design/
 TYPED_DIAGNOSTIC_CALCULUS.md` §10 states in full what this does and
 does not claim, including that it models neither time nor multiple
 rounds of refinement beyond the single `unresolved --> d` step.
+
+## R15. The pairwise diagnostic certificate: R14 meets `CoupledParallelCompatibility.v`
+
+R14 proved which diagnostic *shapes* preserve which declarations.
+`CoupledParallelCompatibility.v` (Phase 5c) separately proved what
+pairwise compatibility and incompatibility actually *mean* for
+two-branch, one-seam keyed declarations — agreement is necessary and
+sufficient for a glue to exist. Until now, nothing connected them: R14
+never said *which evidence authorises which constructor* for a real
+domain. R15 is that bridge (`rocq/PairwiseDiagnosticCertificate.v`),
+proved without modifying either source file.
+
+**The governing question**: can a pairwise diagnostic be constructed so
+that compatibility requires an actual glue witness, incompatibility
+requires an actual local-conflict witness, and unresolved makes no
+semantic claim at all? Yes, constructively:
+
+```text
+DecisivePairwiseEvidence dA dB :=
+  | CompatibleEvidence   (g : Declaration) (IsGlue dA dB g)
+  | IncompatibleEvidence (LocalConflict dA dB)
+
+PairwiseResult dA dB :=
+  | Decided (DecisivePairwiseEvidence dA dB)
+  | Unresolved
+```
+
+`LocalConflict dA dB := exists k va vb, dA k = Some va /\ dB k = Some vb
+/\ va <> vb` names `incompatible_has_no_glue`'s own hypothesis shape —
+not a new definition, a name for an existing pattern. The asymmetry is
+deliberate: compatibility carries a positive glue, incompatibility
+carries a positive obstruction, and there is no constructor anywhere
+for a bare "no acceptable composite" claim — closing exactly the hole
+left open in `docs/design/CERTIFICATE_COMPOSITION_SPEC.md`'s earlier
+`NoAcceptableComposite` placeholder.
+
+**A payload design decision worth recording**: `pairwise_diagnostic`
+erases evidence into `ConflictDiagnostic Declaration (Declaration *
+Declaration)`. The `StructuredDiagnostic` payload is the pair `(dA,
+dB)`, *not* the glue witness `g`. This is not a simplification, it is
+required for soundness: `g` alone does not determine `(dA, dB)`
+uniquely (two structurally different declaration pairs can glue, via
+`candidate_glue`, to an identical `g`), so no function of `g` alone
+could recover which pair produced it — `left_read`/`right_read` must
+work for every `(x, y)`, per R12's own `NonLossy` hypothesis, not just
+one instance. The pair *is* R12's own `structured_pair_is_nonlossy`
+witness, instantiated at `V := Declaration Key Value`.
+
+**The central theorem**, combining representation soundness (R14) and
+semantic soundness (`CoupledParallelCompatibility.v`) case by case:
+
+```text
+pairwise_diagnostic_certificate_sound :
+    Decided (CompatibleEvidence g Hg)  ->  Structured (dA,dB), SoundL dA, SoundR dB, IsGlue dA dB g
+    Decided (IncompatibleEvidence c)   ->  Refuse, LocalConflict dA dB, forall g, ~IsGlue dA dB g
+    Unresolved                          ->  Unresolved, ~SoundL dA, ~SoundR dB
+```
+
+The no-glue conclusion in the incompatible branch is *obtained* from
+`interface_disagreement_blocks_glue`, applied to the `LocalConflict`
+witness's own `(k, va, vb)` — never stored as a second, independent
+assertion. Five supporting theorems isolate each piece:
+`certified_pairwise_never_scalar` (no certified result ever erases to
+`ScalarDiagnostic`), `compatible_certificate_preserves_both`,
+`incompatible_certificate_blocks_every_glue`,
+`unresolved_certificate_makes_no_branch_claim`, and the
+certificate-level safety property this bridge exists to establish,
+**`refusal_requires_local_conflict`**: within this bridge, `Refuse` is
+never emitted without a checked `LocalConflict` witness — diagnostic
+shape alone does not warrant refusal, checked local evidence does.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 19-file dependency
+closure. Deliberately narrow: no exhaustiveness claim
+(`forall dA dB, DecisivePairwiseEvidence dA dB`) is attempted or proved
+— the semantic equivalence `Compatible dA dB <-> exists g, IsGlue dA dB
+g` does not by itself supply a deciding algorithm, and none is claimed
+here. No policy obstruction, global coherence, cycle residues, external
+authority, certificate JSON, or Python integration is added — those
+remain separate, unstarted layers. This is the concrete transition from
+R14's representation soundness to certificate soundness, for the
+already-settled two-branch, one-seam domain specifically; it is not
+claimed to generalise to multi-region composition, where cycle-level
+obstructions may remain after every pairwise interface agrees (see R1-R9).
