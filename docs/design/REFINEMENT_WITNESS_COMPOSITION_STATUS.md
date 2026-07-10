@@ -24,9 +24,17 @@ Phase 4d proves the corrected replacement classification in full:
 `A4_parallel_disjoint_branchwise` (unconditional), `A4_parallel_disjoint_
 nonzero_sum` (the scalar test, exactly under an explicit non-cancellation
 hypothesis), and the fact that branchwise success alone does not imply
-the aggregate. Arbitrary finite sequential chains, three-or-more-branch
-parallel composition, and coupled parallel composition remain open — see
-"What is still not known."
+the aggregate. *Coupled* parallel composition (branches sharing
+structure, not fully independent) was posed as a well-definedness
+question first (Phase 5a), probed with a conservative compatibility gate
+(Phase 5b), and that gate itself is now proved
+(`rocq/CoupledParallelCompatibility.v`, Phase 5c, `coqchk`-clean):
+agreement is necessary and sufficient for a glued composite to exist at
+all. No preservation theorem, merge rule, or (N0)/(A4)/(E0) claim exists
+yet for the coupled case. Arbitrary finite sequential chains,
+three-or-more-branch parallel composition, and any conflict-resolution
+or preservation theorem for coupled parallel composition remain open —
+see "What is still not known."
 
 ## The question
 
@@ -753,20 +761,139 @@ python refinement_witness_coupled_parallel_probe.py
 pytest tests/test_refinement_witness_coupled_parallel_probe.py
 ```
 
-**Not done**: any merge/resolution rule for conflicting shared-seam
-data (averaging, branch-preference, or otherwise) — deliberately
-excluded per the design doc's explicit instruction; any Rocq
-formalisation of the compatibility gate or the consistent-case
-preservation pattern; any systematic sweep beyond the five cases above
-(kept narrow, per instruction, rather than testing all pairs of all
-witnesses against all shared-edge choices); shared declared-cycle
-coupling *without* a shared seam (this probe's construction ties the
-two together at one edge; a cycle shared across otherwise-disjoint
-seams is a different, untested construction); any of the other six
-coupling sources named in `docs/design/COUPLED_PARALLEL_COMPOSITION_
-PROBLEM.md` §2 (policy authority, downstream fusion target, common
-restriction/downgrade, cross-branch pairing constraint, shared vertex/
-region carrier without a shared edge).
+**Not done in this phase**: any merge/resolution rule for conflicting
+shared-seam data (averaging, branch-preference, or otherwise) —
+deliberately excluded per the design doc's explicit instruction; a Rocq
+formalisation of the *consistent-case preservation pattern* itself (see
+Phase 5c for the compatibility gate, which *was* formalised); any
+systematic sweep beyond the five cases above (kept narrow, per
+instruction, rather than testing all pairs of all witnesses against all
+shared-edge choices); shared declared-cycle coupling *without* a shared
+seam (this probe's construction ties the two together at one edge; a
+cycle shared across otherwise-disjoint seams is a different, untested
+construction); any of the other six coupling sources named in
+`docs/design/COUPLED_PARALLEL_COMPOSITION_PROBLEM.md` §2 (policy
+authority, downstream fusion target, common restriction/downgrade,
+cross-branch pairing constraint, shared vertex/region carrier without a
+shared edge).
+
+## Phase 5c: shared-seam compatibility gate, formalised in Rocq
+
+Per the explicit instruction not to formalise a merge rule yet: this
+phase proves the *gate itself*, not full coupled parallel composition
+and not any (N0)/(A4)/(E0) behaviour of a glued composite. The result is
+the safety property underneath Phase 5b's `interface_conflict` refusal:
+an incompatible interface does not merely make a bad composite — no
+composite satisfying both branches' declarations exists **at all**, so
+testing (N0)/(A4)/(E0) against one would be a category error, not a
+finding.
+
+`rocq/CoupledParallelCompatibility.v` models a branch's interface
+declaration abstractly as a partial function `Key -> option Value`
+(deliberately not tied to `Edge`/refinement-witness types — the same
+"no `Point`/finiteness assumption" abstraction discipline as
+`CandidateThreeBDistinctSupportClassification.v`, and general enough to
+cover any future coupling source from the Phase 5a taxonomy, not just
+shared seams). No decidable-equality hypothesis on the key type is
+needed — none of the proofs below ever compare two keys for equality,
+only pattern-match on each branch's own declaration at a given key.
+
+```text
+Compatible dA dB :=
+    forall k, (dA and dB both declare k) -> (their declared values agree)
+
+IsGlue dA dB g :=
+    g reproduces dA's own declaration wherever only dA declares a key,
+    reproduces dB's own declaration wherever only dB declares a key, and
+    reproduces BOTH branches' declared values at any key both declare
+    (possible only when those values coincide).
+```
+
+```text
+interface_agreement_allows_glue :
+    Compatible dA dB -> exists g, IsGlue dA dB g.
+    (constructive -- exhibits the glue explicitly: prefer dA's
+    declaration where it exists, fall back to dB's otherwise; this is
+    NOT a branch-preference merge rule in the sense the design doc warns
+    against, since it is only ever invoked once Compatible already
+    guarantees the two branches agree wherever both declare a key --
+    "prefer A" and "prefer B" give the identical result there.)
+
+interface_disagreement_blocks_glue :
+    dA k = Some vA -> dB k = Some vB -> vA <> vB ->
+    forall g, ~ IsGlue dA dB g.
+    (near-definitional once IsGlue is stated this way: any candidate g
+    would have to satisfy g k = Some vA AND g k = Some vB
+    simultaneously, which is impossible when vA <> vB -- the refusal
+    rule is a direct consequence of what "glue" is required to mean,
+    not a separately-imposed side condition.)
+
+incompatible_has_no_glue :
+    a corollary restating the above in exactly the shape Phase 5b's
+    probe needs: an incompatible pair of declarations has NO glue at
+    all, not merely an unproved one.
+```
+
+**`shared_label_not_sufficient_for_agreement`**, a concrete `Example`
+(not a general theorem, per the instruction that this one "may be
+represented as an example"): instantiates `Key := nat`, `Value := Q`
+with two declarations that both declare the *same* key but with
+different values (`1` vs. `-1`, deliberately matching the shape of the
+probe's own Case 5 z'-value conflict) — the Rocq-level counterpart of
+the probe's *organic* `e12p` finding. This upgrades "a shared label is
+not sufficient for agreement" from something the probe merely
+illustrated to something `coqchk`-verified. A second example,
+`shared_label_not_sufficient_for_agreement_no_glue`, applies
+`incompatible_has_no_glue` directly to the same witness, confirming no
+glue exists for it at all.
+
+**A real Coq debugging note, worth remembering.** The first proof
+attempt used `repeat split` immediately after `unfold`, expecting it to
+split the top-level triple conjunction into exactly three unintroduced
+`forall`-goals and stop there. In this Coq version, `split` is smart
+enough to auto-`intro` leading binders before attempting to split an
+inner conjunction — so `repeat split` silently drilled all the way
+through `IsGlue`'s third conjunct's `forall k vA vB, ... -> ... /\ ...`,
+introducing `k`/`vA`/`vB`/hypotheses *and* splitting the final `/\`,
+producing four goals where three were expected, and later bullets'
+explicit `intros k ...` then failed (`k is already used`) because those
+names were already in context. Fixed by replacing `repeat split` with
+an explicit `split; [| split]`, splitting only the outer two-level
+conjunction and leaving each of the three resulting goals as a full,
+unintroduced `forall` for the bullet's own `intros` to handle. A second,
+related mistake: `apply (Hcompat k); split; [exists vA | exists vB];
+assumption` assumed `split` would only affect the first of the several
+goals `apply` produces — but `t1; t2` applies `t2` to *every* goal `t1`
+produces, and `split` failing outright on one of the non-conjunction
+goals (`dA k = Some vA`) aborted the whole chain with a confusing
+"unable to unify" error. Fixed by restructuring as an explicit bulleted
+sub-proof, one bullet per goal `apply` produces, rather than chaining
+tactics across an unknown number of goals with `;`.
+
+`coqc`-clean and `coqchk`-clean (zero axioms across the full 14-file
+dependency closure). No `Admitted`/`Axiom`/`sorry`.
+
+**Scope, stated precisely.** This proves the compatibility gate is
+correct — agreement is necessary and sufficient for a glue to exist —
+for an abstract single-shared-key interface model. It does **not**
+prove anything about (N0)/(A4)/(E0) behaviour of a glued composite (that
+remains Phase 5b's Python-probe-only finding, on 2 cases); does not
+address multiple simultaneously-shared keys (the abstract `Compatible`
+definition already covers this — "every shared key agrees" — but no
+probe or instantiation exercises more than one shared key at a time);
+and does not propose or formalise any conflict-resolution rule, per the
+explicit instruction to leave that until the refusal semantics was
+theorem-grade, which it now is.
+
+**Not done**: any Rocq connection back to the concrete `Edge`/`Witness`
+types in `refinement_witnesses.py` (the abstraction is intended to cover
+that case — an edge's structural data plus its declared-cycle value is
+one instance of `Value` — but this correspondence is not separately
+checked in Rocq, the same kind of gap already open for
+`A4_composes`/`E0_composes`'s own matrix instantiation); any preservation
+theorem for the consistent case; any progress on the aggregate-A4
+cancellation question, which the user explicitly deferred until after
+this phase.
 
 ## Reproducing this
 
@@ -782,6 +909,7 @@ python refinement_witness_parallel_disjoint_probe.py
 pytest tests/test_refinement_witness_parallel_disjoint_probe.py
 python refinement_witness_coupled_parallel_probe.py
 pytest tests/test_refinement_witness_coupled_parallel_probe.py
+coqc rocq/CoupledParallelCompatibility.v
 ```
 
 ## Next steps
@@ -790,18 +918,22 @@ pytest tests/test_refinement_witness_coupled_parallel_probe.py
   list/vector machinery this project has not built; the three-step
   pattern is expected to continue but is not proved to.
 - Coupled parallel composition, beyond the shared-seam compatibility gate
-  (Phase 5b): still no preservation candidate of any kind, probed or
+  (Phase 5b/5c): still no preservation candidate of any kind, probed or
   proved. Concretely open: (a) a conflict-resolution rule — this
   project has deliberately not chosen one (averaging, branch-preference,
   or otherwise), and picking one is itself a design decision, not yet
-  made; (b) whether the "consistent gluing degenerates to disjoint-style
+  made, gated on the compatibility semantics now being theorem-grade;
+  (b) whether the "consistent gluing degenerates to disjoint-style
   preservation" finding (2 cases, Phase 5b) generalises, or is a
-  small-sample artifact; (c) a Rocq formalisation of the compatibility
-  gate itself (a purely definitional/structural theorem — "the glued
-  witness is well-typed iff declarations agree" — likely easy, not yet
-  attempted); (d) shared declared-cycle coupling *without* a shared seam,
-  and the other six coupling sources named in `docs/design/COUPLED_
-  PARALLEL_COMPOSITION_PROBLEM.md` §2 — none attempted.
+  small-sample artifact — the natural next probe, per the recommended
+  sequence, is searching for a COMPATIBLE case that still produces
+  aggregate-A4 cancellation, deliberately deferred until after Phase 5c;
+  (c) connecting `CoupledParallelCompatibility.v`'s abstract `Key`/
+  `Value` model back to the concrete `Edge`/`Witness` types in
+  `refinement_witnesses.py` — not attempted; (d) shared declared-cycle
+  coupling *without* a shared seam, and the other six coupling sources
+  named in `docs/design/COUPLED_PARALLEL_COMPOSITION_PROBLEM.md` §2 —
+  none attempted.
 - Three-or-more-branch disjoint parallel composition: would need the
   same kind of generalisation as the sequential four-or-more-step case,
   not attempted.
@@ -866,3 +998,12 @@ pytest tests/test_refinement_witness_coupled_parallel_probe.py
   entirely (`interface_conflict`, not an (N0)/(A4)/(E0) failure). No
   merge/resolution rule attempted — deliberately excluded, per
   instruction.
+- ~~Formalise the shared-seam compatibility gate~~ — done, Phase 5c,
+  `rocq/CoupledParallelCompatibility.v`: `interface_agreement_allows_
+  glue`, `interface_disagreement_blocks_glue`,
+  `incompatible_has_no_glue`, and a concrete `Example`
+  (`shared_label_not_sufficient_for_agreement`) upgrading the probe's
+  organic `e12p` finding to `coqchk`-verified. Abstract `Key -> option
+  Value` model, no decidable-equality hypothesis needed. `coqchk`-clean,
+  full 14-file chain. Deliberately no merge rule, no (N0)/(A4)/(E0)
+  claim for a glued composite.

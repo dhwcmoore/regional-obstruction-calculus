@@ -249,10 +249,41 @@ reported as `interface_conflict`, never as an (N0)/(A4)/(E0) failure,
 since no composite object exists for those conditions to be tested
 against.
 
-Not addressed: any conflict-resolution rule (deliberately excluded);
-whether the consistent-case finding generalises beyond 2 hand-picked
-cases; any Rocq formalisation; the other six coupling sources named in
-the problem document's taxonomy (policy authority, downstream fusion
-target, common restriction/downgrade, cross-branch pairing constraint,
-shared vertex/region carrier without a shared edge, shared declared
-cycle without a shared seam).
+Not addressed by the probe itself: any conflict-resolution rule
+(deliberately excluded); whether the consistent-case finding
+generalises beyond 2 hand-picked cases; the other six coupling sources
+named in the problem document's taxonomy (policy authority, downstream
+fusion target, common restriction/downgrade, cross-branch pairing
+constraint, shared vertex/region carrier without a shared edge, shared
+declared cycle without a shared seam).
+
+**The compatibility gate itself, formalised in Rocq (Phase 5c).**
+`rocq/CoupledParallelCompatibility.v` proves the well-definedness
+property underneath Phase 5b's `interface_conflict` refusal, deliberately
+NOT any (N0)/(A4)/(E0) claim and NOT a merge rule. A branch's interface
+declaration is modelled abstractly as `Key -> option Value` (no `Edge`/
+`Witness` types, no decidable-equality hypothesis — the same abstraction
+discipline as `CandidateThreeBDistinctSupportClassification.v`):
+
+```text
+interface_agreement_allows_glue:
+    Compatible dA dB -> exists g, IsGlue dA dB g.
+    (constructive: the glue is exhibited explicitly.)
+interface_disagreement_blocks_glue / incompatible_has_no_glue:
+    a disagreeing shared key means NO glue satisfies both branches'
+    declarations at all -- near-definitional once "glue" is stated to
+    mean "reproduces both branches' declared values at a shared key,"
+    not a separately-imposed side condition.
+shared_label_not_sufficient_for_agreement (Example):
+    a concrete Key:=nat/Value:=Q witness (values 1 vs -1 at the same
+    key) -- the Rocq-level counterpart of the probe's organic e12p
+    finding, upgraded from illustrated to coqchk-verified.
+```
+
+`coqchk`-clean, full 14-file dependency closure, no `Admitted`/`Axiom`/
+`sorry`. Deliberately does not connect back to the concrete `Edge`/
+`Witness` types, does not address multiple simultaneously-shared keys
+by example (though `Compatible`'s own definition already generalises to
+that case), and does not attempt any preservation theorem or merge
+rule — both remain open, the merge rule intentionally so until the
+refusal semantics was theorem-grade.
