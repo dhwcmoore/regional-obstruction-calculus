@@ -138,6 +138,26 @@ procedural claim needs a separate search semantics this file does not
 define, exactly as R15 left `PairwiseResult`'s `Unresolved` case
 underspecified in the same way.
 
+**Stated with maximum precision, since this is the constraint most
+likely to be silently over-claimed later**: `GlobalUnresolvedResult`
+must not be read as implying *either*
+
+```coq
+~ (exists b : C0, ceq (delta0 b) r)          (* not: "provably unrepairable" *)
+~ (exists z : Z1, cycle z /\ ~ (pairing z r == 0))  (* not: "provably no obstruction" *)
+```
+
+The underlying residue `r` might already be repairable, or already
+obstructed, even when the producer supplies no witness — `Unresolved`
+is a fact about *what evidence was presented*, never a fact about
+whether such evidence *exists*. The soundness theorem's `Unresolved`
+branch therefore proves only `True`, the weakest possible conclusion —
+not a disjunction of the two negations above, and not any other
+disguised existence or non-existence claim. This is the same
+non-search-completeness discipline `docs/design/
+TYPED_DIAGNOSTIC_CALCULUS.md` §10 already states for R14's own
+`Unresolved` case, carried over unchanged rather than re-derived.
+
 The asymmetry is deliberate, matching R15's own: repairability carries
 a positive repair witness; obstruction carries a positive cycle
 witness; non-repairability is *derived* from the obstruction witness
@@ -211,7 +231,7 @@ unresolved_result_carries_no_decisive_evidence :
     spirit (a constructor-distinctness fact worth naming, not merely
     assuming).
 
-repairable_and_obstructed_are_disjoint :
+repair_and_obstruction_evidence_are_disjoint :
     no residue can simultaneously have a checked repair witness and a
     checked obstruction witness -- follows immediately from the
     obstruction theorem applied to the repair witness itself. The

@@ -13,7 +13,7 @@
    mathematics; both turn an already-proved abstract theorem into
    evidence-carrying certificate constructors with a soundness theorem.
 
-   Per docs/design/GLOBAL_COHERENCE_CERTIFICATE.md:
+   Per docs/design/GLOBAL_COHERENCE_CERTIFICATE_SPEC.md:
 
    - This does NOT reuse ConflictDiagnostic, SoundL, or SoundR. The
      global problem (one residue, a repair potential, an obstruction
@@ -93,7 +93,15 @@ Section GlobalCoherenceCertificate.
      evidence's own (z, Hcyc, Hnz) -- never re-derived or stored
      separately. The Unresolved branch's `True` is deliberately the
      weakest possible statement: it asserts nothing about search
-     completeness. *)
+     completeness -- concretely, it must NOT be read as implying either
+       ~ (exists b : C0, ceq (delta0 b) r)
+     or
+       ~ (exists z : Z1, cycle z /\ ~ (pairing z r == 0)).
+     The underlying residue may already be repairable or already
+     obstructed even when no witness is presented; GlobalUnresolvedResult
+     is a fact about what evidence was SUPPLIED, never a fact about
+     whether such evidence EXISTS. `True` is exactly weak enough to make
+     this failure mode syntactically impossible to smuggle in later. *)
   Theorem global_coherence_certificate_sound :
     forall (r : C1) (result : GlobalCoherenceResult r),
       match result with
@@ -152,7 +160,7 @@ Section GlobalCoherenceCertificate.
      simultaneously have a checked repair witness and a checked
      obstruction witness. Follows immediately from the obstruction
      theorem applied to the repair witness itself. *)
-  Theorem repairable_and_obstructed_are_disjoint :
+  Theorem repair_and_obstruction_evidence_are_disjoint :
     forall (r : C1) (b : C0) (z : Z1),
       ceq (delta0 b) r -> cycle z -> ~ (pairing z r == 0) -> False.
   Proof.

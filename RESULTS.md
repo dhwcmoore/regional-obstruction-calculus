@@ -829,7 +829,7 @@ into `ConflictDiagnostic V C` would overload `RefuseDiagnostic` with two
 genuinely different obstruction theories — exactly the conflation
 `docs/design/CERTIFICATE_COMPOSITION_SPEC.md`'s `pairwise_compatibility`/
 `global_coherence` split already exists to prevent. `docs/design/
-GLOBAL_COHERENCE_CERTIFICATE.md` records this decision in full.
+GLOBAL_COHERENCE_CERTIFICATE_SPEC.md` records this decision in full.
 
 **The evidence duality**, exactly mirroring R15's asymmetry:
 
@@ -874,8 +874,8 @@ two originally-proposed separate theorems merged into this one honest
 fact rather than padded to a target count with vacuous restatements of
 a constructor's own hypothesis); `obstruction_certificate_blocks_every_
 repair`; `unresolved_result_carries_no_decisive_evidence` (a
-constructor-distinctness fact); and **`repairable_and_obstructed_are_
-disjoint`** — the consistency property this bridge earns: no residue can
+constructor-distinctness fact); and **`repair_and_obstruction_evidence_
+are_disjoint`** — the consistency property this bridge earns: no residue can
 simultaneously have a checked repair witness and a checked obstruction
 witness, following immediately from the obstruction theorem applied to
 the repair witness itself.
