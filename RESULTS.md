@@ -385,3 +385,75 @@ independently of the Python machinery entirely.
 
 `coqchk`-clean, full 14-file dependency closure, no `Admitted`/`Axiom`/
 `sorry`. Still no conflict-resolution rule anywhere in this project.
+
+## R11. The conflict-resolution trilemma
+
+A genuinely separate mathematical question from R10's whole composition
+line — not about refinement witnesses, coupled parallel composition, or
+any structure elsewhere in this project, but about equality and total
+resolver functions `V x V -> V` in the abstract. Motivated directly by
+R10's shared-seam compatibility gate: once two branches disagree
+(`interface_conflict`), any system that wants to *produce* a composite
+value anyway, rather than refuse, needs a resolver. This result shows
+such a resolver can never be neutral.
+
+**The minimal core fact**, `docs/design/CONFLICT_RESOLUTION_TRILEMMA.md`
+§3:
+
+```text
+x != y  ->  ~ (z = x /\ z = y)
+```
+
+If two declarations genuinely disagree, no single value equals both.
+Combined with two named properties (Left fidelity: `resolve(x,y)=x`
+always; Right fidelity: `resolve(x,y)=y` always), this forces: **no
+resolver can have both fidelities, unless the whole value type collapses
+to at most one element.** Proved in general, not just for the pair that
+triggered a specific conflict — `rocq/ConflictResolutionTrilemma.v`:
+
+```text
+no_single_value_matches_both_declarations
+full_fidelity_forces_trivial_domain
+no_resolver_has_both_fidelities_on_nontrivial_domain   (the operationally
+    meaningful contrapositive: given any two distinct values -- true of
+    every real interface-value type this project uses -- no resolver
+    can have both fidelities)
+```
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`.
+
+**Six named desiderata** (agreement, left fidelity, right fidelity,
+symmetry, idempotence, refusal), with an honest observation checked
+before building anything on top of it: *idempotence is exactly the
+diagonal special case of agreement* (`resolve(x,x)=x`, where agreement's
+hypothesis `x=y` is trivially satisfied) — not an independent property,
+though kept as its own named column for clarity.
+
+**Seven candidate resolver shapes classified**, computationally
+(`conflict_resolution_trilemma_probe.py`, exact rationals) not merely
+argued:
+
+```text
+resolver             agreement  idempotent  left_fid  right_fid  symmetric
+left_wins             True       True        True      False      False
+right_wins            True       True        False     True       False
+average               True       True        False     False      True
+sum                   False      False       False     False      True
+erase                 False      False       False     False      True
+refuse                (not a V x V -> V function on disagreement at all)
+external_authority    (not a function of (x, y) alone -- category-level exclusion)
+```
+
+`sum` and `erase` are the sharper finding: they sacrifice *more* than
+the two fidelities — `sum(x,x) = 2x`, which equals `x` only when `x=0`,
+so `sum` fails agreement and idempotence too, not merely both
+fidelities like `average` does. Confirmed computationally that agreement
+and idempotence coincide for every resolver tested, exactly as the
+diagonal-case observation predicts.
+
+**What this does not do**: choose, recommend, or endorse a resolver.
+`external_authority` is flagged as not even the same kind of object the
+other six are (not a pure function of the two declared values alone —
+the sacrifice is category-level, not property-level). No resolver is
+implemented in either `regional-obstruction-calculus` or
+`veribound-fce`.

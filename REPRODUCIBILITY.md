@@ -61,7 +61,7 @@ what each result means.
 make check-rocq
 ```
 
-which compiles all 14 `.v` files, in dependency order:
+which compiles all 15 `.v` files, in dependency order:
 
 ```sh
 coqc rocq/AdmissibleRefinementPersistence.v
@@ -79,11 +79,12 @@ coqc RefinementWitnessVerdictComposition.v
 coqc RefinementWitnessSequentialComposition.v
 coqc RefinementWitnessParallelComposition.v
 coqc CoupledParallelCompatibility.v
+coqc ConflictResolutionTrilemma.v
 ```
 
-All 14 `.v` files contain no `Admitted`, `Axiom`, or `sorry` — grep them
+All 15 `.v` files contain no `Admitted`, `Axiom`, or `sorry` — grep them
 yourself to check; nothing here depends on taking this file's word for
-it. `coqchk` confirms zero axioms across the full 14-file dependency
+it. `coqchk` confirms zero axioms across the full 15-file dependency
 closure. (Until the `v0.12-disjoint-parallel-classification` checkpoint,
 four of these files -- `CochainNaturalityDescent.v`,
 `CommonSubdivisionAgreement.v`, `ExactnessReflection.v`,
