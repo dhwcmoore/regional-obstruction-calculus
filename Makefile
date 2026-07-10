@@ -39,7 +39,7 @@ check-random:
 
 check-rocq:
 	coqc rocq/AdmissibleRefinementPersistence.v
-	cd rocq && coqc AssociatorResidueRepair.v && coqc FourCycleObstruction.v && coqc RepeatedTripleSupportCandidate3b.v && coqc CandidateThreeBDistinctSupportClassification.v && coqc CochainNaturalityDescent.v && coqc CommonSubdivisionAgreement.v && coqc ExactnessReflection.v && coqc FirstOrderClassifierCertificate.v && coqc RefinementWitnessComposition.v && coqc RefinementWitnessVerdictComposition.v && coqc RefinementWitnessSequentialComposition.v && coqc RefinementWitnessParallelComposition.v && coqc CoupledParallelCompatibility.v && coqc ConflictResolutionTrilemma.v
+	cd rocq && coqc AssociatorResidueRepair.v && coqc FourCycleObstruction.v && coqc RepeatedTripleSupportCandidate3b.v && coqc CandidateThreeBDistinctSupportClassification.v && coqc CochainNaturalityDescent.v && coqc CommonSubdivisionAgreement.v && coqc ExactnessReflection.v && coqc FirstOrderClassifierCertificate.v && coqc RefinementWitnessComposition.v && coqc RefinementWitnessVerdictComposition.v && coqc RefinementWitnessSequentialComposition.v && coqc RefinementWitnessParallelComposition.v && coqc CoupledParallelCompatibility.v && coqc ConflictResolutionTrilemma.v && coqc ConflictResolutionLowerBound.v
 
 check-ocaml:
 	cd ocaml && ocamlopt \

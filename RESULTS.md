@@ -491,4 +491,70 @@ to the same trilemma as before. Preserving both claims and having one
 faithful combined scalar are different goals; structure achieves only
 the first. Checked computationally too
 (`conflict_resolution_trilemma_probe.py`'s `pair_resolver`), `coqchk`
--clean, no `Admitted`/`Axiom`/`sorry`, full 15-file dependency closure.
+-clean, no `Admitted`/`Axiom`/`sorry`, full 16-file dependency closure.
+
+## R12. The non-lossy lower bound
+
+Given that structured (non-lossy) resolution is possible at all (R11's
+`pair_resolver`), how much structure does it actually require? Not a
+new question invented for its own sake — the natural next step once
+existence was settled, and, like R11, a fact about functions and
+equality in the abstract, not about refinement witnesses.
+
+**Definition** (`docs/design/CONFLICT_RESOLUTION_TRILEMMA.md` §9): an
+encoding `encode : V -> V -> C` is **non-lossy** when fixed projections
+`left_read, right_read : C -> V` recover both original declarations,
+for every pair. R11's `pair_resolver` is exactly the case `C := V * V`.
+
+**The lower bound**, proved in `rocq/ConflictResolutionLowerBound.v`:
+
+```text
+nonlossy_encoding_injective :
+    NonLossy(encode, left_read, right_read) ->
+    encode(x1, y1) = encode(x2, y2) -> x1 = x2 /\ y1 = y2
+```
+
+A non-lossy encoding must assign a genuinely distinct `C`-value to every
+distinct ordered pair of declarations, or its fixed projections could
+not tell two different conflicts apart. Pairing into `V * V` is not
+merely *one* way to be non-lossy — `structured_pair_is_nonlossy` shows
+it achieves this bound exactly, with no wasted structure.
+
+**The finite corollary**: for finite `V` with `|V| = n`, injectivity on
+`V * V` forces the encoding's codomain to satisfy `|C| >= n^2`. In
+particular, no encoding whose codomain is confined to `V` itself (size
+`n`) can be non-lossy once `n > 1`, since `n^2 > n` — a
+cardinality-flavoured restatement of R11's original equational
+impossibility, not a new assumption. Checked computationally, not only
+argued, in `conflict_resolution_lower_bound_probe.py`, `n = 1..6`:
+
+```text
+n    n^2   gap = n^2 - n
+1    1     0
+2    4     2
+3    9     6
+4    16    12
+5    25    20
+6    36    30
+```
+
+**A scope note, checked before writing it down**: this does *not* mean
+every codomain-`V` resolver's actual output range is bounded by `n` in
+general — `sum`'s outputs are not structurally confined to any finite
+test subset of `Q`, so counting its image size would not demonstrate
+the bound. The probe instead uses resolvers whose output is
+structurally confined to `V` by construction: `left_wins`/`right_wins`
+(image size exactly `n`, the best a codomain-confined resolver can do)
+and `erase` (image size exactly `1`, the worst) — both confirmed strictly
+short of `n^2` once `n > 1`.
+
+**What this settles, and what it does not**: the *shape* a faithful,
+non-lossy conflict record must have — an injective encoding of the
+ordered pair, nothing looser — not what specific fields, names, or
+format such a record should carry in a real diagnostic system. That
+remains entirely undecided.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 16-file dependency
+closure. No resolver, encoding format, or diagnostic schema is
+proposed, recommended, or implemented in either
+`regional-obstruction-calculus` or `veribound-fce`.

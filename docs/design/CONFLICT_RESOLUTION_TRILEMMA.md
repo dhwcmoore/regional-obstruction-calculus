@@ -189,9 +189,10 @@ not because refusal itself is a new finding.
 
 ```sh
 python conflict_resolution_trilemma_probe.py
+python conflict_resolution_lower_bound_probe.py
 ```
 
-See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`... **no** —
+See `docs/design/REFINEMENT_WITNESS_COMPOSITION_STATUS.md`... **no** --
 this document intentionally does not attach itself to that status
 doc's phase numbering; the conflict-resolution trilemma is a different
 mathematical question (about equality and resolvers in the abstract)
@@ -228,7 +229,7 @@ no_resolver_has_both_fidelities_on_nontrivial_domain :
     move for any resolver ever proposed for a real shared-seam interface.
 ```
 
-`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 15-file dependency
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 16-file dependency
 closure. See `RESULTS.md` (R11) for the full account.
 
 ## 8. Lossy versus structured resolvers
@@ -288,7 +289,98 @@ projections recover the original test pairs exactly, for every pair
 tested, including the disagreeing ones §4's lossy resolvers all fail on
 in one direction or the other.
 
-## 9. What is not claimed
+## 9. R12: the non-lossy lower bound
+
+§8 showed structured resolution is *possible*. This section asks how
+much structure it actually *requires* -- not a new question invented
+for its own sake, but the natural next step once existence is settled:
+what is the minimum an honest, non-lossy encoding must do?
+
+**Definition.** An encoding `encode : V -> V -> C` is **non-lossy**
+when fixed projection functions `left_read, right_read : C -> V`
+recover both original declarations, for every pair:
+
+```text
+NonLossy(encode, left_read, right_read) :=
+    forall x y, left_read(encode(x, y)) = x /\ right_read(encode(x, y)) = y
+```
+
+(`§8`'s `pair_resolver` is exactly the case `C := V * V`, `left_read :=
+fst`, `right_read := snd` -- this section generalises to an arbitrary
+codomain `C`, not only the literal pair type.)
+
+**The lower bound.** Any non-lossy encoding is injective on `V * V`:
+
+```text
+nonlossy_encoding_injective :
+    NonLossy(encode, left_read, right_read) ->
+    encode(x1, y1) = encode(x2, y2) -> x1 = x2 /\ y1 = y2
+```
+
+The proof is short -- apply `left_read` to both sides of
+`encode(x1,y1) = encode(x2,y2)` to recover `x1 = x2`; apply
+`right_read` for `y1 = y2` -- but the *content* is the point, not the
+difficulty: **a non-lossy encoding must assign a genuinely distinct
+`C`-value to every distinct ordered pair of declarations**, or its
+fixed projections could not tell two different conflicts apart. This is
+the information-theoretic fact underneath §8's existence result: pairing
+into `V * V` is not merely *one* way to be non-lossy, it is exhibited
+here (`structured_pair_is_nonlossy`, restating `pair_resolver`'s
+property under this section's vocabulary) as achieving the bound
+exactly, with no wasted structure.
+
+**The finite corollary.** For finite `V` with `|V| = n`, injectivity on
+`V * V` forces the encoding's codomain to satisfy `|C| >= n^2` (an
+injective function's domain cannot exceed its codomain's size). In
+particular, **no encoding whose codomain is confined to `V` itself
+(size `n`) can be non-lossy once `n > 1`**, since `n^2 > n` whenever
+`n > 1` -- a cardinality-flavoured restatement of §3's original
+equational impossibility, not a new assumption, and not requiring `V`
+to be finite in the first place (`nonlossy_encoding_injective` itself
+holds for any type, finite or not; only this specific corollary needs
+finiteness to state the gap as a number).
+
+Checked computationally, not only stated, in
+`conflict_resolution_lower_bound_probe.py`, for finite test domains of
+size `n = 1..6`:
+
+```text
+n    n^2   gap = n^2 - n
+1    1     0
+2    4     2
+3    9     6
+4    16    12
+5    25    20
+6    36    30
+```
+
+**A scope note worth stating precisely, checked before writing this
+down**: this does *not* mean every codomain-`V` ("lossy," in §8's
+sense) resolver's actual output range is bounded by `n` in general --
+`sum` (§4) is typed `Q -> Q -> Q`, matching `V := Q`, but its outputs
+(`x + y`) are not structurally confined to any finite test subset of
+`Q`, so counting `sum`'s image size on a finite domain is not the right
+demonstration of the bound. The probe instead uses resolvers whose
+output is structurally confined to `V` by construction --
+`left_wins`/`right_wins` (output is always literally one of the two
+inputs) and `erase` (output is always a fixed sentinel already in `V`)
+-- and confirms their image sizes exactly: `left_wins`/`right_wins`
+achieve `n` (the best a codomain-confined resolver can do, still short
+of `n^2` once `n > 1`); `erase` achieves `1` (the worst possible,
+regardless of `n`).
+
+**What this settles, and what it does not.** This section characterises
+the *shape* a faithful, non-lossy conflict record must have -- an
+injective encoding of the ordered pair, nothing looser -- not what
+specific fields, names, or format such a record should carry in a real
+diagnostic system. That remains entirely undecided, the same as before.
+
+`rocq/ConflictResolutionLowerBound.v`: `nonlossy_encoding_injective` and
+`structured_pair_is_nonlossy`, `coqchk`-clean, full 16-file dependency
+closure, no `Admitted`/`Axiom`/`sorry`. See `RESULTS.md` (R12) for the
+full account.
+
+## 10. What is not claimed
 
 - That §4's seven resolver shapes are exhaustive. They are the
   candidates named in this document's own opening discussion, not a
@@ -317,6 +409,15 @@ in one direction or the other.
   only that it avoids the specific impossibility of §3/§7 for the
   *claims themselves*; a structured resolver still owes its consumer
   some scalar summary in most real use cases, and that summary is still
-  fully subject to §3/§7 — structure changes what can be preserved
+  fully subject to §3/§7 -- structure changes what can be preserved
   alongside a decision, not whether a decision, once reduced to one
   value, can honour both sides.
+- That §9's lower bound recommends a specific field layout, encoding, or
+  serialisation format for a real diagnostic object. It characterises
+  the abstract minimum -- injectivity on `V * V` -- not a concrete
+  schema; deciding what a real record should actually contain (field
+  names, types, provenance metadata) is unstarted, in either repository.
+- That `sum`'s image size on a finite domain is bounded the way
+  `left_wins`/`right_wins`/`erase`'s are. §9 states explicitly why that
+  comparison would be misleading (`sum`'s outputs are not structurally
+  confined to `V`) and does not make it.
