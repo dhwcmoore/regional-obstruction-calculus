@@ -55,7 +55,9 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v4
+      - run: which coqc coqchk || find / -maxdepth 6 -iname 'coqc' -o -maxdepth 6 -iname 'coqchk' 2>/dev/null; echo "PATH=$PATH"
       - run: make check-rocq
+        shell: bash -l {0}
 
   rocq-trust:
     runs-on: ubuntu-latest
@@ -65,6 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: make check-rocq-trust
+        shell: bash -l {0}
 
   ocaml:
     runs-on: ubuntu-latest
