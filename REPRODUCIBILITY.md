@@ -22,7 +22,28 @@ OCaml   4.14.1     (ocamlopt)
 
 `make check-all` reproduces every check below, in this order, stopping
 at the first failure: `check-python`, `check-rocq`, `check-rocq-trust`,
-`check-ocaml`, `check-assembly-parity`.
+`check-ocaml`, `check-assembly-parity`, `check-contribution-parity`
+(the last of these was previously missing from this sentence, even
+though the Makefile's own `check-all` target had always run it).
+
+## Pinned container
+
+`Dockerfile` builds an image with exactly the versions above --
+Coq/Rocq 8.18.0 and OCaml 4.14.1 from Ubuntu 24.04 LTS's own apt
+archive (not opam), Python 3.12 -- and runs `make check-all` by
+default:
+
+```sh
+docker build -t regional-obstruction-calculus .
+docker run --rm regional-obstruction-calculus
+```
+
+The image fails its own build loudly if the apt archive ever serves a
+different `coqc`/`ocamlopt` version than the ones pinned here -- see
+the Dockerfile's own version-check step. This is the recommended path
+for an evaluator who wants to reproduce the Rocq/`coqchk`/OCaml stages
+without installing or configuring a toolchain by hand; the commands
+below remain the direct, no-container path.
 
 ## Setup
 
