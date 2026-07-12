@@ -1,11 +1,17 @@
 # The Contribution Judgement: What a Verified Contribution Certificate Must Establish
 
-**Status: design document, no Rocq proof and no production code. Phase
-3A of the pairwise-to-global provenance bridge** (see
-`docs/design/PAIRWISE_TO_GLOBAL_PROVENANCE.md`, whose Phase 2.5 this
-document follows and whose §9 decision 1 explicitly deferred this
-question). This document exists to answer one question before any
-`VerifiedContributionCertificate` type or verifier is written:
+**Status (2026-07-12): Phase 3A (this document) is complete. Phase 3B
+(`rocq/AssociatorContributionCertificate.v`) is also complete** — see
+that file's header for its two honest scoping decisions (the
+registered orientation is a *stipulated* convention checked against
+`FourCycleObstruction.v`'s `r`, not derived from `delta0`'s formula;
+`associatorContribution` formalises `closed_form_delta`'s arithmetic,
+not `associator_defect`'s full expansion) and `STATUS.md` §1 for the
+theorem-by-theorem summary. Phase 3C (independent runtime parity
+checker, fixture replacement) and Phase 4 (operational integration)
+remain unstarted. This document exists to answer one question, asked
+before any `VerifiedContributionCertificate` type or verifier was
+written:
 
 > What must a witness establish, and what data must it bind, for a
 > rational scalar to count as the contribution of a particular
@@ -382,21 +388,30 @@ narrow, concrete target (§5), not a mechanisation of
   (`committed_input_digest`, §5) for Phase 3B to act on, not an
   immediate rename.
 
-## 9. Open question for the next phase to confirm, not resolved here
+## 9. Open question — resolved in Phase 3B
 
 `SeamAssociatorInstance` in the existing Python code has no explicit
 orientation field — the choice is currently implicit in which `mu_*`
 slot is nonzero, and `four_cycle_instances()` never states an explicit
 "this is the canonical positive direction for `e12`" declaration
-anywhere, because nothing has ever needed to check it before. Phase 3B
-will need to decide, concretely: does the *registry's* canonical
-orientation for the four-cycle's seams get chosen freshly (an
-arbitrary but fixed convention, matching how the seam-to-slot mapping
-in `four_cycle_instances()` was itself already "a free modelling
-choice," per its own docstring), or does it need to be derived from
-`FourCycleObstruction.v`'s existing `coboundary_0` matrix orientation
-(the `(-1,1,0,0)`-style rows already fixing a sign convention for
-`e12`, `e23`, `e34`, `e14` at the Rocq level)? This document does not
-decide that — it is exactly the kind of question Phase 3A exists to
-raise and Phase 3B must settle before writing `Orientation`'s concrete
-type, not before.
+anywhere, because nothing has ever needed to check it before. This
+document left open whether the registry's canonical orientation should
+be chosen freshly or derived from `FourCycleObstruction.v`'s
+`coboundary_0` matrix.
+
+**Resolution (`rocq/AssociatorContributionCertificate.v`, header
+Decision 1)**: neither, exactly — `delta0` (an abstract coboundary map
+on four formal vertices, signs from graph incidence) and
+`associator_defect` (a three-region Venn-algebra construction, no
+vertices or incidence structure at all) are different mathematical
+objects with no a priori structural connection, so there is no formula
+to derive the slot choice *from*. The registered orientation is a
+**stipulated** convention (a `Slot` value per registered interface),
+chosen freely exactly as `four_cycle_instances()`'s own slot choice
+already was — but then **checked**, not assumed: `registry_orientation
+_agrees_with_delta0` proves the four contributions this stipulated
+convention produces, assembled in `FourCycleObstruction.v`'s own
+`SEAM_ORDER`, equal that file's own `r` constant exactly. This is the
+sense in which "derived from `delta0`" ultimately cashes out — a
+checked agreement with the existing global theory's own committed
+values, not a structural derivation from its formula.

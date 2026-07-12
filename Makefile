@@ -20,7 +20,7 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   ConflictResolutionTrilemma ConflictResolutionLowerBound \
   ConflictDiagnosticCompleteness TypedDiagnosticCalculus \
   PairwiseDiagnosticCertificate GlobalCoherenceCertificate \
-  PairwiseToGlobalAssembly
+  PairwiseToGlobalAssembly AssociatorContributionCertificate
 
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
