@@ -44,14 +44,24 @@ jobs:
     # container: key does not reliably support expressions in every
     # Actions runner version. Keep this in sync with env.COQ_VERSION
     # above and REPRODUCIBILITY.md's toolchain table by hand.
-    container: coqorg/coq:8.18.0
+    #
+    # options: --user root -- coqorg/coq images run as a non-root `coq`
+    # user by default, which fails with EACCES when actions/checkout
+    # tries to write to the runner's mounted _temp directory. Running
+    # the container as root avoids that; the actual coqc/coqchk
+    # commands below don't need any elevated privilege themselves.
+    container:
+      image: coqorg/coq:8.18.0
+      options: --user root
     steps:
       - uses: actions/checkout@v4
       - run: make check-rocq
 
   rocq-trust:
     runs-on: ubuntu-latest
-    container: coqorg/coq:8.18.0
+    container:
+      image: coqorg/coq:8.18.0
+      options: --user root
     steps:
       - uses: actions/checkout@v4
       - run: make check-rocq-trust
