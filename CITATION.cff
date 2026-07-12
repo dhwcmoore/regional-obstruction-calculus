@@ -6,4 +6,4 @@ authors:
   - family-names: Moore
     given-names: Duston
 repository-code: "https://github.com/dhwcmoore/regional-obstruction-calculus"
-license: MIT
+license: AGPL-3.0-or-later
