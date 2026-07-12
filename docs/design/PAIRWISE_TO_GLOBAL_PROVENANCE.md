@@ -320,7 +320,7 @@ assembler must not:
 - infer evidence from file or argument order;
 - accept two different certificates for the same interface without an
   explicit resolution rule (there is none in this first version —
-  duplicates are `AssemblyRefused`, §5);
+  duplicates are `AssemblyUnresolved`, §5);
 - proceed to a confident global verdict while any required evidence is
   unresolved.
 
@@ -384,11 +384,32 @@ be passed to `global_coherence_certificate.build_certificate`.
 **Procedural absence, not contradiction.** Use when: an interface's
 evidence is missing entirely; either the admissibility or the
 contribution half is `Unresolved`; a required declaration cannot be
-matched; the topology is incomplete. No `Incompatible` finding is
-present anywhere in the required set. Maps to `hold_for_review` — the
-same mapping `UNRESOLVED_GLOBAL_EVIDENCE` already has in
-`veribound-fce/src/policy.py`, extended one layer earlier in the
-pipeline, not given new vocabulary.
+matched; the topology is incomplete; two certificates claim the same
+required interface (duplicate evidence — the assembler cannot choose
+between them, and duplication alone proves no contradiction, so
+refusal would overclaim while silent selection would be unsound; see
+the correction note below); or a co-reference condition fails
+(admissibility and contribution evidence, or either evidence and the
+required interface's own registered digest, disagree — this proves
+only that the two evidentiary objects cannot safely be joined, not
+that the underlying declarations conflict; see the correction note
+below). No `Incompatible` finding is present anywhere in the required
+set. Maps to `hold_for_review` — the same mapping
+`UNRESOLVED_GLOBAL_EVIDENCE` already has in `veribound-fce/src/
+policy.py`, extended one layer earlier in the pipeline, not given new
+vocabulary.
+
+**Correction recorded, not silently rewritten (2026-07-12, `veribound-fce`
+commit `f3d4b12`)**: this document's first draft listed duplicate
+interface evidence and co-reference failure under `AssemblyRefused`
+below. Implementing and testing Phase 2 established both belong here
+instead — duplication does not prove incompatibility, and a
+co-reference mismatch proves only that two objects cannot be safely
+combined, not that the interface itself is genuinely incompatible.
+Neither is "positively contradictory" in the sense the rest of
+`AssemblyRefused`'s list is. The tested behaviour
+(`veribound-fce/tests/test_pairwise_to_global_assembly.py`) is
+authoritative; this section now matches it.
 
 ### `AssemblyRefused`
 
@@ -398,13 +419,10 @@ separate from mere absence:
 - any required interface's admissibility is `Decided Incompatible`
   (this blocks the *whole* assembly, not just that coordinate — §0's
   governing constraint, `Incompatible(i) => assembly is not authorised`);
-- two certificates claim the same interface with different contributions;
 - certificate endpoints disagree with the topology;
 - a certificate digest does not match its contents;
 - the same certificate is illicitly reused for distinct interfaces;
-- orientation metadata is internally contradictory;
-- a co-reference condition fails (admissibility and contribution
-  evidence name different interfaces or input states).
+- orientation metadata is internally contradictory.
 
 `Incompatible` producing `AssemblyRefused` is a genuine, decisive
 finding (R15's `IncompatibleEvidence` is not malformed input, it is a
@@ -449,7 +467,9 @@ vocabulary at that layer.
 5. **Ordering invariance.** Reordering the input certificates must not
    alter the assembled object.
 6. **Duplicate rejection.** Two certificates cannot silently populate
-   the same interface — this is `AssemblyRefused`, not last-write-wins.
+   the same interface — this is `AssemblyUnresolved` (the assembler
+   cannot choose between them, and duplication alone proves no
+   contradiction — §5), not last-write-wins.
 7. **Verification gating.** Only certificates whose `verification_status`
    reflects a genuinely independent recheck (in-process verifier result,
    or an envelope re-verified before assembly) may enter — a stored
