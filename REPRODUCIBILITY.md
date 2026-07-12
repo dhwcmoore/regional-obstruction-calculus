@@ -7,7 +7,22 @@ deliberately just commands and expected output.
 
 Python checks are the default reproducibility path. Rocq and OCaml
 checks require external toolchains and are not assumed available in
-every environment.
+every environment; CI (`.github/workflows/`) runs all four -- Python,
+Rocq, Rocq trust (`coqchk`), and OCaml -- against the exact versions
+below on every push.
+
+## Verified toolchain versions
+
+```text
+Python  3.12
+pytest  9.1.1
+Coq/Rocq 8.18.0    (coqc, coqchk)
+OCaml   4.14.1     (ocamlopt)
+```
+
+`make check-all` reproduces every check below, in this order, stopping
+at the first failure: `check-python`, `check-rocq`, `check-rocq-trust`,
+`check-ocaml`.
 
 ## Setup
 
@@ -55,17 +70,25 @@ Each prints its own rank/quotient/verdict numbers; see
 `docs/diagnostics/REALISABILITY_DIAGNOSTICS.md` and RESULTS.md R6-R9 for
 what each result means.
 
-## Rocq (optional, requires `coqc`)
+## Rocq (optional, requires `coqc`, `coqchk`)
+
+Three separate, composable targets -- each independently runnable, each
+one a real check rather than a formality:
 
 ```sh
-make check-rocq
+make check-rocq-inventory   # rocq/*.v matches the Makefile's declared build chain exactly, in both directions
+make check-rocq-scan        # fast preliminary text scan for Admitted/Axiom/Parameter outside comments -- not a substitute for the next two
+make check-rocq             # compiles all 20 .v files from a clean state, in dependency order (runs the inventory and scan checks first)
+make check-rocq-trust       # runs coqchk over the complete declared module list (runs check-rocq first)
 ```
 
-which compiles all 20 `.v` files, in dependency order:
+`check-rocq` removes any stale `.vo`/`.vok`/`.vos`/`.glob` files before
+compiling, so a failure can never be masked by a leftover artefact from
+an earlier run. In dependency order:
 
 ```sh
-coqc rocq/AdmissibleRefinementPersistence.v
 cd rocq
+coqc AdmissibleRefinementPersistence.v
 coqc AssociatorResidueRepair.v
 coqc FourCycleObstruction.v
 coqc RepeatedTripleSupportCandidate3b.v
@@ -87,15 +110,42 @@ coqc PairwiseDiagnosticCertificate.v
 coqc GlobalCoherenceCertificate.v
 ```
 
-All 20 `.v` files contain no `Admitted`, `Axiom`, or `sorry` — grep them
-yourself to check; nothing here depends on taking this file's word for
-it. `coqchk` confirms zero axioms across the full 20-file dependency
-closure. (Until the `v0.12-disjoint-parallel-classification` checkpoint,
-four of these files -- `CochainNaturalityDescent.v`,
-`CommonSubdivisionAgreement.v`, `ExactnessReflection.v`,
-`FirstOrderClassifierCertificate.v` -- were valid and already claimed as
-verified in `STATUS.md` §1, but not actually wired into the `check-rocq`
-Makefile target; that gap is fixed as of this checkpoint.)
+All 20 `.v` files contain no `Admitted`, `Axiom`, or `sorry` outside a
+comment -- `make check-rocq-scan` checks this itself (comments stripped
+first, so a doc comment that merely *mentions* the word `Axiom` is not
+a false positive); grep them yourself to check independently, nothing
+here depends on taking this file's word for it.
+
+`make check-rocq-trust` then runs `coqchk`, Rocq's own independent,
+from-scratch proof checker (a separate program from `coqc`), over the
+complete 20-module dependency closure:
+
+```sh
+cd rocq && coqchk -Q . "" \
+  AdmissibleRefinementPersistence AssociatorResidueRepair FourCycleObstruction \
+  RepeatedTripleSupportCandidate3b CandidateThreeBDistinctSupportClassification \
+  CochainNaturalityDescent CommonSubdivisionAgreement ExactnessReflection \
+  FirstOrderClassifierCertificate RefinementWitnessComposition \
+  RefinementWitnessVerdictComposition RefinementWitnessSequentialComposition \
+  RefinementWitnessParallelComposition CoupledParallelCompatibility \
+  ConflictResolutionTrilemma ConflictResolutionLowerBound ConflictDiagnosticCompleteness \
+  TypedDiagnosticCalculus PairwiseDiagnosticCertificate GlobalCoherenceCertificate
+```
+
+Expected: `Modules were successfully checked`, with no `Axioms:` section
+in the output. This is the check that actually backs the "zero axioms"
+claim -- stated precisely: **the project has introduced no unproved
+assumption (no `Admitted` proof, no extra `Axiom` or `Parameter`) into
+the theorem chain, beyond Rocq's own kernel and standard library.**
+This is not a claim that Rocq's own logical foundation is itself free
+of foundational assumptions -- every proof assistant has some, by
+design; that question is out of scope here and always will be. (Until
+the `v0.12-disjoint-parallel-classification` checkpoint, four of these
+files -- `CochainNaturalityDescent.v`, `CommonSubdivisionAgreement.v`,
+`ExactnessReflection.v`, `FirstOrderClassifierCertificate.v` -- were
+valid and already claimed as verified in `STATUS.md` §1, but not
+actually wired into the `check-rocq` Makefile target; that gap is fixed
+as of this checkpoint.)
 
 ## OCaml parity (optional, requires `ocamlopt`)
 
@@ -103,7 +153,7 @@ Makefile target; that gap is fixed as of this checkpoint.)
 make check-ocaml
 ```
 
-which is:
+removes any stale `.cmi`/`.cmx`/`.o`/executable files first, then:
 
 ```sh
 cd ocaml
@@ -114,6 +164,10 @@ ocamlopt refinement_witnesses.ml refinement_checker.ml -o ../refinement_checker_
 Mirrors `refinement_checker.py`'s (A1)-(A4) computation independently, in
 a self-contained OCaml exact-rational type over ordinary integers — not
 (N0)/(E0), added to the Python side after this mirror was last updated.
+`refinement_checker.ml`'s own `run_self_check` compares every computed
+pairing against a fixed set of expected values (`5, 5, 5, -5`) and the
+program itself exits `1` on any mismatch -- `make check-ocaml` fails
+whenever that self-check fails, not only when the build itself fails.
 
 ## Expected truth table (`refinement_checker.py`)
 

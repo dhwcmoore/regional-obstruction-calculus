@@ -1,0 +1,86 @@
+name: Formal verification
+
+# Four independent, legible jobs -- python, rocq, rocq-trust, ocaml --
+# each reproducing one of make check-all's four checks from a fresh
+# environment, against pinned toolchain versions. See
+# REPRODUCIBILITY.md for the exact commands and expected output each
+# job's `make` target runs, and what the rocq-trust job's coqchk pass
+# does and does not claim.
+#
+# Deliberately does not rely on any committed .vo/.glob/.cmi/.cmx/.o or
+# executable artefact -- every job starts from a fresh checkout and
+# fresh toolchain install, and each Makefile target under test removes
+# stale build artefacts itself before compiling.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Pinned exactly -- a CI run that installs whatever happens to be
+  # current is not a reproducible proof build. See REPRODUCIBILITY.md's
+  # "Verified toolchain versions" section, which must stay in sync with
+  # these values.
+  OCAML_VERSION: "4.14.1"
+  COQ_VERSION: "8.18.0"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: python -m pip install -U pip
+      - run: pip install -r requirements.txt
+      - run: make check-python
+
+  rocq:
+    runs-on: ubuntu-latest
+    # Hardcoded rather than interpolating env.COQ_VERSION -- the
+    # container: key does not reliably support expressions in every
+    # Actions runner version. Keep this in sync with env.COQ_VERSION
+    # above and REPRODUCIBILITY.md's toolchain table by hand.
+    #
+    # options: --user root -- coqorg/coq images run as a non-root `coq`
+    # user by default, which fails with EACCES when actions/checkout
+    # tries to write to the runner's mounted _temp directory. Running
+    # the container as root avoids that; the actual coqc/coqchk
+    # commands below don't need any elevated privilege themselves.
+    container:
+      image: coqorg/coq:8.18.0
+      options: --user root
+    # coqorg/coq:8.18.0's opam switch is 4.13.1+flambda, and its bin
+    # directory is not on PATH for a root shell (only for the image's
+    # default, non-root `coq` user, whose profile scripts root does not
+    # inherit) -- confirmed by actually running `find` in this exact
+    # container in CI, not assumed. Adding it here directly rather than
+    # depending on any profile/login-shell mechanism.
+    env:
+      PATH: /home/coq/.opam/4.13.1+flambda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+      - uses: actions/checkout@v4
+      - run: make check-rocq
+
+  rocq-trust:
+    runs-on: ubuntu-latest
+    container:
+      image: coqorg/coq:8.18.0
+      options: --user root
+    env:
+      PATH: /home/coq/.opam/4.13.1+flambda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+      - uses: actions/checkout@v4
+      - run: make check-rocq-trust
+
+  ocaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ env.OCAML_VERSION }}
+      - run: opam exec -- make check-ocaml

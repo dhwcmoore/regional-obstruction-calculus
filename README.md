@@ -84,7 +84,13 @@ pip install -r requirements.txt
 make check-python
 ```
 
-Expect `181 passed`. See [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the full command sequence, including the optional Rocq and OCaml checks.
+Expect `181 passed`. To reproduce the full formal chain (Rocq compilation, `coqchk`, and the OCaml parity checker) in one command:
+
+```sh
+make check-all
+```
+
+Verified toolchain: Python 3.12, Coq/Rocq 8.18.0 (`coqc`, `coqchk`), OCaml 4.14.1 (`ocamlopt`) -- pinned exactly in CI (`.github/workflows/`), which runs `check-python`, `check-rocq`, `check-rocq-trust`, and `check-ocaml` as four separate jobs on every push. See [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the full command sequence, including each check run individually.
 
 ## Verification status
 
