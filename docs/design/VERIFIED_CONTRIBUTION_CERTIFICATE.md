@@ -1,17 +1,23 @@
 # The Contribution Judgement: What a Verified Contribution Certificate Must Establish
 
-**Status (2026-07-12): Phase 3A (this document) is complete. Phase 3B
-(`rocq/AssociatorContributionCertificate.v`) is also complete** — see
-that file's header for its two honest scoping decisions (the
-registered orientation is a *stipulated* convention checked against
+**Status (2026-07-12): Phases 3A, 3B, and 3C are all complete.** Phase
+3B (`rocq/AssociatorContributionCertificate.v`) — see that file's
+header for its two honest scoping decisions (the registered
+orientation is a *stipulated* convention checked against
 `FourCycleObstruction.v`'s `r`, not derived from `delta0`'s formula;
 `associatorContribution` formalises `closed_form_delta`'s arithmetic,
-not `associator_defect`'s full expansion) and `STATUS.md` §1 for the
-theorem-by-theorem summary. Phase 3C (independent runtime parity
-checker, fixture replacement) and Phase 4 (operational integration)
-remain unstarted. This document exists to answer one question, asked
-before any `VerifiedContributionCertificate` type or verifier was
-written:
+not `associator_defect`'s full expansion). Phase 3C —
+`ocaml/associator_contribution_checker.ml` (this repository) and
+`veribound-fce`'s `src/associator_contribution_verifier.py` (commit
+`f672f1e`) independently implement and agree on a fourteen-case parity
+corpus; real verified contribution certificates now back
+`veribound-fce`'s primary four-cycle integration path, with
+`src/pairwise_to_global_assembly.py` unmodified (confirmed by an empty
+`git diff`). See `STATUS.md` §1 for the theorem-by-theorem summary.
+Phase 4 (operational integration into `fce_check.py` and the
+certificate envelope) remains unstarted. This document exists to
+answer one question, asked before any `VerifiedContributionCertificate`
+type or verifier was written:
 
 > What must a witness establish, and what data must it bind, for a
 > rational scalar to count as the contribution of a particular

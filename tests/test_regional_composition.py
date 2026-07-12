@@ -69,6 +69,16 @@ def test_direct_expansion_matches_closed_form_property():
     prop:four-term. This is the same "two independent methods must agree"
     discipline used throughout the rest of the repository
     (refinement_checker.py's solver/pairing cross-check).
+
+    This is exactly the evidence rocq/AssociatorContributionCertificate.v's
+    header (Decision 2) and docs/design/VERIFIED_CONTRIBUTION_CERTIFICATE.md
+    cite when scoping that file to formalise closed_form_delta's arithmetic
+    only, not associator_defect's full DualNumber/region expansion -- this
+    200-case property test is the equivalence's only checked evidence
+    anywhere in this project; it is Python-level implementation evidence,
+    not a Rocq theorem, and Phase 3C does not attempt to promote it into
+    one. Keep this test (and its accuracy) if this file is ever refactored
+    -- later Rocq work may depend on citing it honestly.
     """
     triple = VennTriple()
     rng = random.Random(4242)

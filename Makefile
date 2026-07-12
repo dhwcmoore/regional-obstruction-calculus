@@ -24,7 +24,8 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
 
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
-  check-assembly-parity check-associator check-diagnostics check-certificates check-all
+  check-assembly-parity check-contribution-parity check-associator check-diagnostics \
+  check-certificates check-all
 
 check: check-python
 
@@ -40,7 +41,8 @@ check-all:
 	$(MAKE) check-rocq-trust
 	$(MAKE) check-ocaml
 	$(MAKE) check-assembly-parity
-	@echo "check-all: check-python, check-rocq, check-rocq-trust, check-ocaml, and check-assembly-parity all passed."
+	$(MAKE) check-contribution-parity
+	@echo "check-all: check-python, check-rocq, check-rocq-trust, check-ocaml, check-assembly-parity, and check-contribution-parity all passed."
 
 check-python:
 	$(PYTHON) residue_classifier.py examples/four_cycle.json
@@ -163,8 +165,23 @@ check-assembly-parity:
 	./assembly_checker
 	@echo "check-assembly-parity: OCaml assembler mirror compiled from a clean state; all nine parity cases matched their independently verified expected outcome."
 
+# Compiles the independent OCaml mirror of the associator contribution
+# certificate's runtime verification (rocq/AssociatorContributionCertificate
+# .v's own semantics, Phase 3C.1) fresh, and runs its self-check:
+# fourteen cases -- four real four-cycle acceptances, six rejection
+# reasons, a magnitude-negation pair, and three non-canonical-slot
+# arithmetic cases -- each independently computed, not copied from any
+# other implementation. Not Rocq extraction; see
+# associator_contribution_checker.ml's own header.
+check-contribution-parity:
+	rm -f ocaml/associator_contribution_checker.cmi ocaml/associator_contribution_checker.cmx \
+	  ocaml/associator_contribution_checker.o associator_contribution_checker
+	cd ocaml && $(OCAMLOPT) associator_contribution_checker.ml -o ../associator_contribution_checker
+	./associator_contribution_checker
+	@echo "check-contribution-parity: OCaml contribution-certificate mirror compiled from a clean state; all fourteen parity cases matched their independently computed expected outcome."
+
 clean:
 	rm -rf __pycache__ tests/__pycache__ .pytest_cache
-	rm -f refinement_checker_ocaml assembly_checker
+	rm -f refinement_checker_ocaml assembly_checker associator_contribution_checker
 	rm -f ocaml/*.cmi ocaml/*.cmx ocaml/*.o
 	rm -f rocq/*.vo rocq/*.vok rocq/*.vos rocq/*.glob rocq/.*.aux

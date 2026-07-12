@@ -21,4 +21,5 @@ __pycache__/
 *.o
 refinement_checker_ocaml
 assembly_checker
+associator_contribution_checker
 Nontrivial

@@ -1,12 +1,13 @@
 name: Formal verification
 
 # Four independent, legible jobs -- python, rocq, rocq-trust, ocaml --
-# each reproducing one of make check-all's five checks from a fresh
+# each reproducing one of make check-all's six checks from a fresh
 # environment, against pinned toolchain versions. The ocaml job runs
-# both check-ocaml and check-assembly-parity -- same toolchain, no
-# separate job needed. See REPRODUCIBILITY.md for the exact commands
-# and expected output each job's `make` target runs, and what the
-# rocq-trust job's coqchk pass does and does not claim.
+# check-ocaml, check-assembly-parity, and check-contribution-parity --
+# same toolchain, no separate job needed. See REPRODUCIBILITY.md for
+# the exact commands and expected output each job's `make` target
+# runs, and what the rocq-trust job's coqchk pass does and does not
+# claim.
 #
 # Deliberately does not rely on any committed .vo/.glob/.cmi/.cmx/.o or
 # executable artefact -- every job starts from a fresh checkout and
@@ -86,3 +87,4 @@ jobs:
           ocaml-compiler: ${{ env.OCAML_VERSION }}
       - run: opam exec -- make check-ocaml
       - run: opam exec -- make check-assembly-parity
+      - run: opam exec -- make check-contribution-parity
