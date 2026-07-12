@@ -53,21 +53,28 @@ jobs:
     container:
       image: coqorg/coq:8.18.0
       options: --user root
+    # coqorg/coq:8.18.0's opam switch is 4.13.1+flambda, and its bin
+    # directory is not on PATH for a root shell (only for the image's
+    # default, non-root `coq` user, whose profile scripts root does not
+    # inherit) -- confirmed by actually running `find` in this exact
+    # container in CI, not assumed. Adding it here directly rather than
+    # depending on any profile/login-shell mechanism.
+    env:
+      PATH: /home/coq/.opam/4.13.1+flambda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     steps:
       - uses: actions/checkout@v4
-      - run: which coqc coqchk || find / -maxdepth 6 -iname 'coqc' -o -maxdepth 6 -iname 'coqchk' 2>/dev/null; echo "PATH=$PATH"
       - run: make check-rocq
-        shell: bash -l {0}
 
   rocq-trust:
     runs-on: ubuntu-latest
     container:
       image: coqorg/coq:8.18.0
       options: --user root
+    env:
+      PATH: /home/coq/.opam/4.13.1+flambda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     steps:
       - uses: actions/checkout@v4
       - run: make check-rocq-trust
-        shell: bash -l {0}
 
   ocaml:
     runs-on: ubuntu-latest
