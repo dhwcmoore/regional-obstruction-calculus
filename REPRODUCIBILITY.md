@@ -22,7 +22,7 @@ OCaml   4.14.1     (ocamlopt)
 
 `make check-all` reproduces every check below, in this order, stopping
 at the first failure: `check-python`, `check-rocq`, `check-rocq-trust`,
-`check-ocaml`.
+`check-ocaml`, `check-assembly-parity`.
 
 ## Setup
 
@@ -168,6 +168,26 @@ a self-contained OCaml exact-rational type over ordinary integers — not
 pairing against a fixed set of expected values (`5, 5, 5, -5`) and the
 program itself exits `1` on any mismatch -- `make check-ocaml` fails
 whenever that self-check fails, not only when the build itself fails.
+
+## Assembly parity (optional, requires `ocamlopt`)
+
+```sh
+make check-assembly-parity
+```
+
+Compiles and runs `ocaml/assembly_checker.ml` -- an independent OCaml
+mirror of `PairwiseToGlobalAssembly.v`'s Gallina specification and
+`veribound-fce`'s `src/pairwise_to_global_assembly.py`. Not Rocq
+extraction (this repository has never used that mechanism); see the
+file's own header for why the established hand-written-mirror pattern
+above is used instead. Nine cases are hardcoded, each independently
+verified against a real run of `veribound-fce`'s
+`assemble_global_evidence()` at commit `f3d4b12` before being written
+into this file -- covering a complete four-cycle assembly, refusal on
+Incompatible evidence, and every `AssemblyUnresolved` reason. The
+program's own self-check asserts its independently computed outcome
+matches each of those nine already-verified values exactly and exits
+`1` on any mismatch.
 
 ## Expected truth table (`refinement_checker.py`)
 

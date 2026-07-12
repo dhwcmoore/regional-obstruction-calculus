@@ -19,11 +19,12 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   RefinementWitnessParallelComposition CoupledParallelCompatibility \
   ConflictResolutionTrilemma ConflictResolutionLowerBound \
   ConflictDiagnosticCompleteness TypedDiagnosticCalculus \
-  PairwiseDiagnosticCertificate GlobalCoherenceCertificate
+  PairwiseDiagnosticCertificate GlobalCoherenceCertificate \
+  PairwiseToGlobalAssembly
 
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
-  check-associator check-diagnostics check-certificates check-all
+  check-assembly-parity check-associator check-diagnostics check-certificates check-all
 
 check: check-python
 
@@ -38,7 +39,8 @@ check-all:
 	$(MAKE) check-rocq
 	$(MAKE) check-rocq-trust
 	$(MAKE) check-ocaml
-	@echo "check-all: check-python, check-rocq, check-rocq-trust, and check-ocaml all passed."
+	$(MAKE) check-assembly-parity
+	@echo "check-all: check-python, check-rocq, check-rocq-trust, check-ocaml, and check-assembly-parity all passed."
 
 check-python:
 	$(PYTHON) residue_classifier.py examples/four_cycle.json
@@ -147,8 +149,22 @@ check-ocaml:
 	./refinement_checker_ocaml
 	@echo "check-ocaml: OCaml parity checker compiled from a clean state; its fixture self-check passed."
 
+# Compiles the independent OCaml mirror of the pairwise-to-global
+# assembler (PairwiseToGlobalAssembly.v's own Gallina specification,
+# and veribound-fce's src/pairwise_to_global_assembly.py) fresh, and
+# runs its self-check: nine cases, each independently verified against
+# a real run of the Python assembler before being hardcoded in
+# assembly_checker.ml, per that file's own header. Not Rocq extraction
+# -- see PairwiseToGlobalAssembly.v's header for why this repository's
+# existing hand-written-mirror-plus-parity pattern is used instead.
+check-assembly-parity:
+	rm -f ocaml/assembly_checker.cmi ocaml/assembly_checker.cmx ocaml/assembly_checker.o assembly_checker
+	cd ocaml && $(OCAMLOPT) assembly_checker.ml -o ../assembly_checker
+	./assembly_checker
+	@echo "check-assembly-parity: OCaml assembler mirror compiled from a clean state; all nine parity cases matched their independently verified expected outcome."
+
 clean:
 	rm -rf __pycache__ tests/__pycache__ .pytest_cache
-	rm -f refinement_checker_ocaml
+	rm -f refinement_checker_ocaml assembly_checker
 	rm -f ocaml/*.cmi ocaml/*.cmx ocaml/*.o
 	rm -f rocq/*.vo rocq/*.vok rocq/*.vos rocq/*.glob rocq/.*.aux

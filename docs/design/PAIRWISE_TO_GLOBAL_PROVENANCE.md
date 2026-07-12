@@ -1,10 +1,12 @@
 # The Pairwise-to-Global Provenance Bridge
 
-**Status: design document, no Rocq proof and no production code.**
-Phase 1 architecture decisions recorded 2026-07-12 (§9) after the
-finding in §1 changed the shape of the bridge; implementation has not
-begun. This document exists to answer one question before anything is
-implemented:
+**Status (2026-07-12): Phase 1 (this specification) and Phase 2 (the
+Python assembler, `veribound-fce` commit `f3d4b12`) are both complete.
+Phase 2.5 (`rocq/PairwiseToGlobalAssembly.v` + `ocaml/assembly_checker
+.ml`, this repository) is also complete — see §7 and §8.** Phase 3 (a
+real Rocq `VerifiedContributionCertificate`) and every later phase
+remain unstarted. This document exists to answer one question, asked
+before any of that implementation began:
 
 > What exact information must each verified pairwise interface
 > contribute so that a global discrepancy object can be constructed
@@ -568,12 +570,23 @@ evidence assignment.
 orientation transforms the residue as invariant 4 requires and
 preserves the global obstruction classification.
 
-**Target file, later phase (not this one — see §8):**
-`rocq/PairwiseToGlobalAssembly.v`, importing
-`rocq/PairwiseDiagnosticCertificate.v` and
-`rocq/GlobalCoherenceCertificate.v` directly, adding whatever
-`VerifiedContributionCertificate` Rocq type a later phase settles on,
-rather than duplicating either existing file's content.
+**Done (2026-07-12, Phase 2.5, §8): `rocq/PairwiseToGlobalAssembly.v`**,
+importing `rocq/PairwiseDiagnosticCertificate.v` directly (not
+`rocq/GlobalCoherenceCertificate.v` -- none of these three theorem
+groups need R16, since none of them touch the global residue's own
+repairability/obstruction question). Proves representation/provenance
+soundness (7a) and registered co-reference consistency (7b) exactly as
+specified above, against a deliberately OPAQUE contribution witness
+(§9's reordering note) -- not yet against a real
+`VerifiedContributionCertificate`, which remains Phase 3, unstarted.
+The reorientation theorem above is **not** proved by this file --
+`RequiredInterface` in this phase carries no orientation field at all
+(Phase 2's own simplification, carried through here unchanged); it
+remains for whichever later phase actually models orientation.
+`ocaml/assembly_checker.ml` independently mirrors the same
+specification by hand (not Rocq extraction) and is checked against
+nine cases, each independently verified against a real run of the
+Python assembler before being hardcoded.
 
 ## 8. Recommended Phase 2 boundary and roadmap beyond this document
 
@@ -617,24 +630,43 @@ into zero. It only joins independently warranted facts without losing
 their origin.
 
 Later phases, listed for context only — not queued, not authorized by
-this document:
+this document at the time it was first drafted. The order below is
+already superseded once — see the status markers, and the note at the
+end of this section for why:
 
 ```text
-Phase 2   pure Python assembler, fixture contribution evidence,
-          four-cycle integration cases (obstructed / repairable /
-          missing evidence / endpoint mismatch / duplicate interface /
-          orientation reversal / tampered provenance)
-Phase 3   VerifiedContributionCertificate as a real Rocq type +
-          its own soundness theorem (decision 1, §9) -- only once
-          Phase 2's integration semantics are demonstrated in Python
-Phase 4   rocq/PairwiseToGlobalAssembly.v: representation/provenance
-          soundness (7a) and co-reference consistency (7b), now against
-          the real contribution certificate rather than a fixture
+Phase 2   DONE (veribound-fce commit f3d4b12) -- pure Python assembler,
+          fixture contribution evidence, four-cycle integration cases
+Phase 2.5 DONE (this repository, rocq/PairwiseToGlobalAssembly.v +
+          ocaml/assembly_checker.ml) -- representation/provenance
+          soundness (7a), registered co-reference consistency (7b),
+          and outcome separation/refusal precedence, all against an
+          OPAQUE contribution witness -- not the real Rocq contribution
+          certificate Phase 3 below describes. Independently mirrored
+          in OCaml (hand-written, not extraction), checked against nine
+          cases each verified against a real Python run.
+Phase 3   VerifiedContributionCertificate as a real Rocq type + its own
+          soundness theorem (decision 1, §9) -- still not started
+Phase 4   re-prove 7a/7b against the real contribution certificate
+          instead of an opaque witness, once Phase 3 exists
 Phase 5   certificate envelope extension + verifier
 Phase 6   unit / exhaustive / end-to-end regression tests beyond
           Phase 2's own integration cases
 Phase 7   evaluator-kit demonstration, only after both upstream releases
 ```
+
+**Reordering note, matching this project's own recurring pattern**:
+this document originally sequenced Phase 3 (real contribution
+certificate) before Phase 4 (assembly-level Rocq soundness). The
+actual authorizing instruction for this round explicitly reversed that
+again -- prove assembly soundness now, against a deliberately opaque
+contribution witness, and defer the real certificate rather than block
+on it. The governing question that motivated this: "what can be proved
+about global assembly solely from the structure and provenance of the
+supplied evidence, without assuming the certified contribution values
+are semantically correct?" -- a question Phase 3-then-4's original
+order could not have asked as cleanly, since it would have entangled
+assembly soundness with contribution soundness from the start.
 
 ## 9. Decisions recorded (2026-07-12)
 

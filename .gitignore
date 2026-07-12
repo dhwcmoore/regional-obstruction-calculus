@@ -20,4 +20,5 @@ __pycache__/
 *.cmx
 *.o
 refinement_checker_ocaml
+assembly_checker
 Nontrivial
