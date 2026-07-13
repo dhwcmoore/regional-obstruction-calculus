@@ -900,12 +900,15 @@ equivalence. `CommonSubdivisionVerdictInvariance.v` is that assembly —
 `docs/design/PRESENTATION_INVARIANCE_SPEC.md` names the gap and scopes
 this exact theorem before any of its code was written.
 
-**No new mathematics is claimed.** Both ingredients being combined —
-(N0) and (E0) — were already proved, independently, in the two files
-above. What R17 adds is one previously-unnamed but already-proved
-consequence of (N0) (its forward direction, stated in prose in
-`CochainNaturalityDescent.v`'s own header, named here as
-`naturality_descent_exact`) and the assembly itself.
+**No new primitive hypotheses or local preservation mechanisms are
+introduced.** Both ingredients being combined — (N0) and (E0) — were
+already proved, independently, in the two files above; the contribution
+is the first formal assembly of those existing preservation and
+reflection results into a single verdict-invariance theorem, not a new
+proof technique. What R17 adds beyond the assembly itself is one
+previously-unnamed but already-proved consequence of (N0) (its forward
+direction, stated in prose in `CochainNaturalityDescent.v`'s own
+header, named here as `naturality_descent_exact`).
 
 **The theorem**, for refinement legs `rho1: N12 -> N1`, `rho2: N12 ->
 N2` that are both descent-safe (N0) and reflecting (E0) — exactly

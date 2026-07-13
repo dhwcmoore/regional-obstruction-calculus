@@ -11,9 +11,12 @@
    repository that deserves to be called presentation invariance, even
    though its proof is short.
 
-   No new mathematics is claimed. Both halves being combined were
-   already proved, independently, before this file existed. What is new
-   is the assembly, and the paper's own remark on the two halves
+   No new primitive hypotheses or local preservation mechanisms are
+   introduced. Both halves being combined were already proved,
+   independently, before this file existed; the contribution here is
+   the first formal assembly of those existing preservation and
+   reflection results into a single verdict-invariance theorem, not a
+   new proof technique. The paper's own remark on the two halves
    (`paper/associator_fields_ACS_revised.tex`, "Result ladder, and what
    remains open") states explicitly that this assembly had not been
    done: "this paper does not, however, assemble that into a single
