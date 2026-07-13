@@ -16,7 +16,8 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   CommonSubdivisionAgreement ExactnessReflection \
   CommonSubdivisionVerdictInvariance \
   FirstOrderClassifierCertificate RefinementWitnessComposition \
-  RefinementWitnessVerdictComposition RefinementWitnessSequentialComposition \
+  RefinementWitnessVerdictComposition QuotientDescentReflection \
+  RefinementWitnessSequentialComposition \
   RefinementWitnessParallelComposition CoupledParallelCompatibility \
   ConflictResolutionTrilemma ConflictResolutionLowerBound \
   ConflictDiagnosticCompleteness TypedDiagnosticCalculus \

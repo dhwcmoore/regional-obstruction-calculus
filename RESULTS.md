@@ -961,3 +961,84 @@ comparison line, stated abstractly over opaque `Type`s and not itself
 instantiated against concrete four-cycle matrices in Rocq — that
 cross-check remains the Python side's job (`refinement_checker.py`'s
 `verdict_safe` field).
+
+## R18-R19. Quotient descent and reflection: what (N0) and (E0) mean algebraically
+
+R17 answers a verdict-level question — do two presentations agree on
+*whether* an obstruction is present. `rocq/QuotientDescentReflection.v`
+answers a different, algebraic question `docs/design/
+QUOTIENT_DESCENT_AND_REFLECTION_SPEC.md` poses precisely: what do (N0)
+and (E0) mean as properties of the induced map on the coboundary
+quotient `C1/im(delta0)`? The two are not a strengthening ladder — R17
+holds for `rho1star` an *arbitrary function*; R18-R19 need it *linear*,
+a strictly narrower class of refinement maps, to even state a quotient
+map that respects the equivalence relation. Neither subsumes the other.
+
+**Architecture, kept visible in the proof rather than folded into one
+theorem**: a refinement map's obligations split into two independent
+logical functions on coboundary equivalence (`r ~ s` iff `r - s in
+im(delta0)`) — (N0) is **preservation** of `~` (forward: equivalent
+residues transfer to equivalent residues); (E0) is **reflection** of
+`~` (backward: equivalent transferred residues came from equivalent
+originals). Together they give **faithful** quotient descent. This is
+the same preservation/reflection split R17 already made at the verdict
+level, now made at the quotient level.
+
+`CoboundaryQuotientLaws S`, a small extension record (`vadd`
+commutativity, an additive-inverse law, scalar identity) — deliberately
+*not* added to `RefinementWitnessVerdictComposition.v`'s own `VSpace`
+record, which was built as exactly the minimum its own span-transport
+proofs needed and would be silently over-strengthened for every
+existing caller by adding fields it does not use. Confirmed missing,
+not assumed missing: a scratch prototype tried to prove `vsub a a =
+vzero` directly from `VSpace` alone and failed before these three laws
+were added. Deliberately not named `FullVSpace` — even with these three
+laws it still falls short of a complete rational-vector-space
+axiomatisation, only the additional structure this specific argument
+needs.
+
+**Hypothesis minimality, checked per theorem, not assumed** (the same
+scratch-prototype-before-tracked-code discipline `CommonSubdivisionVerdictInvariance.v`
+already established):
+
+- `CobEquiv_equivalence_source`/`_target`: `CoboundaryQuotientLaws` on
+  the one relevant cochain space, plus that side's coboundary map
+  linear. Nothing about the other side.
+- `quotient_descent` (preservation): **only** (N0) and `rho1star`
+  linear — sharper than expected while writing the design document:
+  no `CoboundaryQuotientLaws` on either side, no `delta0`/`delta0'`
+  linearity, no `rho0star` linearity. The transferred-equivalence
+  witness is exhibited directly (`rho0star b`); no subtraction is ever
+  performed on the target side.
+- `E0_iff_reflects_CobEquiv` (reflection): `rho1star` linear plus
+  `CoboundaryQuotientLaws` on **both** sides (the reverse direction
+  needs each side's own zero-identity simplification) — and, exactly
+  as designed, **no (N0) anywhere** in this theorem's hypotheses or
+  proof.
+- `N0_E0_give_faithful_quotient_descent`: everything above combined —
+  packages `PreservesCobEquiv /\ ReflectsCobEquiv` as a plain
+  conjunction of two `Prop`s, not a committed induced-quotient-map
+  type or setoid construction, the lighter of the two formulations the
+  design document named as sufficient without extra machinery.
+
+No axioms, no typeclasses (`Coq.Classes.RelationClasses.Equivalence`
+would be the "expected" way to state "this is an equivalence relation,"
+but no other file in this refinement-comparison line uses typeclasses,
+and reaching for one here for the first time only for stylistic
+uniformity would be exactly the kind of unnecessary generality
+`PRESENTATION_INVARIANCE_SPEC.md` section 0 warns against). No quotient
+type, setoid, adjunction, or general morphism scaffold. `coqchk`-clean,
+no `Admitted`/`Axiom`/`sorry`, full 24-file dependency closure.
+
+**What this does not claim**: that the cycle-surjectivity
+characterisation of (E0) in `ExactnessReflection.v`
+(`Z1(coarse) subseteq rho_*(Z1(refined))`) has been shown equivalent to
+`ReflectsCobEquiv` above — that needs an annihilator/duality argument
+not used anywhere in this file, and remains deferred, exactly as
+`QUOTIENT_DESCENT_AND_REFLECTION_SPEC.md` section 4 scoped it. That
+class-level invariance (`Q1 iso Q2`, an isomorphism between the two
+presentations' obstruction quotients) has been established — two
+injective maps into a common codomain do not by themselves give an
+isomorphism; that would need matching images or surjectivity, neither
+proved here. That any of this is wired into the four-cycle concretely,
+`refinement_checker.py`, or `veribound-fce`.
