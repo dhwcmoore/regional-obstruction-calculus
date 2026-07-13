@@ -888,3 +888,73 @@ cover still owes their own proof of `coboundaries_pair_zero`, the same
 shape of per-domain obligation R15 left to `CoupledParallelCompatibility
 .v`'s own `Key`/`Value` instantiation. No decidability claim; no policy
 obstruction, certificate JSON, or `veribound-fce` change.
+
+## R17. Common-subdivision verdict invariance: the first presentation-invariance theorem
+
+`CommonSubdivisionAgreement.v` (obstruction-present) and
+`ExactnessReflection.v` (obstruction-absent) each independently compare
+two coarse presentations `N1`, `N2` through a shared common subdivision
+`N12`, but neither states, and the paper's own remark on them states
+explicitly neither had been assembled into, a single combined
+equivalence. `CommonSubdivisionVerdictInvariance.v` is that assembly —
+`docs/design/PRESENTATION_INVARIANCE_SPEC.md` names the gap and scopes
+this exact theorem before any of its code was written.
+
+**No new mathematics is claimed.** Both ingredients being combined —
+(N0) and (E0) — were already proved, independently, in the two files
+above. What R17 adds is one previously-unnamed but already-proved
+consequence of (N0) (its forward direction, stated in prose in
+`CochainNaturalityDescent.v`'s own header, named here as
+`naturality_descent_exact`) and the assembly itself.
+
+**The theorem**, for refinement legs `rho1: N12 -> N1`, `rho2: N12 ->
+N2` that are both descent-safe (N0) and reflecting (E0) — exactly
+`refinement_checker.py`'s `verdict_safe`, true for the three
+subdivision witnesses and false for `insert_bridge`:
+
+```text
+common_subdivision_verdict_invariance :
+    rho1_1star r1 = rho2_1star r2  ->
+    (exists b1, r1 = delta1 b1) <-> (exists b2, r2 = delta2 b2)
+
+common_subdivision_verdict_invariance_obstructed :
+    rho1_1star r1 = rho2_1star r2  ->
+    ~ (exists b1, r1 = delta1 b1) <-> ~ (exists b2, r2 = delta2 b2)
+```
+
+The second is a pure, fully constructive contraposition of the first —
+no classical axiom, no excluded middle.
+
+**A deliberate scoping decision, stated precisely because a less
+careful assembly could have gotten it wrong**: the proof invokes
+`common_subdivision_exactness_agreement` for *both* directions, and
+does not invoke `common_subdivision_certificate_agreement` at all.
+Reusing the certificate-agreement theorem as an unconditional
+"non-exact implies non-exact" step would require an extra fact this
+repository does not prove anywhere — that non-exactness always comes
+with an explicit witnessing cycle (a finite-dimensional duality
+statement, plausible but unproved, structurally the same kind of gap
+`PRESENTATION_INVARIANCE_SPEC.md` section 4.4 already declined to
+assume for E0 versus quotient injectivity). `common_subdivision_
+certificate_agreement` remains fully available under its own name — it
+is, in fact, the theorem that actually fires for the paper's own
+displayed residue `r=(1,1,1,-2)`, which is obstructed rather than
+exact, via an independent, N0-only argument requiring no E0 at all. The
+two routes are not merged into one proof term because no proved fact
+connects them beyond what each already establishes on its own.
+
+**Scope, restated once more**: verdict-level invariance
+(`[r_P]=0 <-> [r_Q]=0`) for the descent-safe, reflecting fragment only
+— not full presentation invariance (nothing here reaches topology-
+changing refinements such as `insert_bridge`, which fails (N0)), and
+not class-level invariance (a correspondence between `[r_P]` and
+`[r_Q]` themselves, rather than agreement on whether either vanishes —
+`PRESENTATION_INVARIANCE_SPEC.md`'s proposed R20).
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 23-file dependency
+closure. No axioms, typeclasses, quotient constructions, adjunctions,
+or new morphism scaffold. As with every file in this refinement-
+comparison line, stated abstractly over opaque `Type`s and not itself
+instantiated against concrete four-cycle matrices in Rocq — that
+cross-check remains the Python side's job (`refinement_checker.py`'s
+`verdict_safe` field).

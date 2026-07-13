@@ -107,7 +107,8 @@ Verified toolchain: Python 3.12, Coq/Rocq 8.18.0 (`coqc`, `coqchk`), OCaml 4.14.
 | Realisability diagnostics (negative) | `realisability_diagnostic.py`, `coupled_realisability_diagnostic.py`, `lattice_ie_diagnostic.py`, `candidate_discipline_diagnostic.py` | executable, tested, negative/cover-inert results |
 | Boolean proper-crossing witness | `boolean_crossing_diagnostic.py` | executable, tested, non-linear diagnostic witness |
 | Repeated triple support | `repeated_triple_support_diagnostic.py`, `rocq/RepeatedTripleSupportCandidate3b.v` | executable + machine-checked, positive diagnostic witness |
-| Full presentation invariance | none | not claimed |
+| Common-subdivision verdict invariance (R17) | `rocq/CommonSubdivisionVerdictInvariance.v` | machine-checked, `coqchk`-clean -- descent-safe/reflecting fragment only, see `docs/design/PRESENTATION_INVARIANCE_SPEC.md` |
+| Full presentation invariance (arbitrary admissible refinements, topology-changing refinements) | none | not claimed |
 | Full end-to-end verified implementation | none | not claimed |
 
 ## What is proved, what is computed, what is diagnostic

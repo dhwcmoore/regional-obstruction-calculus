@@ -14,6 +14,7 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   FourCycleObstruction RepeatedTripleSupportCandidate3b \
   CandidateThreeBDistinctSupportClassification CochainNaturalityDescent \
   CommonSubdivisionAgreement ExactnessReflection \
+  CommonSubdivisionVerdictInvariance \
   FirstOrderClassifierCertificate RefinementWitnessComposition \
   RefinementWitnessVerdictComposition RefinementWitnessSequentialComposition \
   RefinementWitnessParallelComposition CoupledParallelCompatibility \

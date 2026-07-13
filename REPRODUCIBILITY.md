@@ -99,7 +99,7 @@ one a real check rather than a formality:
 ```sh
 make check-rocq-inventory   # rocq/*.v matches the Makefile's declared build chain exactly, in both directions
 make check-rocq-scan        # fast preliminary text scan for Admitted/Axiom/Parameter outside comments -- not a substitute for the next two
-make check-rocq             # compiles all 20 .v files from a clean state, in dependency order (runs the inventory and scan checks first)
+make check-rocq             # compiles all 23 .v files from a clean state, in dependency order (runs the inventory and scan checks first)
 make check-rocq-trust       # runs coqchk over the complete declared module list (runs check-rocq first)
 ```
 
@@ -117,6 +117,7 @@ coqc CandidateThreeBDistinctSupportClassification.v
 coqc CochainNaturalityDescent.v
 coqc CommonSubdivisionAgreement.v
 coqc ExactnessReflection.v
+coqc CommonSubdivisionVerdictInvariance.v
 coqc FirstOrderClassifierCertificate.v
 coqc RefinementWitnessComposition.v
 coqc RefinementWitnessVerdictComposition.v
@@ -129,9 +130,11 @@ coqc ConflictDiagnosticCompleteness.v
 coqc TypedDiagnosticCalculus.v
 coqc PairwiseDiagnosticCertificate.v
 coqc GlobalCoherenceCertificate.v
+coqc PairwiseToGlobalAssembly.v
+coqc AssociatorContributionCertificate.v
 ```
 
-All 20 `.v` files contain no `Admitted`, `Axiom`, or `sorry` outside a
+All 23 `.v` files contain no `Admitted`, `Axiom`, or `sorry` outside a
 comment -- `make check-rocq-scan` checks this itself (comments stripped
 first, so a doc comment that merely *mentions* the word `Axiom` is not
 a false positive); grep them yourself to check independently, nothing
@@ -139,18 +142,20 @@ here depends on taking this file's word for it.
 
 `make check-rocq-trust` then runs `coqchk`, Rocq's own independent,
 from-scratch proof checker (a separate program from `coqc`), over the
-complete 20-module dependency closure:
+complete 23-module dependency closure:
 
 ```sh
 cd rocq && coqchk -Q . "" \
   AdmissibleRefinementPersistence AssociatorResidueRepair FourCycleObstruction \
   RepeatedTripleSupportCandidate3b CandidateThreeBDistinctSupportClassification \
   CochainNaturalityDescent CommonSubdivisionAgreement ExactnessReflection \
+  CommonSubdivisionVerdictInvariance \
   FirstOrderClassifierCertificate RefinementWitnessComposition \
   RefinementWitnessVerdictComposition RefinementWitnessSequentialComposition \
   RefinementWitnessParallelComposition CoupledParallelCompatibility \
   ConflictResolutionTrilemma ConflictResolutionLowerBound ConflictDiagnosticCompleteness \
-  TypedDiagnosticCalculus PairwiseDiagnosticCertificate GlobalCoherenceCertificate
+  TypedDiagnosticCalculus PairwiseDiagnosticCertificate GlobalCoherenceCertificate \
+  PairwiseToGlobalAssembly AssociatorContributionCertificate
 ```
 
 Expected: `Modules were successfully checked`, with no `Axioms:` section
