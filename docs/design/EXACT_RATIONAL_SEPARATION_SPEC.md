@@ -12,12 +12,33 @@ and does it match the coordinate and orientation conventions
 question is answered precisely below, by tracing the actual code, not
 by picking a convention and hoping it matches.
 
-The governing question, unchanged from how it was posed:
+The governing question, unchanged from how it was first posed:
 
 > What is the smallest exact rational matrix representation in Rocq
 > that can prove `r notin im(D) iff exists y, y*D = 0 and y(r) = 1`,
 > while matching the coordinate and orientation conventions already
 > used by `rational_linear_algebra.py`?
+
+**Refinement record**: §3's first version framed the remaining scope
+question too coarsely, as "mirror all of `nullspace_over_Q`" versus
+"prove existence non-executably." A sharper middle route exists —
+extend `solve_over_Q`'s own elimination on an augmented `[D | r | I_m]`
+matrix, so an inconsistent row's identity-block entries directly give
+the separating certificate, with no need for a full nullspace *basis*
+at all. §3 is rewritten around this route (now called Route C2) and
+verified directly: implemented against the real `rational_linear_
+algebra.py` functions and run on `FourCycleObstruction.v`'s own
+concrete data, it extracts `y = (-1,-1,-1,1)`, `c = -5` — this
+repository's own already-declared canonical cycle `z` and its own
+recorded pairing, exactly, not merely some other valid witness. The
+refined, narrower governing question this document now answers:
+
+> Can the repository's exact Gauss-Jordan solver be refined into a
+> proof-producing alternative procedure which, for every rational
+> system `D b = r`, returns either a checked repair witness `b` or a
+> checked normalised separator `y` satisfying `transpose(D) @ y = 0`
+> and `dot(y, r) == 1`, without first formalising a complete nullspace
+> basis algorithm? Yes — see §3.
 
 ## 0. The orientation convention, resolved by tracing the real code
 
@@ -106,49 +127,117 @@ adopted, for the same reason: `Q`'s Leibniz equality is too strict for
 this repository's own representation of rationals, confirmed concretely
 in that document's own `QSpace` non-constructibility finding.
 
-## 3. What proving this theorem actually requires — the real scope question
+## 3. What proving this theorem actually requires — refined and narrowed
 
-This is not a small lemma. `nullspace_over_Q` and `solve_over_Q` in
-`rational_linear_algebra.py` are a real, general Gauss-Jordan
-elimination implementation — pivot selection, row reduction, free-
-column basis extraction — for arbitrary `m x n` matrices. Matching that
-generality in Rocq means one of two real, differently-sized
-undertakings, and this document does not choose between them:
+The first version of this section framed the choice as "mirror all of
+`nullspace_over_Q`" versus "prove existence abstractly, non-
+executably." That framing was too coarse. Certificate completeness
+(D4) needs exactly one separating witness per non-repairable residue —
+it does not need a full nullspace *basis*, and building one (pivot
+selection across every column, free-column basis extraction for the
+*entire* nullspace) is surplus machinery for this specific theorem,
+even though `nullspace_over_Q` happens to compute one as part of how
+`refinement_checker.py`'s E0 check works.
 
-- **Mirror the algorithm.** Write a Rocq `mat_vec`/`transpose`/Gauss-
-  Jordan elimination function structurally following the Python
-  implementation (a `fixpoint` over rows/columns, exactly as
-  `nullspace_over_Q`'s own `for col in range(n)` loop does), then prove
-  its output satisfies `separation_for_finite_rational_image`'s
-  conclusion. This is executable, decidable, and would give a genuine
-  third independent implementation of the same algorithm this
-  repository already has in Python and (for a narrower purpose)
-  OCaml — a real, substantial, but *bounded and precedented* piece of
-  work, matching this repository's own established "independently
-  written, not extracted" discipline (`ocaml/refinement_checker.ml`'s
-  own header) applied to a third language for the first time.
-- **Prove existence abstractly, by induction on dimension, without
-  building an executable elimination function.** A pure existence proof
-  (rank-nullity-style induction: either `r` is already expressible or
-  adding one more constraint strictly reduces a free-dimension count)
-  can establish `separation_for_finite_rational_image` without ever
-  producing a decision procedure — smaller in one sense (no executable
-  algorithm to verify terminates and is correct step by step), but
-  loses the direct, checkable correspondence to `nullspace_over_Q`'s own
-  actual computation that mirroring the algorithm would give, and
-  arguably answers a different, weaker question than "does this
-  repository's actual Python computation correspond to a Rocq proof."
+**The narrower, certificate-producing route**: `solve_over_Q` already
+performs Gauss-Jordan elimination on the augmented matrix `[D | r]` and
+detects inconsistency exactly when a row reduces to `[0 ... 0 | c]`
+with `c <> 0`. Augmenting further, to `[D | r | I_m]`, and applying the
+*same* row operations `solve_over_Q` already performs, means that when
+an inconsistent row appears it has the form `[0 ... 0 | c | y]` — and
+because every row of the reduced matrix is some linear combination of
+the *original* rows (row operations are exactly: swap, scale, subtract
+a multiple of another row), the `I_m`-block entries `y` of that specific
+row record *which* linear combination produced it. That gives directly:
+`y^T D = 0` (the combination annihilates every column of `D`, since the
+`D`-block of that row is all zero) and `y^T r = c` (the same combination
+applied to `r` gives the recorded inconsistency `c`). Rescaling by
+`c^{-1}` gives the normalised certificate `dot(y, r) == 1` for free (§1).
 
-**This document's own recommendation, stated but not decided**:
-mirroring the algorithm (the first option) is more consistent with why
-Route C was chosen over Route A alone — the whole point was to close
-the gap between the abstract layer and `rational_linear_algebra.py`'s
-real computation (`CYCLE_QUOTIENT_DUALITY_SPEC.md` §0), and an existence-
-only proof would leave that gap exactly as open as it is today, just
-one abstraction layer further down. But mirroring the algorithm is
-real, scoped work, not a one-file afternoon, and should be its own
-explicitly authorized phase, not started as a side effect of this
-document.
+**Checked, not merely reasoned about**: implemented this exact
+augmented-elimination procedure directly against
+`rational_linear_algebra.py`'s real `mat_vec`/`transpose`/`dot`, run
+against three cases — a synthetic inconsistent `3x2` system, a
+consistent `2x2` system (confirming the primal branch still works
+unchanged), and, most tellingly, `FourCycleObstruction.v`'s own
+concrete `delta0`/`r = (1,1,1,-2)` matrix (translated to the `RatMatrix`
+representation for this check only — see §4's own note that this
+translation is not free in Rocq). On the real four-cycle data, the
+extracted, un-normalised certificate is `y = (-1,-1,-1,1)` with `c =
+-5` — **exactly** the paper's own hand-declared cycle `z = (-1,-1,-1,1)`
+and its own recorded pairing `-5`, not merely *some* valid separating
+functional. The augmented-elimination procedure, run on the repository's
+own central example, reproduces the repository's own canonical witness
+exactly. That is strong, concrete evidence this is the right mechanism,
+not just an elegant one on paper.
+
+**The fork, restated more precisely than "mirror everything" versus
+"prove nothing executable"**:
+
+- **Route C1 — full nullspace verification.** Verify
+  `nullspace_over_Q`'s complete algorithm: pivot selection, full row
+  reduction, free-column basis extraction, and a proof the result
+  spans the entire nullspace. Connects directly to the existing E0
+  implementation, which genuinely needs a full cycle-space *basis* (to
+  check span-coverage, not just non-emptiness) — valuable, but strictly
+  more than certificate completeness by itself requires.
+- **Route C2 — certificate-producing elimination.** Verify only the
+  augmented procedure above: `solve_over_Q` extended to return either a
+  repair witness `b` or a normalised separating certificate `y`, never
+  a full basis. Closes the immediate gap D4 needs with substantially
+  less infrastructure than C1, while still being a real, executable,
+  third independent implementation of the same elimination mechanism
+  this repository already has in Python (and, for a narrower purpose,
+  OCaml).
+- **Route C3 — pure existence.** Prove the alternative theorem (§3.1)
+  by induction on dimension, with no executable decision procedure.
+  Proves the mathematics; does not verify the computational mechanism,
+  and leaves the gap between the abstract layer and the real Python
+  computation exactly as open as before, one layer further down.
+
+**Recommendation: Route C2.** It is exact, constructive, executable,
+directly certificate-producing, derived from the same elimination
+mechanism `solve_over_Q` already uses (not a parallel, independently-
+motivated algorithm), narrower than a full verified nullspace library,
+and — per the check above — already confirmed to reproduce this
+repository's own canonical witness on its own central example. Route C1
+remains valuable, but as a separate, later undertaking if the actual
+goal becomes verifying E0's cycle-*coverage* computation (which
+genuinely needs a basis) rather than certificate completeness alone.
+
+### 3.1 The theorem C2 actually produces
+
+The right theorem is not `separation_for_finite_rational_image` stated
+as a bare implication from non-repairability. It is a constructive
+alternative — repair witness or separating certificate, exactly one,
+never neither:
+
+```coq
+Theorem rational_repair_or_separator :
+  forall (m n : nat) (D : RatMatrix m n) (r : RatVec m),
+    (exists b : RatVec n, VecEq (mat_vec D b) r)
+    \/
+    (exists y : RatVec m,
+       VecEq (mat_vec (transpose D) y) (zero_vec n) /\ dot y r == 1).
+
+Corollary separation_for_finite_rational_image :
+  forall (m n : nat) (D : RatMatrix m n) (r : RatVec m),
+    ~ (exists b : RatVec n, VecEq (mat_vec D b) r) ->
+    exists y : RatVec m,
+      VecEq (mat_vec (transpose D) y) (zero_vec n) /\ dot y r == 1.
+```
+
+The two branches are disjoint — if both a repair witness `b` and a
+certificate `y` existed simultaneously, `1 = dot(y, r) = dot(y, mat_vec
+D b) = dot(mat_vec (transpose D) y, b) = dot(zero_vec, b) = 0`, a
+contradiction — so this is a genuine constructive exact alternative
+(a Farkas'-lemma-shaped statement for this specific finite rational
+setting), not merely an existence theorem with a separately-noted
+non-overlap fact. `SeparatesOutside`'s own discharge (§2) is the
+corollary; the alternative theorem is the stronger, more directly
+useful object, and matches what the augmented elimination procedure
+actually computes — the code produces one or the other, never merely
+"exists," so the theorem it earns should say the same thing.
 
 ## 4. The smallest first step, if a first step is wanted before the general theorem
 
@@ -190,12 +279,15 @@ own `vec4` representation ends up as the one future files actually
 build on.
 
 Whichever representation is used, the target is the same normalised
-fact: exhibiting a witness `y` (computable once, by hand or by running
-`nullspace_over_Q`/`solve_over_Q` on this file's own matrix and reading
-off the answer) with `z`'s own annihilation property and `dot(y, r) ==
-1` (or, in `vec4` terms, `pairing y r == 1` after rescaling `z`, since
-`pairing z r == -5` already, and `z` already satisfies `cycle z` — see
-`FourCycleObstruction.v`'s own `four_cycle_not_repairable`). This would
+fact, and §3's own check already computed the actual witness rather
+than leaving it as "computable in principle": running the augmented-
+elimination procedure on this file's own `delta0`/`r` (translated to
+`RatMatrix` for that check only) extracts `y = (-1,-1,-1,1)`,
+`c = -5` — this file's own `z` and its own recorded pairing, exactly,
+not merely some other valid separator. In `vec4` terms the normalised
+certificate is `pairing y_hat r == 1` for `y_hat := vscale (-1/5) z`,
+using `z`'s own already-proved `cycle z` and `pairing z r == -5` facts
+(`FourCycleObstruction.v`'s own `four_cycle_not_repairable`). This would
 not discharge `SeparatesOutside` for the abstract `VSpace`-level
 interface (it says nothing about the general finite case, only one
 matrix), but it would give D4's forward direction a first genuinely
@@ -207,24 +299,34 @@ existed.
 
 ## 5. What this document does not claim
 
-- That `separation_for_finite_rational_image` (§2) or
-  `separation_for_the_four_cycle` (§4) has been proved, or even fully
-  stated in a compiling Rocq file. Both are stated here as targets, not
-  results.
-- That mirroring `nullspace_over_Q`'s algorithm in Rocq (§3) has been
-  attempted, scoped in detail, or estimated for size beyond "real,
-  substantial, bounded."
-- That the choice between mirroring the algorithm and an abstract
-  existence proof (§3) has been made. Both remain open; this document
-  states their trade-off, not a decision.
+- That `rational_repair_or_separator` or `separation_for_finite_
+  rational_image` (§3.1) has been proved, or even fully stated in a
+  compiling Rocq file. Both are stated here as the recommended target,
+  not a result. The augmented-elimination *procedure* they would
+  formalise was checked directly (§3), in Python against the real
+  `rational_linear_algebra.py` functions — the Rocq proof that this
+  procedure is correct, for arbitrary `m x n` inputs, does not yet
+  exist.
+- That Route C1 (full nullspace verification) has been ruled out
+  permanently — §3 recommends C2 first and defers C1, not never; C1
+  remains the right route if the actual future goal is verifying E0's
+  cycle-*coverage* computation specifically, which genuinely needs a
+  basis rather than one certificate.
+- That the four-cycle's extracted certificate matching `z` exactly (§3,
+  §4) generalises to every input — it is one striking, concrete
+  confirmation on the repository's own central example, not a proof
+  that the augmented-elimination procedure is correct in general.
 - That the smallest first step (§4, the concrete four-cycle instance)
   is a substitute for the general theorem `SeparatesOutside` actually
   needs at the `VSpace` level — it would be a first checked instance,
-  not a discharge of the abstract interface.
+  not a discharge of the abstract interface, and still needs the §4
+  representational-mismatch decision (translate `vec4`, or reprove
+  directly in `vec4`'s own terms) resolved either way.
 - That `RatVec`/`RatMatrix`/`VecEq` (§2) have been added to any tracked
   file, or that `list Q` is the final representation to adopt rather
   than, for instance, a fixed-length vector type.
 - That this is the next authorized phase. Per every prior phase in this
   research line, starting any tracked implementation from this
-  document — including the smallest four-cycle-only instance in §4 —
-  needs its own explicit go-ahead.
+  document — including the smallest four-cycle-only instance in §4, or
+  the augmented-elimination check's own Python prototype becoming a
+  tracked file anywhere — needs its own explicit go-ahead.
