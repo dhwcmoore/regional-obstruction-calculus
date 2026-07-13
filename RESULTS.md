@@ -1091,3 +1091,80 @@ quotient_descent`, once per leg, plus the zero-identity simplification
 `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 25-file dependency
 closure. No axioms, typeclasses, quotient constructions, adjunctions,
 or new morphism scaffold.
+
+## R21. Exact rational repair-or-separator: a constructive Farkas-shaped alternative
+
+`rocq/ExactRationalRepairOrSeparator.v` decides, for any rational
+system `D b = r` (`D`: `m x n`, `r`: length `m`), a constructive
+exact alternative:
+
+```text
+(exists b, D b = r)
+\/
+(exists y, D^T y = 0  /\  dot y r == 1)
+```
+
+by running verified exact-rational Gauss-Jordan elimination on the
+augmented matrix `[D | r]` and extracting whichever witness the final
+state supports — a repair vector `b` if every row is consistent, or a
+separating functional `y` from the first inconsistent row otherwise.
+Both witnesses are *evidence*, not merely existence claims: the
+executable `compute_repair_or_separator` returns one or the other, and
+`compute_repair_or_separator_correct` proves the returned value has
+the claimed property, for the **original** `D`, `r` — not just the
+row-reduced matrix elimination actually operates on. That bridge back
+to the original system was the main technical obligation: the
+repair witness's correctness needs a solution-set equivalence
+(`SolvesAug`, "b satisfies every row") proved to be preserved by each
+of `swap_rows`/`scale_row`/`add_scaled_row` independently and threaded
+through the whole elimination trace by induction, since the
+transformation-matrix invariant used for the separator branch does not
+by itself relate the reduced matrix's solution set back to the
+original one.
+
+Disjointness of the two branches is proved as its own theorem
+(`repair_and_separator_disjoint`), not inferred from the algorithm
+returning only one constructor — the short direct computation
+`1 = y.r = y.(D b) = (D^T y).b = 0` is a genuine contradiction, using
+an adjoint identity (`dot_mat_vec_assoc`) proved by the same
+"expand-by-first-row" technique already used for the shaped
+associativity law beneath it.
+
+Verified against the repository's own R1 four-cycle obstruction
+witness (`examples/four_cycle.json`): the internal inconsistent-row
+extraction recovers the paper's own canonical cycle
+`z = (-1, -1, -1, 1)` with pairing `c = -5` before normalisation,
+exactly matching R1; the public certificate is the normalised
+`-1/5 z = (1/5, 1/5, 1/5, -1/5)`. Seven sandbox cases are checked by
+`vm_compute`: a repairable system, a synthetic inconsistent one, the
+four-cycle system, and four tamper-rejection cases (an altered repair
+vector, an altered separator entry, an annihilating-but-unnormalised
+separator, and a normalised-but-non-annihilating one) — all rejected
+by independent executable checkers (`check_repair`/`check_separator`)
+that do not reuse any elimination machinery.
+
+**What this establishes**: a general, verified, executable decision
+procedure for rational linear feasibility with checked evidence on
+both branches, not specific to the four-cycle example or to this
+repository's coboundary structure — `D` and `r` are arbitrary rational
+matrices/vectors satisfying only the stated shape hypotheses.
+`Print Assumptions` on `rational_repair_or_separator`,
+`repair_and_separator_disjoint`, and `compute_repair_or_separator_correct`
+each report "Closed under the global context": zero project-added
+axioms, and nothing beyond Rocq's own kernel and standard library.
+
+**What this does not establish**: no claim about efficiency (the
+algorithm is a direct, unoptimised Gauss-Jordan elimination, not
+pivoted for numerical stability since exact rationals need none, and
+not asymptotically tuned); no rank, determinant, or general matrix
+inverse is computed or exposed — the transformation matrix is tracked
+only as needed for the elimination invariant. The shape-safe public
+wrapper (`RatVec`/`RatMatrix` records, `decide_repair_or_separator`)
+excludes malformed input at the boundary but is not itself the source
+of any proof obligation discharged elsewhere.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`Parameter`/`sorry`, full 26-file
+dependency closure (self-contained: no `Require` of any other file in
+this repository). No axioms, typeclasses, quotient constructions, or
+new morphism scaffold beyond the setoid (`Forall2`-based `VecEq`/
+`MatEq`) equality infrastructure the file builds for itself.

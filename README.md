@@ -106,7 +106,7 @@ The same residue is independently generated from explicit associator-field data 
 
 ## Main results
 
-See [`RESULTS.md`](RESULTS.md) for the complete R1-R20 account and [`STATUS.md`](STATUS.md) for the distinction between proved, computed, diagnostic, and unclaimed results.
+See [`RESULTS.md`](RESULTS.md) for the complete R1-R21 account and [`STATUS.md`](STATUS.md) for the distinction between proved, computed, diagnostic, and unclaimed results.
 
 ### R1-R5: obstruction, repair, refinement, and certificates
 
@@ -193,6 +193,22 @@ R20 rederives R17's verdict-equivalence conclusion through R18-R19's quotient ma
 
 It does not prove an isomorphism between the full quotient spaces. It compares the distinguished residues carried by the existing common-subdivision theorem.
 
+### R21: exact rational repair-or-separator
+
+A different kind of result from R17-R20: not another presentation-invariance theorem, but a general, verified, executable decision procedure for rational linear feasibility. For any rational system `D b = r`, R21 decides constructively:
+
+```text
+(exists b, D b = r)
+\/
+(exists y, D^T y = 0  /\  dot y r == 1)
+```
+
+by running verified exact-rational Gauss-Jordan elimination and extracting whichever witness the final state supports. Both witnesses are checked evidence, proved against the original `D`, `r`, not just the row-reduced matrix elimination operates on -- the repair branch needed its own solution-set-equivalence argument, proved independently of the transformation-matrix invariant the separator branch uses. The two witnesses are proved mutually exclusive as a separate theorem, not inferred from the algorithm's own branching.
+
+R21 recovers R1's own four-cycle witness exactly: the internal elimination finds the paper's canonical cycle `z = (-1,-1,-1,1)` with pairing `-5` before normalisation, and the public certificate is the normalised `-1/5 z = (1/5,1/5,1/5,-1/5)`.
+
+It proves no general efficiency or numerical-stability property, and computes no rank, determinant, or general matrix inverse.
+
 ### Applied provenance bridges
 
 The unnumbered pairwise-to-global assembly and associator-contribution results connect the mathematical certificates to the applied `veribound-fce` architecture.
@@ -224,7 +240,7 @@ README.md
     project overview and scope
 
 RESULTS.md
-    complete R1-R20 result account
+    complete R1-R21 result account
 
 STATUS.md
     proved, computed, diagnostic, and unclaimed results
@@ -297,7 +313,7 @@ check-assembly-parity
 check-contribution-parity
 ```
 
-The active formal chain contains 25 Rocq modules. `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
+The active formal chain contains 26 Rocq modules. `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
 
 ### Pinned container
 
@@ -351,7 +367,7 @@ The later manuscript:
 
 packages the realisability classification and refinement-witness composition results.
 
-The repository has now grown beyond both manuscripts. R11-R20, the typed diagnostic and certificate bridges, the common-subdivision verdict theorem, and the quotient-preservation/reflection theory should be treated as repository results unless and until they are incorporated into a revised manuscript.
+The repository has now grown beyond both manuscripts. R11-R21, the typed diagnostic and certificate bridges, the common-subdivision verdict theorem, and the quotient-preservation/reflection theory should be treated as repository results unless and until they are incorporated into a revised manuscript.
 
 See [`paper/README.md`](paper/README.md) for the manuscript-level map.
 

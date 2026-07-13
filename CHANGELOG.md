@@ -14,6 +14,43 @@ current boundary.
 
 ## Unreleased
 
+### Exact rational repair-or-separator
+
+- Added R21, `rocq/ExactRationalRepairOrSeparator.v`: a general
+  constructive exact alternative for any rational system `D b = r`
+  (`D`: `m x n`, `r`: length `m`) --
+  `(exists b, D b = r) \/ (exists y, D^T y = 0 /\ dot y r == 1)` --
+  decided by verified exact-rational Gauss-Jordan elimination on the
+  augmented matrix `[D | r]`. The executable
+  `compute_repair_or_separator` returns one witness or the other, and
+  `compute_repair_or_separator_correct` proves the returned value
+  correct against the ORIGINAL `D`, `r`, not merely the row-reduced
+  matrix elimination operates on.
+- The repair branch's correctness needed a solution-set equivalence
+  (`SolvesAug`) proved preserved by each of `swap_rows`/`scale_row`/
+  `add_scaled_row` independently and threaded through the whole
+  elimination trace by induction -- the transformation-matrix
+  invariant the separator branch uses does not by itself relate the
+  reduced matrix's solution set back to the original system.
+- `repair_and_separator_disjoint` proves the two witnesses cannot
+  coexist as its own theorem (`1 = y.r = y.(D b) = (D^T y).b = 0`),
+  not by appeal to the algorithm returning only one constructor.
+- Verified against the repository's own R1 four-cycle witness
+  (`examples/four_cycle.json`): the internal inconsistent-row
+  extraction recovers the paper's canonical cycle `z=(-1,-1,-1,1)`
+  with pairing `c=-5` before normalisation, exactly matching R1; the
+  public certificate is the normalised `-1/5 z = (1/5,1/5,1/5,-1/5)`.
+  Checked against seven `vm_compute` sandbox cases (a repairable
+  system, a synthetic inconsistent one, the four-cycle system, and
+  four tamper-rejection cases), via independent executable checkers
+  (`check_repair`/`check_separator`) reusing no elimination machinery.
+- Self-contained: no `Require` of any other file in this repository.
+  `Print Assumptions` on `rational_repair_or_separator`,
+  `repair_and_separator_disjoint`, and
+  `compute_repair_or_separator_correct` each report "Closed under the
+  global context" -- zero project-added axioms.
+- The active formal chain now contains 26 Rocq modules.
+
 ### Presentation fidelity and quotient semantics
 
 - Added R17, `rocq/CommonSubdivisionVerdictInvariance.v`: the first
