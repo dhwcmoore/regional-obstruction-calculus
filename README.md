@@ -109,6 +109,7 @@ Verified toolchain: Python 3.12, Coq/Rocq 8.18.0 (`coqc`, `coqchk`), OCaml 4.14.
 | Repeated triple support | `repeated_triple_support_diagnostic.py`, `rocq/RepeatedTripleSupportCandidate3b.v` | executable + machine-checked, positive diagnostic witness |
 | Common-subdivision verdict invariance (R17) | `rocq/CommonSubdivisionVerdictInvariance.v` | machine-checked, `coqchk`-clean -- descent-safe/reflecting fragment only, see `docs/design/PRESENTATION_INVARIANCE_SPEC.md` |
 | Quotient descent and reflection (R18-R19) | `rocq/QuotientDescentReflection.v` | machine-checked, `coqchk`-clean -- algebraic meaning of (N0)/(E0) for linear refinement maps, see `docs/design/QUOTIENT_DESCENT_AND_REFLECTION_SPEC.md` |
+| Quotient verdict closure (R20) | `rocq/QuotientVerdictClosure.v` | machine-checked, `coqchk`-clean -- reproves R17's own conclusion via the R18-R19 quotient route, confirming the two agree |
 | Full presentation invariance (arbitrary admissible refinements, topology-changing refinements) | none | not claimed |
 | Full end-to-end verified implementation | none | not claimed |
 

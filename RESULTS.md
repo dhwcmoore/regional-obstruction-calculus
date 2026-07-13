@@ -1042,3 +1042,49 @@ injective maps into a common codomain do not by themselves give an
 isomorphism; that would need matching images or surjectivity, neither
 proved here. That any of this is wired into the four-cycle concretely,
 `refinement_checker.py`, or `veribound-fce`.
+
+## R20. Quotient verdict closure: R17's conclusion, reached the other way
+
+`rocq/QuotientVerdictClosure.v` is a closure theorem, not a new
+mechanism: it reproves R17's own conclusion — that the two transported
+residues of a common subdivision are both repairable or neither is —
+using R18-R19's quotient machinery (`N0_E0_give_faithful_quotient_
+descent`, applied once per refinement leg) instead of R17's own direct
+route (`common_subdivision_exactness_agreement`). Given the shared-
+transferred-residue hypothesis every theorem in this line already
+carries, `rho1_1star r1 = rho2_1star r2`, the two transferred residues
+are trivially `CobEquiv`-related (mere reflexivity, since they are
+literally equal, not merely equivalent) — "the two distinguished
+residues have equivalent transferred representatives in the common-
+subdivision coboundary quotient." Each leg's own faithful descent
+(preservation from that leg's (N0), reflection from that leg's (E0))
+then transports that fact back down to
+
+```text
+quotient_verdict_closure :
+    CobEquiv S1_1 delta1 r1 (vzero S1_1)  <->  CobEquiv S1_2 delta2 r2 (vzero S1_2)
+```
+
+which unfolds, via `CoboundaryQuotientLaws`-derived `vsub_zero_r`, to
+exactly R17's own `(exists b1, r1 = delta1 b1) <-> (exists b2, r2 =
+delta2 b2)` — the same conclusion, reached by a structurally different
+proof.
+
+**What this establishes**: that R17's direct-manipulation route and
+R18-R19's abstract-quotient route agree, for the same hypotheses, on
+the same conclusion — a genuine, if modest, internal-consistency
+finding. It was not assumed; the two formalisations could in principle
+have disagreed subtly and this proof would then not have gone through.
+
+**What this does not establish**, stated precisely because "closure"
+invites over-reading: not class-level invariance in the strong sense —
+no isomorphism, or even a stated correspondence, between the full
+quotients `C1_1/im(delta1)` and `C1_2/im(delta2)` as objects, only that
+the two *distinguished* residues land in equivalent classes. No new
+mechanism — every step is direct application of `N0_E0_give_faithful_
+quotient_descent`, once per leg, plus the zero-identity simplification
+`CoboundaryQuotientLaws` already supplies.
+
+`coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 25-file dependency
+closure. No axioms, typeclasses, quotient constructions, adjunctions,
+or new morphism scaffold.
