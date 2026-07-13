@@ -17,82 +17,53 @@ Everything computational is exact rational arithmetic using Python `Fraction`, w
 
 ## Central mathematical architecture
 
-For a coboundary map
-
-[
-\delta^0:C^0\longrightarrow C^1,
-]
-
-a residue (r\in C^1) is repairable when
-
-[
-r\in\operatorname{im}\delta^0.
-]
+For a coboundary map `delta^0 : C^0 -> C^1`, a residue `r` in `C^1` is repairable when `r` is in `im(delta^0)`.
 
 The repository separates four increasingly strong questions.
 
 ### 1. Obstruction inside a fixed presentation
 
-Is (r) a coboundary? A non-zero pairing with a cycle that annihilates all coboundaries certifies that it is not.
+Is `r` a coboundary? A non-zero pairing with a cycle that annihilates all coboundaries certifies that it is not.
 
 ### 2. Persistence under a specified refinement
 
-Given a refinement map (\rho^*), do the transferred residue and its cycle certificate satisfy the declared A1-A4 conditions? This proves non-exactness inside the refined complex.
+Given a refinement map `rho^*`, do the transferred residue and its cycle certificate satisfy the declared A1-A4 conditions? This proves non-exactness inside the refined complex.
 
 ### 2b. Descent and reflection
 
 Two further conditions have different logical roles:
 
-[
-\text{N0}:\quad
-\rho_1^*(\delta^0 b)
-====================
-
-{\delta'}^0(\rho_0^*b)
-]
+```text
+(N0)  rho_1^*(delta^0 b) = delta'^0(rho_0^* b)
+```
 
 preserves repair witnesses in the forward direction, while
 
-[
-\text{E0}:\quad
-\rho_1^*r\in\operatorname{im}{\delta'}^0
-\Longrightarrow
-r\in\operatorname{im}\delta^0
-]
+```text
+(E0)  rho_1^*(r) in im(delta'^0)  ==>  r in im(delta^0)
+```
 
 reflects exactness back to the source.
 
 For linear refinement maps, R18-R19 prove their quotient-level meanings:
 
-[
-\boxed{\text{N0 preserves coboundary equivalence}}
-]
-
-[
-\boxed{\text{E0 reflects coboundary equivalence}}
-]
-
-[
-\boxed{\text{N0 + E0 give faithful quotient descent}}
-]
+* **N0 preserves coboundary equivalence**
+* **E0 reflects coboundary equivalence**
+* **N0 + E0 give faithful quotient descent**
 
 ### 2c. Common-subdivision verdict invariance
 
 If two presentations transfer their distinguished residues to the same residue in a common subdivision, and both refinement legs satisfy N0 and E0, then:
 
-[
-r_1\in\operatorname{im}\delta_1^0
-\quad\Longleftrightarrow\quad
-r_2\in\operatorname{im}\delta_2^0.
-]
+```text
+r_1 in im(delta_1^0)   <=>   r_2 in im(delta_2^0)
+```
 
 Equivalently, constructively:
 
-[
-r_1\notin\operatorname{im}\delta_1^0
-\quad\Longleftrightarrow\quad
-r_2\notin\operatorname{im}\delta_2^0.
-]
+```text
+r_1 notin im(delta_1^0)   <=>   r_2 notin im(delta_2^0)
+```
 
 This is R17, the repository's first presentation-invariance theorem. It applies to the descent-safe, exactness-reflecting common-subdivision fragment, corresponding to the three verified subdivision witnesses.
 
@@ -123,26 +94,13 @@ The base witness is a four-region cyclic cover
 U1 - U2 - U3 - U4 - U1
 ```
 
-with residue
+with residue `r = (1, 1, 1, -2)` and cycle `z = (-1, -1, -1, 1)`. Their pairing is
 
-[
-r=(1,1,1,-2)
-]
+```text
+<z, r> = -5 != 0
+```
 
-and cycle
-
-[
-z=(-1,-1,-1,1).
-]
-
-Their pairing is
-
-[
-\langle z,r\rangle=-5\neq0.
-]
-
-Because (z) annihilates every coboundary, (r) is not in
-(\operatorname{im}\delta^0). In the concrete four-cycle complex, the residue is also closed, so it represents a non-trivial (H^1) obstruction rather than a bookkeeping artefact.
+Because `z` annihilates every coboundary, `r` is not in `im(delta^0)`. In the concrete four-cycle complex, the residue is also closed, so it represents a non-trivial `H^1` obstruction rather than a bookkeeping artefact.
 
 The same residue is independently generated from explicit associator-field data rather than merely declared as input.
 
@@ -181,7 +139,7 @@ For coupled parallel composition, the repository first proves a compatibility ga
 
 R11 proves that no single value can fully honour two disagreeing declarations unless the value domain is trivial.
 
-R12 proves that a non-lossy diagnostic must preserve enough information to recover the ordered pair. For a finite value set of size (n), this requires a codomain with at least (n^2) distinguishable values.
+R12 proves that a non-lossy diagnostic must preserve enough information to recover the ordered pair. For a finite value set of size `n`, this requires a codomain with at least `n^2` distinguishable values.
 
 R13 gives a bounded four-way classification of honest conflict diagnostics:
 
@@ -207,11 +165,9 @@ The no-repair conclusion is derived from the evidence, never stored as an unaudi
 
 For two presentations with a shared transferred residue and refinement legs satisfying N0 and E0:
 
-[
-[r_1]=0
-\quad\Longleftrightarrow\quad
-[r_2]=0.
-]
+```text
+[r_1] = 0   <=>   [r_2] = 0
+```
 
 This is verdict-level presentation invariance for the verified `verdict_safe` fragment. It is not full presentation invariance.
 
@@ -219,16 +175,14 @@ This is verdict-level presentation invariance for the verified `verdict_safe` fr
 
 For linear refinement maps, define coboundary equivalence by
 
-[
-r\sim s
-\quad\Longleftrightarrow\quad
-r-s\in\operatorname{im}\delta^0.
-]
+```text
+r ~ s   <=>   r - s in im(delta^0)
+```
 
 The machine-checked results show:
 
-* N0 preserves (\sim);
-* E0 is equivalent to reflection of (\sim);
+* N0 preserves `~`;
+* E0 is equivalent to reflection of `~`;
 * N0 and E0 together give faithful quotient descent.
 
 The proof deliberately uses no quotient type, setoid machinery, cycle-space duality, adjunction, typeclass framework, or general presentation record.
