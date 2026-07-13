@@ -29,6 +29,11 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `rocq/CochainNaturalityDescent.v` — Rocq proof of the (N0)-descent theorem.
 - `rocq/CommonSubdivisionAgreement.v` — two-map common-subdivision certificate agreement.
 - `rocq/ExactnessReflection.v` — Rocq proof of the (E0)-reflection theorem.
+- `docs/design/PRESENTATION_INVARIANCE_SPEC.md` — locates the exact common-subdivision gap that became R17 and records why the earlier universal-refinement scaffold should not be revived.
+- `rocq/CommonSubdivisionVerdictInvariance.v` — R17: combines N0 preservation and E0 reflection into verdict-level common-subdivision invariance for the `verdict_safe` fragment.
+- `docs/design/QUOTIENT_DESCENT_AND_REFLECTION_SPEC.md` — scopes the algebraic interpretation of N0 and E0 and records the hypothesis-minimality results confirmed by a compiling scratch prototype before implementation.
+- `rocq/QuotientDescentReflection.v` — R18-R19: proves that N0 preserves coboundary equivalence, E0 is equivalent to reflection of coboundary equivalence, and together they give faithful quotient descent for linear refinement maps.
+- `rocq/QuotientVerdictClosure.v` — R20: rederives R17's distinguished-residue verdict equivalence through the R18-R19 quotient machinery, confirming that the direct and quotient-level formalisations agree.
 - `rocq/RefinementWitnessComposition.v` — (N0)-composability, proved abstractly: `N0_composes`.
 - `rocq/RefinementWitnessVerdictComposition.v` — (A4)/(E0)-composability, proved abstractly: `A4_composes`, `E0_composes`, with minimal span/linear-map infrastructure built from scratch.
 - `rocq/RefinementWitnessSequentialComposition.v` — three-step composition: `N0_composes_three`, `A4_composes_three`, `E0_composes_three`. Arbitrary finite chains not attempted.
@@ -53,7 +58,7 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `rocq/PairwiseDiagnosticCertificate.v` — R15: the first bridge between R14 (`TypedDiagnosticCalculus.v`) and `CoupledParallelCompatibility.v`'s two-branch, one-seam gluing theory, neither file modified. `LocalConflict dA dB` names `incompatible_has_no_glue`'s own hypothesis shape; `DecisivePairwiseEvidence` carries either a glue witness (`CompatibleEvidence`) or a `LocalConflict` witness (`IncompatibleEvidence`) — no constructor for a bare "no composite" claim. `pairwise_diagnostic` erases evidence into `ConflictDiagnostic Declaration (Declaration * Declaration)` — the payload is the declaration PAIR, not the glue `g` itself (a glue does not determine its two source declarations uniquely; see the file's own header note). `pairwise_diagnostic_certificate_sound` combines representation soundness (R14) and semantic soundness (`CoupledParallelCompatibility.v`) case by case; `refusal_requires_local_conflict` is the certificate-level safety property — within this bridge, `RefuseDiagnostic` is never emitted without a checked `LocalConflict` witness. `coqchk`-clean.
 - `docs/design/GLOBAL_COHERENCE_CERTIFICATE_SPEC.md` — design doc for R16: scopes a global-coherence analogue of R15 against `AssociatorResidueRepair.v`'s already-proved abstract Layer-1 theorem, not a new cover theory. Explicitly does not reuse `ConflictDiagnostic`/`SoundL`/`SoundR` (the global problem has no left/right declarations), does not claim `H^1` nontriviality (only non-repairability — `delta1 r = 0` is never assumed), and does not add a fourth "already coherent" status.
 - `rocq/GlobalCoherenceCertificate.v` — R16: a global-coherence analogue of R15, packaging `AssociatorResidueRepair.v`'s `nonzero_pairing_blocks_repair_mod_ceq` (not modified, not duplicated) rather than deriving new cohomology. `DecisiveGlobalEvidence` carries either a repair witness (`RepairEvidence`, `b` with `ceq (delta0 b) r`) or an obstruction witness (`ObstructionEvidence`, `z` with `cycle z` and nonzero pairing) — no constructor for a bare "not repairable" claim. `global_coherence_certificate_sound` combines both cases plus `GlobalUnresolvedResult`; the obstruction conclusion is *derived* from `nonzero_pairing_blocks_repair_mod_ceq`, never stored as primitive evidence. `repair_and_obstruction_evidence_are_disjoint` is the consistency property this bridge earns. `coqchk`-clean, full 20-file dependency closure.
-- `rocq/PairwiseToGlobalAssembly.v` — not R-numbered (a soundness result about an assembler, not a new theorem in the R1-R16 sequence). Proves representation/provenance soundness, registered co-reference consistency, and outcome separation/refusal precedence for the pairwise-to-global provenance bridge's Phase 2 assembler (`veribound-fce`'s `src/pairwise_to_global_assembly.py`, commit `f3d4b12`). Reuses `PairwiseDiagnosticCertificate.v` (R15) unchanged for admissibility; contribution evidence is modelled with an opaque witness, deliberately proving nothing about semantic correctness. `ocaml/assembly_checker.ml` is an independent hand-written OCaml mirror (not Rocq extraction), checked against nine cases each verified against a real Python run. See `docs/design/PAIRWISE_TO_GLOBAL_PROVENANCE.md`.
+- `rocq/PairwiseToGlobalAssembly.v` — not R-numbered (a soundness result about an applied assembler rather than part of the numbered mathematical R1-R20 ladder). Proves representation/provenance soundness, registered co-reference consistency, and outcome separation/refusal precedence for the pairwise-to-global provenance bridge's Phase 2 assembler (`veribound-fce`'s `src/pairwise_to_global_assembly.py`, commit `f3d4b12`). Reuses `PairwiseDiagnosticCertificate.v` (R15) unchanged for admissibility; contribution evidence is modelled with an opaque witness, deliberately proving nothing about semantic correctness. `ocaml/assembly_checker.ml` is an independent hand-written OCaml mirror (not Rocq extraction), checked against nine cases each verified against a real Python run. See `docs/design/PAIRWISE_TO_GLOBAL_PROVENANCE.md`.
 - `rocq/AssociatorContributionCertificate.v` — not R-numbered. Answers `docs/design/VERIFIED_CONTRIBUTION_CERTIFICATE.md`'s governing question: what registered orientation data makes an associator contribution a well-defined function of a committed local instance. Two honest scoping decisions in the file's own header: the registered orientation (`Slot`) is a stipulated convention checked against `FourCycleObstruction.v`'s `r`, not derived from `delta0`'s formula (the two are different mathematical objects with no a priori connection); `associatorContribution` formalises `closed_form_delta`'s arithmetic, not `associator_defect`'s full expansion. Proves orientation/sign determinacy, a deliberately narrow magnitude-negation reversal fact (not the stronger endpoint-swap theorem), verifier soundness, and `registry_orientation_agrees_with_delta0` — a checked, not derived, agreement for the four registered four-cycle interfaces.
 - `ocaml/associator_contribution_checker.ml` — Phase 3C.1/3C.2, independent hand-written OCaml mirror of `AssociatorContributionCertificate.v`'s runtime semantics (not Rocq extraction). Fourteen-case parity corpus, agreeing exactly with `veribound-fce`'s own `src/associator_contribution_verifier.py` (commit `f672f1e`), which replaced fixture contribution evidence on the primary four-cycle integration path there without modifying `src/pairwise_to_global_assembly.py`.
 
@@ -79,20 +84,41 @@ The diagnostic ladder — see `docs/diagnostics/REALISABILITY_ROADMAP.md` for th
 
 ## 6. Rocq proof artefacts
 
-All compile clean with no `Admitted`/`Axiom`/`sorry` (`make check-rocq`):
+All 25 active modules compile cleanly with no project-added
+`Admitted`, `Axiom`, `Parameter`, or `sorry`. `make check-rocq-trust`
+runs `coqchk` over the complete declared dependency closure.
 
-- `rocq/AdmissibleRefinementPersistence.v`
-- `rocq/AssociatorResidueRepair.v`
-- `rocq/FourCycleObstruction.v`
-- `rocq/CochainNaturalityDescent.v`
-- `rocq/CommonSubdivisionAgreement.v`
-- `rocq/ExactnessReflection.v`
-- `rocq/FirstOrderClassifierCertificate.v`
-- `rocq/RepeatedTripleSupportCandidate3b.v`
-- `rocq/CandidateThreeBDistinctSupportClassification.v`
-- `rocq/RefinementWitnessComposition.v`
-- `rocq/RefinementWitnessVerdictComposition.v`
-- `rocq/RefinementWitnessSequentialComposition.v`
+```text
+rocq/AdmissibleRefinementPersistence.v
+rocq/AssociatorResidueRepair.v
+rocq/FourCycleObstruction.v
+rocq/RepeatedTripleSupportCandidate3b.v
+rocq/CandidateThreeBDistinctSupportClassification.v
+rocq/CochainNaturalityDescent.v
+rocq/CommonSubdivisionAgreement.v
+rocq/ExactnessReflection.v
+rocq/CommonSubdivisionVerdictInvariance.v
+rocq/FirstOrderClassifierCertificate.v
+rocq/RefinementWitnessComposition.v
+rocq/RefinementWitnessVerdictComposition.v
+rocq/QuotientDescentReflection.v
+rocq/QuotientVerdictClosure.v
+rocq/RefinementWitnessSequentialComposition.v
+rocq/RefinementWitnessParallelComposition.v
+rocq/CoupledParallelCompatibility.v
+rocq/ConflictResolutionTrilemma.v
+rocq/ConflictResolutionLowerBound.v
+rocq/ConflictDiagnosticCompleteness.v
+rocq/TypedDiagnosticCalculus.v
+rocq/PairwiseDiagnosticCertificate.v
+rocq/GlobalCoherenceCertificate.v
+rocq/PairwiseToGlobalAssembly.v
+rocq/AssociatorContributionCertificate.v
+```
+
+See `REPRODUCIBILITY.md` for dependency order, exact commands, toolchain
+versions, the inventory check, the preliminary source scan, and the
+complete `coqchk` invocation.
 
 ## 7. Paper
 

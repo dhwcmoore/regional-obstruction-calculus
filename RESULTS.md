@@ -946,13 +946,16 @@ exact, via an independent, N0-only argument requiring no E0 at all. The
 two routes are not merged into one proof term because no proved fact
 connects them beyond what each already establishes on its own.
 
-**Scope, restated once more**: verdict-level invariance
-(`[r_P]=0 <-> [r_Q]=0`) for the descent-safe, reflecting fragment only
-— not full presentation invariance (nothing here reaches topology-
-changing refinements such as `insert_bridge`, which fails (N0)), and
-not class-level invariance (a correspondence between `[r_P]` and
-`[r_Q]` themselves, rather than agreement on whether either vanishes —
-`PRESENTATION_INVARIANCE_SPEC.md`'s proposed R20).
+**Scope, restated once more**: R17 proves verdict-level invariance
+(`[r_P]=0 <-> [r_Q]=0`) for the descent-safe, reflecting fragment only.
+It is not full presentation invariance: nothing here reaches arbitrary
+admissible refinements or topology-changing refinements such as
+`insert_bridge`, which fails (N0). It is also not class-level invariance
+in the strong sense of an isomorphism or general correspondence between
+the full quotient spaces. R20 later closes the distinguished-residue
+case through the R18-R19 quotient machinery, confirming that the direct
+and quotient-level proof routes agree, but it still does not prove an
+isomorphism of obstruction quotients.
 
 `coqchk`-clean, no `Admitted`/`Axiom`/`sorry`, full 23-file dependency
 closure. No axioms, typeclasses, quotient constructions, adjunctions,

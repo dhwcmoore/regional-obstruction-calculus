@@ -1,83 +1,317 @@
 # Regional Obstruction Calculus
 
-Exact rational diagnostics for local-to-global coherence failure in finite regional systems.
+**Exact rational and machine-checked methods for detecting, transporting, and auditing local-to-global coherence failure in finite regional systems.**
 
-This repository contains executable and proof-oriented artefacts for detecting when locally valid regional data fails to glue into a globally coherent object. It separates **detection**, **repair**, **refinement persistence**, and **realisability** as distinct, individually-checked questions, rather than treating "there is an obstruction" as one monolithic claim.
+Local validity does not guarantee global coherence. Pairwise-compatible regional declarations can still carry a non-removable global residue. This repository develops a finite obstruction calculus for distinguishing:
 
-This repository grew out of the associator-fields paper and the `admissible-refinement-persistence` development. It is now the working repository for the broader regional obstruction calculus; see [Relation to the associator-fields paper](#relation-to-the-associator-fields-paper) below.
+* a residue that is repairable from one that is genuinely obstructed;
+* an obstruction that merely appears in one presentation from one that survives an admissible refinement;
+* preservation of repair equivalence from reflection of repair equivalence;
+* verdict invariance from the stronger, still-open claim of full class-level presentation invariance;
+* a lossy scalar conflict summary from a structured, evidence-bearing diagnostic;
+* a verdict asserted by a program from a verdict backed by an independently checkable certificate.
 
-## What this repository does
+The distinctive contribution is the separation of these obligations. "There is an obstruction" is not treated as one monolithic claim.
 
-Local compatibility does not guarantee global coherence. A finite regional system can satisfy local and pairwise boundary conditions while still carrying a non-removable global residue. This repository provides exact rational tools for:
+Everything computational is exact rational arithmetic using Python `Fraction`, with no floating-point reasoning in any active path. The active Rocq chain contains 25 modules and is checked with both `coqc` and `coqchk`, with no project-added `Admitted`, `Axiom`, `Parameter`, or `sorry`.
 
-- classifying whether a residue on a finite cover is a coherence obstruction or repairable;
-- generating that residue from literal associator-field data instead of declaring it;
-- checking whether an obstruction persists under refinement of the cover;
-- emitting and independently checking proof-carrying certificates for classifier verdicts;
-- diagnosing whether a given generator's associator residues are structurally forced or merely constructible (realisability).
+## Central mathematical architecture
 
-Everything computational is exact-rational (Python `Fraction`, no floating point). Where a result is also formalised in Rocq, the proof scripts contain no `Admitted`, `Axiom`, or `sorry`.
+For a coboundary map
 
-## Interpretation, not formalism
+[
+\delta^0:C^0\longrightarrow C^1,
+]
 
-The proved and computed content throughout this repository is entirely
-at the level of finite cochains, δ⁰/δ¹, cocycles, and coboundaries -- a
-Čech-style obstruction calculus, not a higher category. It is useful to
-read the surviving classes as failures of *higher coherence*: local
-validity (object-level data on a single region) and pairwise
-compatibility (seam-level agreement across an overlap) can both hold
-while the data still fail to assemble into a globally warranted
-structure. That reading motivates why the obstruction calculus matters;
-it is not a formal claim proved anywhere in this repository. The
-refinement-persistence results (item 10 onward) can likewise be read as
-a finite, cochain-level form of coherence under change of presentation --
-an obstruction that survives admissible refinement was not an artefact
-of how the system happened to be described. See RESULTS.md and STATUS.md
-for exactly what is proved versus interpreted.
+a residue (r\in C^1) is repairable when
+
+[
+r\in\operatorname{im}\delta^0.
+]
+
+The repository separates four increasingly strong questions.
+
+### 1. Obstruction inside a fixed presentation
+
+Is (r) a coboundary? A non-zero pairing with a cycle that annihilates all coboundaries certifies that it is not.
+
+### 2. Persistence under a specified refinement
+
+Given a refinement map (\rho^*), do the transferred residue and its cycle certificate satisfy the declared A1-A4 conditions? This proves non-exactness inside the refined complex.
+
+### 2b. Descent and reflection
+
+Two further conditions have different logical roles:
+
+[
+\text{N0}:\quad
+\rho_1^*(\delta^0 b)
+====================
+
+{\delta'}^0(\rho_0^*b)
+]
+
+preserves repair witnesses in the forward direction, while
+
+[
+\text{E0}:\quad
+\rho_1^*r\in\operatorname{im}{\delta'}^0
+\Longrightarrow
+r\in\operatorname{im}\delta^0
+]
+
+reflects exactness back to the source.
+
+For linear refinement maps, R18-R19 prove their quotient-level meanings:
+
+[
+\boxed{\text{N0 preserves coboundary equivalence}}
+]
+
+[
+\boxed{\text{E0 reflects coboundary equivalence}}
+]
+
+[
+\boxed{\text{N0 + E0 give faithful quotient descent}}
+]
+
+### 2c. Common-subdivision verdict invariance
+
+If two presentations transfer their distinguished residues to the same residue in a common subdivision, and both refinement legs satisfy N0 and E0, then:
+
+[
+r_1\in\operatorname{im}\delta_1^0
+\quad\Longleftrightarrow\quad
+r_2\in\operatorname{im}\delta_2^0.
+]
+
+Equivalently, constructively:
+
+[
+r_1\notin\operatorname{im}\delta_1^0
+\quad\Longleftrightarrow\quad
+r_2\notin\operatorname{im}\delta_2^0.
+]
+
+This is R17, the repository's first presentation-invariance theorem. It applies to the descent-safe, exactness-reflecting common-subdivision fragment, corresponding to the three verified subdivision witnesses.
+
+R20 reaches the same verdict-equivalence conclusion through the independently developed quotient machinery, confirming that the direct and quotient-level formalisations agree.
+
+### 3. Full presentation invariance
+
+Not proved.
+
+The repository does not claim:
+
+* invariance under every admissible refinement;
+* invariance under topology-changing refinements such as `insert_bridge`, which fails N0;
+* an isomorphism between the full obstruction quotients of two presentations;
+* functoriality of obstruction quotients over a category of presentations;
+* equivalence between quotient reflection and cycle-space surjectivity;
+* completeness of cycle certificates for every non-exact residue.
+
+These are later mathematical questions, not consequences silently attributed to the existing results.
+
+See [`docs/theory/THEOREM_CONCORDANCE.md`](docs/theory/THEOREM_CONCORDANCE.md) for a claim-by-claim map of theorem, checker, scope, and non-claim.
 
 ## Central example
 
-A four-region cyclic cover `U1-U2-U3-U4-U1`, coboundary map `delta^0`, and a residue `r = (1, 1, 1, -2)` on the induced 1-cochains. Pairing `r` against the cycle `z = (-1, -1, -1, 1)` gives `<z, r> = -5 != 0`, so `r` is not a coboundary: a genuine `H^1` obstruction, not a bookkeeping artefact. See [RESULTS.md](RESULTS.md) R1-R2 for how this residue is both declared and independently generated from associator data.
+The base witness is a four-region cyclic cover
+
+```text
+U1 - U2 - U3 - U4 - U1
+```
+
+with residue
+
+[
+r=(1,1,1,-2)
+]
+
+and cycle
+
+[
+z=(-1,-1,-1,1).
+]
+
+Their pairing is
+
+[
+\langle z,r\rangle=-5\neq0.
+]
+
+Because (z) annihilates every coboundary, (r) is not in
+(\operatorname{im}\delta^0). In the concrete four-cycle complex, the residue is also closed, so it represents a non-trivial (H^1) obstruction rather than a bookkeeping artefact.
+
+The same residue is independently generated from explicit associator-field data rather than merely declared as input.
 
 ## Main results
 
-See [RESULTS.md](RESULTS.md) for the full account. Headline items:
+See [`RESULTS.md`](RESULTS.md) for the complete R1-R20 account and [`STATUS.md`](STATUS.md) for the distinction between proved, computed, diagnostic, and unclaimed results.
 
-- **R1-R5**: the four-cycle obstruction is classified, generated from associator data, shown not repairable, shown to persist under refinement, and independently certificate-checked -- all in exact rational arithmetic, with Rocq proofs for the repair-impossibility and refinement-persistence claims.
-- **R6-R9**: a ladder of realisability diagnostics for what data a coupled associator generator must share to produce structurally-forced (rather than merely constructible) obstructions, ending in **R9**, the first positive linear/rational witness: a repeated-triple-support coupling with `rank(B)=2`, `dim(im(B) ∩ im δ⁰)=1`, `dim(quotient)=1` -- neither too free nor collapsed -- also formalised as a machine-checked Rocq theorem (`rocq/RepeatedTripleSupportCandidate3b.v`).
-- **R10**: refinement-witness composition is theorem-grade for all three governing conditions, both for sequential composition (two and three steps: `N0_composes`, `A4_composes`, `E0_composes`, `rocq/RefinementWitnessComposition.v`, `rocq/RefinementWitnessVerdictComposition.v`, `rocq/RefinementWitnessSequentialComposition.v`) and for disjoint *parallel* composition (`N0_parallel_disjoint`, `E0_parallel_disjoint`, and a full branchwise/aggregate A4 classification -- `A4_parallel_disjoint_branchwise`, `A4_parallel_disjoint_nonzero_sum`, and a machine-checked witness that branchwise success does not imply aggregate success -- `rocq/RefinementWitnessParallelComposition.v`) -- reached only after searches/probes (~175,000 cases sequentially, 32 cases in parallel) that also found a genuine negative result: the naive scalar A4 does **not** compose under disjoint parallel composition, a demonstrated fact (in Rocq, not only Python), resolved by classification rather than left as an open question. Released as `v0.12-disjoint-parallel-classification`. A first step into *coupled* parallel composition (branches sharing a seam, not fully independent) asks a prior question instead of preservation -- is the glued composite even well-defined -- and answers it with a conservative compatibility gate, both probed (`refinement_witness_coupled_parallel_probe.py`) and proved (`rocq/CoupledParallelCompatibility.v`, `coqchk`-clean): agreement is necessary and sufficient for a glue to exist, agreeing declarations glue cleanly, conflicting ones are diagnosed and refused, never silently merged. Coupled-parallel well-definedness is now formalised; coupled-parallel preservation remains open -- except for one settled preservation-adjacent question, both probed (`refinement_witness_coupled_a4_cancellation_probe.py`) and proved (`rocq/CoupledParallelCompatibility.v`'s `CompatibleAggregateCancellation` section, `coqchk`-clean): shared-seam agreement does **not** force the aggregate (A4) to compose either -- a verified, compatible, branchwise-preserved, aggregate-cancelled case exists. Still no conflict-resolution rule anywhere in this project.
-- **R11**: the conflict-resolution trilemma -- a separate mathematical question from R10, about equality and resolver functions in the abstract, not about refinement witnesses at all. Proves no *lossy* (same-type) resolver can honour both disagreeing branches at once unless the whole value type is trivial (`rocq/ConflictResolutionTrilemma.v`, `coqchk`-clean), and classifies seven candidate resolver shapes (`left_wins`, `right_wins`, `average`, `sum`, `erase`, `refuse`, `external_authority`) by what each sacrifices (`conflict_resolution_trilemma_probe.py`). Also proves a *structured* (non-lossy) resolver preserving both declarations always exists -- the impossibility is about collapsing to one value of the same type, not about preserving information as such -- while showing structure does not exempt a structured object's own scalar summary field from the same impossibility. No resolver is proposed, recommended, or implemented.
-- **R12**: the non-lossy lower bound -- given R11's structured resolver exists, how much structure does non-lossy resolution actually require? Proves any encoding recoverable via fixed projections must be injective on `V x V` (`rocq/ConflictResolutionLowerBound.v`, `coqchk`-clean), so for finite `V` with `|V|=n`, a non-lossy codomain needs at least `n^2` elements -- a cardinality restatement of R11's impossibility, checked computationally for `n=1..6` (`conflict_resolution_lower_bound_probe.py`). Characterises the abstract shape a faithful conflict record must have, not a concrete schema.
-- **R13**: bounded conflict-diagnostic completeness -- combines R11 and R12 into a closed, four-constructor classification (`rocq/ConflictDiagnosticCompleteness.v`, `coqchk`-clean) of what a diagnostic about a conflicting shared interface can honestly be: refusal (`RefuseDiagnostic`), a lossy scalar summary (`ScalarDiagnostic`, always lossy once the declarations disagree -- R11, imported directly), a non-lossy structured diagnostic (`StructuredDiagnostic`, non-lossy exactly under R12's projection condition, imported directly), or an explicitly unresolved case (`UnresolvedDiagnostic`). Classification is proved total and exclusive, and the four classes are pairwise distinct. **Bounded** is the key word: this is completeness for the narrow fragment defined in `docs/design/CONFLICT_DIAGNOSTIC_COMPLETENESS.md`, not for all possible diagnostic systems -- it does not choose a resolver, and does not contradict R11's own §10 disclaimer that its seven named resolver *shapes* are not exhaustive (R13 classifies structural *shapes* of diagnostic, a coarser, different question). Checked computationally in `conflict_diagnostic_completeness_probe.py`: every named strategy lands in exactly one of the four classes.
-- **R14**: a typed diagnostic calculus for the R11-R13 fragment (`rocq/TypedDiagnosticCalculus.v`, `coqchk`-clean) -- turns R13's static classification into explicit introduction/elimination/reduction rules. `SoundL`/`SoundR` (left/right-soundness) let `structured_intro`/`-left-elim`/`-right-elim` restate R12 and `scalar_conflict_loss` restate R11 as an elimination-*inadmissibility* fact; `refuse_no_composite_left`/`-right` and `unresolved_no_claim_left`/`-right` show neither `RefuseDiagnostic` nor `UnresolvedDiagnostic` has any sound elimination, for two deliberately distinct reasons. The unifying theorem, `elimination_soundness`: under a genuine conflict, only a `StructuredDiagnostic` can be both left- and right-sound -- the formal cash-out of `docs/theory/NO_NEUTRAL_SCALAR_FUSION.md`'s headline sentence. A one-constructor reduction relation, `RefinesByEvidence`, formalises refining an `Unresolved` diagnostic once evidence arrives, with two safety theorems (`preservation_under_reduction`, `no_silent_soundness_gain` -- the latter showing that refining `Unresolved` into a `ScalarDiagnostic` under conflict is still fully subject to `scalar_conflict_loss`: passing through `Unresolved` buys nothing). Deliberately does **not** derive `REFUSE-NO-COMPOSITE` from `CoupledParallelCompatibility.v`'s glue theorems -- a related but distinct object, not a definitional identity.
-- **R15**: the pairwise diagnostic certificate (`rocq/PairwiseDiagnosticCertificate.v`, `coqchk`-clean) -- the first bridge between R14 and `CoupledParallelCompatibility.v`'s two-branch, one-seam gluing theory, neither source file modified. `DecisivePairwiseEvidence` carries either a positive glue witness (`CompatibleEvidence`) or a positive `LocalConflict` witness (`IncompatibleEvidence`) -- no constructor for a bare "no acceptable composite" claim. Evidence erases into `ConflictDiagnostic Declaration (Declaration * Declaration)`, the payload being the declaration *pair* rather than the glue itself (a glue does not determine its two source declarations uniquely -- see the file's own header note). `pairwise_diagnostic_certificate_sound` combines representation soundness (R14) and semantic soundness (`CoupledParallelCompatibility.v`) case by case, with the no-glue conclusion under conflict *derived* from `interface_disagreement_blocks_glue` rather than stored as primitive evidence. `refusal_requires_local_conflict` is the certificate-level safety property: `RefuseDiagnostic` is never emitted, in this bridge, without a checked `LocalConflict` witness. Deliberately narrow: no deciding algorithm for `Compatible dA dB` is claimed, and no exhaustiveness theorem is attempted.
-- **R16**: the global coherence certificate (`rocq/GlobalCoherenceCertificate.v`, `coqchk`-clean) -- a global-coherence analogue of R15, packaging `AssociatorResidueRepair.v`'s already-abstract `nonzero_pairing_blocks_repair_mod_ceq` (source file not modified) rather than deriving new cohomology. `DecisiveGlobalEvidence` carries either a positive repair witness (`RepairEvidence`, `b` with `ceq (delta0 b) r`) or a positive obstruction witness (`ObstructionEvidence`, a cycle `z` with nonzero pairing against `r`) -- no constructor for a bare "not repairable" claim. Deliberately does **not** reuse `ConflictDiagnostic`/`SoundL`/`SoundR` -- the global problem has one residue, not two declarations, and forcing it into R14's pairwise vocabulary would overload `RefuseDiagnostic` with two genuinely different obstruction theories. Deliberately does **not** claim `H^1` nontriviality -- every obstruction fact is named non-repairable, never nontrivial cohomology class, since `delta1 r = 0` is never assumed. `global_coherence_certificate_sound` combines both cases plus `GlobalUnresolvedResult`, with the no-repair conclusion *derived*, never stored; `repair_and_obstruction_evidence_are_disjoint` is the consistency property earned. Scoped to the abstract Layer-1 interface exactly as it already exists, neither the concrete four-cycle alone nor a new general cover theory.
+### R1-R5: obstruction, repair, refinement, and certificates
 
-**Pairwise-to-global provenance bridge** (`rocq/PairwiseToGlobalAssembly.v`, deliberately not given an R-number -- a soundness result about an assembler built on R15, not a new theorem in the R1-R16 sequence, the same treatment `docs/design/R14_APPLIED_PIPELINE_AUDIT.md` got): proves that `veribound-fce`'s pairwise-to-global assembler (`src/pairwise_to_global_assembly.py`, commit `f3d4b12`) never invents, mutates, or drops a contribution, that admissibility and contribution evidence both agree with the required interface's own registered digest (never that admissibility validates the contribution's *value* -- contribution is modelled with an opaque witness throughout), and that its three outcomes (`AssemblyComplete`/`AssemblyUnresolved`/`AssemblyRefused`) are mutually exclusive with refusal taking precedence. `ocaml/assembly_checker.ml` independently mirrors the same specification by hand (not Rocq extraction, which this repository has never used) and is checked against nine cases each independently verified against a real Python run. See `docs/design/PAIRWISE_TO_GLOBAL_PROVENANCE.md` for the full specification and `STATUS.md` §1 for the theorem-by-theorem summary.
+* The four-cycle residue is classified as a non-trivial obstruction.
+* The residue is generated from explicit associator data.
+* No regional boundary correction repairs it.
+* Its transferred obstruction persists under four checked refinement witnesses at the A1-A4 level.
+* Classifier verdicts can be emitted as independently checkable proof-carrying certificates.
+
+### R6-R9: realisability
+
+The realisability line asks whether an associator generator structurally forces obstruction or merely allows an arbitrary residue to be chosen.
+
+Several candidate generators are shown to be either too free or collapsed into coboundaries. Candidate 3b receives a complete two-sided classification:
+
+* pairwise-distinct triple support gives independent seam-local freedom and full rank;
+* repeated triple support forces a genuinely partial, non-trivial quotient.
+
+Both directions are machine-checked in Rocq.
+
+### R10: refinement-witness composition
+
+Sequential composition preserves N0, A4, and E0, but the three conditions have different dependency profiles.
+
+Disjoint parallel composition preserves N0 and E0 componentwise. A4 does not behave as a Boolean conjunction because branch pairings can cancel in the aggregate. The repository proves both the branchwise preservation theorem and the exact non-cancellation condition required by the scalar aggregate.
+
+For coupled parallel composition, the repository first proves a compatibility gate: agreeing shared-interface declarations admit a glue; conflicting declarations admit none. No conflict-resolution rule is introduced.
+
+### R11-R14: no neutral scalar fusion
+
+R11 proves that no single value can fully honour two disagreeing declarations unless the value domain is trivial.
+
+R12 proves that a non-lossy diagnostic must preserve enough information to recover the ordered pair. For a finite value set of size (n), this requires a codomain with at least (n^2) distinguishable values.
+
+R13 gives a bounded four-way classification of honest conflict diagnostics:
+
+1. refusal;
+2. lossy scalar summary;
+3. non-lossy structured diagnostic;
+4. unresolved.
+
+R14 turns that classification into a typed diagnostic calculus with explicit introduction, elimination, and evidence-refinement rules. Its central safety theorem states that, under genuine conflict, only a structured diagnostic can be both left-sound and right-sound.
+
+### R15-R16: evidence-bearing diagnostic certificates
+
+R15 connects the typed diagnostic calculus to the pairwise gluing theory. Compatibility requires an actual glue witness. Refusal requires an actual local-conflict witness. No bare "no composite" assertion is accepted as decisive evidence.
+
+R16 gives the global analogue. A decisive global result carries either:
+
+* a concrete repair witness; or
+* a cycle obstruction witness with non-zero pairing.
+
+The no-repair conclusion is derived from the evidence, never stored as an unaudited assertion.
+
+### R17: common-subdivision verdict invariance
+
+For two presentations with a shared transferred residue and refinement legs satisfying N0 and E0:
+
+[
+[r_1]=0
+\quad\Longleftrightarrow\quad
+[r_2]=0.
+]
+
+This is verdict-level presentation invariance for the verified `verdict_safe` fragment. It is not full presentation invariance.
+
+### R18-R19: quotient descent and reflection
+
+For linear refinement maps, define coboundary equivalence by
+
+[
+r\sim s
+\quad\Longleftrightarrow\quad
+r-s\in\operatorname{im}\delta^0.
+]
+
+The machine-checked results show:
+
+* N0 preserves (\sim);
+* E0 is equivalent to reflection of (\sim);
+* N0 and E0 together give faithful quotient descent.
+
+The proof deliberately uses no quotient type, setoid machinery, cycle-space duality, adjunction, typeclass framework, or general presentation record.
+
+### R20: quotient verdict closure
+
+R20 rederives R17's verdict-equivalence conclusion through R18-R19's quotient machinery. This confirms that the direct and quotient-level proof routes agree.
+
+It does not prove an isomorphism between the full quotient spaces. It compares the distinguished residues carried by the existing common-subdivision theorem.
+
+### Applied provenance bridges
+
+The unnumbered pairwise-to-global assembly and associator-contribution results connect the mathematical certificates to the applied `veribound-fce` architecture.
+
+They establish representation, provenance, co-reference, outcome-separation, orientation, and sign-determinacy properties. They deliberately do not claim that every applied implementation component has been extracted from or verified by Rocq.
+
+## Interpretation, not formalism
+
+The proved and computed content is at the level of finite cochains, cocycles, coboundaries, exact rational linear algebra, and explicitly defined diagnostic judgements. It is a finite, Čech-style obstruction calculus, not a formal higher-category theory.
+
+It is useful to interpret surviving obstruction classes as failures of higher coherence: local data and pairwise agreement can hold while no globally warranted object exists. That interpretation motivates the calculus but is not itself a theorem proved in this repository.
+
+Likewise, the presentation results support a restricted reading of representation independence: within the descent-safe and reflecting fragment, the obstruction verdict is not an artefact of choosing either of two presentations. They do not establish unrestricted presentation independence.
+
+## Evidence levels
+
+Three kinds of evidence appear throughout the repository and are not interchangeable.
+
+* **Proved:** Rocq theorems checked by `coqc` and independently by `coqchk`.
+* **Computed:** exact-rational Python or OCaml calculations with regression tests.
+* **Diagnostic:** exact computations that establish a witness, counterexample, or classification for a specified construction, but not a theorem about every construction of that kind.
+
+[`STATUS.md`](STATUS.md) states which category each result belongs to and what is not claimed.
 
 ## Repository map
 
-See [PROJECT_MAP.md](PROJECT_MAP.md) for the full file-by-file map. Top level:
+```text
+README.md
+    project overview and scope
 
-```
-README.md            this file
-PROJECT_MAP.md        where to start, by layer
-STATUS.md             what is proved / computed / diagnostic / not claimed
-RESULTS.md            the results, R1-R16
-REPRODUCIBILITY.md    exact commands to reproduce every check
-CHANGELOG.md
-LICENSE
-Makefile
-requirements.txt
-examples/             JSON witness data
-tests/                pytest suite (181 tests)
-rocq/                 Rocq proof scripts (no Admitted/Axiom/sorry)
-ocaml/                OCaml parity mirror of the refinement checker
-docs/                 theory, diagnostics, design, and archive notes
-paper/                the associator-fields manuscript (see paper/README.md)
+RESULTS.md
+    complete R1-R20 result account
+
+STATUS.md
+    proved, computed, diagnostic, and unclaimed results
+
+PROJECT_MAP.md
+    file-by-file entry points by mathematical layer
+
+REPRODUCIBILITY.md
+    exact commands, versions, and expected outputs
+
+docs/theory/THEOREM_CONCORDANCE.md
+    compact theorem-to-file-to-scope map
+
+docs/design/
+    design documents written before implementation
+
+docs/theory/
+    synthesis and interpretation notes
+
+docs/diagnostics/
+    realisability and computational diagnostic accounts
+
+rocq/
+    25 active machine-checked proof modules
+
+examples/
+    exact JSON witness data
+
+tests/
+    181-test Python regression suite
+
+ocaml/
+    independent refinement and parity checkers
+
+paper/
+    two manuscripts and their relationship to the current repository
 ```
 
 ## Quick start
+
+### Python checks
 
 ```sh
 python3 -m venv .venv
@@ -86,49 +320,92 @@ pip install -r requirements.txt
 make check-python
 ```
 
-Expect `181 passed`. To reproduce the full formal chain (Rocq compilation, `coqchk`, and the OCaml parity checker) in one command:
+Expected result:
+
+```text
+181 passed
+```
+
+### Complete verification
 
 ```sh
 make check-all
 ```
 
-Verified toolchain: Python 3.12, Coq/Rocq 8.18.0 (`coqc`, `coqchk`), OCaml 4.14.1 (`ocamlopt`) -- pinned exactly in CI (`.github/workflows/`), which runs `check-python`, `check-rocq`, `check-rocq-trust`, and `check-ocaml` as four separate jobs on every push. See [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the full command sequence, including each check run individually.
+This runs, in order:
+
+```text
+check-python
+check-rocq
+check-rocq-trust
+check-ocaml
+check-assembly-parity
+check-contribution-parity
+```
+
+The active formal chain contains 25 Rocq modules. `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
+
+### Pinned container
+
+For a matching formal toolchain without local installation:
+
+```sh
+docker build -t regional-obstruction-calculus .
+docker run --rm regional-obstruction-calculus
+```
+
+The pinned environment uses:
+
+```text
+Python       3.12
+pytest       9.1.1
+Coq/Rocq     8.18.0
+OCaml        4.14.1
+```
+
+The container fails loudly if the installed `coqc` or `ocamlopt` versions do not match the declared versions.
+
+See [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) for the complete command sequence and expected outputs.
 
 ## Verification status
 
-| Layer | Artefact | Status |
-|---|---|---|
-| Exact rational classifier | `residue_classifier.py` | executable, tested |
-| Associator-generated residue | `associator_residue.py`, `run_associator_obstruction.py` | executable, tested |
-| Repair obstruction | `repair_solver.py` | executable, tested |
-| Refinement witnesses | `refinement_checker.py` | executable, tested |
-| First-order certificates | `certificate_emitter.py`, `first_order_certificate_checker.py` | executable, tested |
-| Rocq abstract proofs | `rocq/*.v` | proof scripts, toolchain-dependent, no `Admitted`/`Axiom`/`sorry` |
-| Realisability diagnostics (negative) | `realisability_diagnostic.py`, `coupled_realisability_diagnostic.py`, `lattice_ie_diagnostic.py`, `candidate_discipline_diagnostic.py` | executable, tested, negative/cover-inert results |
-| Boolean proper-crossing witness | `boolean_crossing_diagnostic.py` | executable, tested, non-linear diagnostic witness |
-| Repeated triple support | `repeated_triple_support_diagnostic.py`, `rocq/RepeatedTripleSupportCandidate3b.v` | executable + machine-checked, positive diagnostic witness |
-| Common-subdivision verdict invariance (R17) | `rocq/CommonSubdivisionVerdictInvariance.v` | machine-checked, `coqchk`-clean -- descent-safe/reflecting fragment only, see `docs/design/PRESENTATION_INVARIANCE_SPEC.md` |
-| Quotient descent and reflection (R18-R19) | `rocq/QuotientDescentReflection.v` | machine-checked, `coqchk`-clean -- algebraic meaning of (N0)/(E0) for linear refinement maps, see `docs/design/QUOTIENT_DESCENT_AND_REFLECTION_SPEC.md` |
-| Quotient verdict closure (R20) | `rocq/QuotientVerdictClosure.v` | machine-checked, `coqchk`-clean -- reproves R17's own conclusion via the R18-R19 quotient route, confirming the two agree |
-| Full presentation invariance (arbitrary admissible refinements, topology-changing refinements) | none | not claimed |
-| Full end-to-end verified implementation | none | not claimed |
+| Layer                                     | Principal artefacts                                                           | Status                                                         |
+| ----------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Exact rational obstruction classification | `residue_classifier.py`, `repair_solver.py`                                   | executable and tested                                          |
+| Associator-generated residue              | `associator_residue.py`, `run_associator_obstruction.py`                      | executable and tested                                          |
+| Refinement checking                       | `refinement_checker.py`                                                       | executable and tested                                          |
+| First-order certificates                  | `certificate_emitter.py`, `first_order_certificate_checker.py`                | executable and independently checked                           |
+| Realisability diagnostics                 | R6-R9 Python diagnostics and Rocq witnesses                                   | computed, with the Candidate 3b classification machine-checked |
+| Refinement composition                    | R10 Rocq modules and probes                                                   | sequential and disjoint-parallel results machine-checked       |
+| Conflict and diagnostic calculus          | R11-R16 Rocq modules                                                          | machine-checked                                                |
+| Verdict-level presentation invariance     | `rocq/CommonSubdivisionVerdictInvariance.v`                                   | machine-checked for the descent-safe, reflecting fragment      |
+| Quotient preservation and reflection      | `rocq/QuotientDescentReflection.v`                                            | machine-checked for linear refinement maps                     |
+| Quotient verdict closure                  | `rocq/QuotientVerdictClosure.v`                                               | machine-checked                                                |
+| Applied provenance bridges                | `rocq/PairwiseToGlobalAssembly.v`, `rocq/AssociatorContributionCertificate.v` | machine-checked, with independent OCaml parity checks          |
+| Full presentation invariance              | none                                                                          | not claimed                                                    |
+| Full end-to-end verified implementation   | none                                                                          | not claimed                                                    |
 
-## What is proved, what is computed, what is diagnostic
+## Papers
 
-Three distinct kinds of evidence appear in this repository, and they are not interchangeable:
+The repository originated as the companion code for:
 
-- **Proved** (Rocq, no `Admitted`/`Axiom`/`sorry`): abstract theorems and, where stated, their concrete instantiation over the paper's own numbers. See `rocq/*.v` and [STATUS.md](STATUS.md) §1.
-- **Computed** (Python, exact rational): executable checks with a pytest regression suite. See [STATUS.md](STATUS.md) §2.
-- **Diagnostic** (Python, exact rational, but not a theorem): witnesses and negative results in the realisability line -- they establish that a specific candidate rule does or does not do something on a specific construction, not a general theorem about all such rules. See [STATUS.md](STATUS.md) §3.
+*Associator Fields and Local-to-Global Failure in Finite Compositional Structures*
 
-[STATUS.md](STATUS.md) §4 states explicitly what is **not** claimed.
+The later manuscript:
 
-## Relation to the associator-fields paper
+*A Finite Cohomological Obstruction Calculus for Regional Warrant*
 
-This repository originated as the companion code to *Associator Fields and Local-to-Global Failure in Finite Compositional Structures* (`paper/associator_fields_ACS_revised.tex`). The repository has since grown beyond that paper -- in particular, the realisability diagnostics (R6-R9), the Candidate 3b classification, and refinement-witness composition (R10) are post-paper developments. A second manuscript, *A Finite Cohomological Obstruction Calculus for Regional Warrant* (`paper/finite_obstruction_calculus_for_regional_warrant.tex`), packages that later work into its own theorem ladder, with the Candidate 3b classification (§4) and refinement-witness composition (§5) as its actual new content. See `paper/README.md` for how the two manuscripts and the repository now relate.
+packages the realisability classification and refinement-witness composition results.
 
-The prior repository, `admissible-refinement-persistence`, is retained as historical/paper-companion material; this repository is the current, active one.
+The repository has now grown beyond both manuscripts. R11-R20, the typed diagnostic and certificate bridges, the common-subdivision verdict theorem, and the quotient-preservation/reflection theory should be treated as repository results unless and until they are incorporated into a revised manuscript.
 
-## Citation / contact
+See [`paper/README.md`](paper/README.md) for the manuscript-level map.
 
-Duston Moore -- Independent Researcher. See [CITATION.cff](CITATION.cff) if present, or the repository metadata on GitHub.
+## Citation, licence, and contact
+
+Citation metadata is provided in [`CITATION.cff`](CITATION.cff).
+
+Licence: AGPL-3.0-or-later.
+
+Duston Moore
+Independent Researcher

@@ -1,12 +1,58 @@
 # Changelog
 
 Tags refer to milestones in the admissible-refinement-persistence work
-(the paper's "Admissible refinement persistence" section). Scope discipline
-kept throughout: this proves persistence for refinements satisfying the
-declared (A1)-(A4) conditions, not arbitrary refinement invariance and not
-full presentation invariance through common refinement.
+(the paper's "Admissible refinement persistence" section) and, from R17
+onward, in the presentation-invariance and quotient-semantics work built
+on top of it. Scope discipline kept throughout: A1-A4 alone proves
+persistence for a single refinement, not arbitrary refinement invariance;
+R17-R20 later prove verdict-level invariance for the descent-safe,
+reflecting common-subdivision fragment specifically, not full
+presentation invariance through arbitrary or topology-changing
+refinement. See the "Presentation fidelity and quotient semantics"
+checkpoint below and `docs/theory/THEOREM_CONCORDANCE.md` for the exact
+current boundary.
 
 ## Unreleased
+
+### Presentation fidelity and quotient semantics
+
+- Added R17, `rocq/CommonSubdivisionVerdictInvariance.v`: the first
+  combined verdict-invariance theorem for two presentations related
+  through a common subdivision whose refinement legs are both
+  descent-safe (N0) and exactness-reflecting (E0). Proves both the
+  exactness-side equivalence and its fully constructive obstruction-side
+  contraposition. Introduces no new primitive preservation mechanism;
+  its contribution is the first formal assembly of the existing N0/E0
+  results.
+- Added
+  `docs/design/PRESENTATION_INVARIANCE_SPEC.md`, which established before
+  implementation that most of the proposed presentation-invariance
+  ladder already existed in separate form and identified the combined
+  verdict equivalence as the precise missing theorem.
+- Added R18-R19, `rocq/QuotientDescentReflection.v`: introduces the small
+  `CoboundaryQuotientLaws` extension without strengthening the existing
+  `VSpace` record; proves coboundary equivalence is an equivalence
+  relation under the stated hypotheses; proves N0 preserves
+  coboundary equivalence; proves E0 is equivalent to reflection of
+  coboundary equivalence; and packages N0 plus E0 as faithful quotient
+  descent for linear refinement maps.
+- Added
+  `docs/design/QUOTIENT_DESCENT_AND_REFLECTION_SPEC.md`, based on a
+  compiling scratch prototype against the repository's actual algebraic
+  infrastructure. The prototype identified both the extra quotient laws
+  missing from `VSpace` and the independent linearity hypothesis required
+  for quotient descent.
+- Added R20, `rocq/QuotientVerdictClosure.v`: rederives R17's
+  distinguished-residue verdict equivalence through the R18-R19 quotient
+  machinery, confirming that the direct and quotient-level
+  formalisations agree.
+- The active formal chain now contains 25 Rocq modules. `make check-all`
+  runs Python, Rocq compilation, complete `coqchk` trust checking, the
+  OCaml refinement checker, assembly parity, and contribution parity.
+- Scope remains deliberately limited. No full quotient-space
+  isomorphism, arbitrary presentation invariance, topology-changing
+  invariance, cycle-space/quotient duality theorem, or general
+  functoriality result is claimed.
 
 - Generalised `rocq/AssociatorResidueRepair.v` from Leibniz equality on
   `C1` to an explicit, caller-supplied equivalence relation `ceq`
