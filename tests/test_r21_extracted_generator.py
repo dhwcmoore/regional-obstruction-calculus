@@ -59,6 +59,10 @@ ocaml_checker_missing = pytest.mark.skipif(
     reason="roc-verify-ocaml not built; run `make check-r21-ocaml` first",
 )
 
+# A hung generator or checker must fail the test loudly, not hang the
+# suite indefinitely.
+SUBPROCESS_TIMEOUT = 30
+
 
 def to_str_matrix(D):
     return [[str(F(x)) for x in row] for row in D]
@@ -78,7 +82,7 @@ def run_extracted_solve(input_path, tmp_path):
     cert_path = tmp_path / "extracted_cert.json"
     result = subprocess.run(
         [str(EXTRACTED_BINARY), str(input_path), "--certificate", str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert result.returncode == 0, f"roc-solve-extracted failed: {result.stdout}{result.stderr}"
     return cert_path
@@ -87,7 +91,7 @@ def run_extracted_solve(input_path, tmp_path):
 def run_python_checker(input_path, cert_path) -> int:
     result = subprocess.run(
         [sys.executable, str(REPO_ROOT / "r21_certificate_checker.py"), str(input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     return result.returncode
 
@@ -95,7 +99,7 @@ def run_python_checker(input_path, cert_path) -> int:
 def run_ocaml_checker(input_path, cert_path) -> int:
     result = subprocess.run(
         [str(OCAML_CHECKER), str(input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     return result.returncode
 

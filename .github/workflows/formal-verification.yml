@@ -1,7 +1,7 @@
 name: Formal verification
 
-# Four independent, legible jobs -- python, rocq, rocq-trust, ocaml --
-# each reproducing one of make check-all's six checks from a fresh
+# Five independent, legible jobs -- python, rocq, rocq-trust, ocaml, r21
+# -- each reproducing one of make check-all's checks from a fresh
 # environment, against pinned toolchain versions. The ocaml job runs
 # check-ocaml, check-assembly-parity, and check-contribution-parity --
 # same toolchain, no separate job needed. See REPRODUCIBILITY.md for
@@ -13,6 +13,17 @@ name: Formal verification
 # executable artefact -- every job starts from a fresh checkout and
 # fresh toolchain install, and each Makefile target under test removes
 # stale build artefacts itself before compiling.
+#
+# The r21 job exists because the python job alone is not sufficient
+# evidence for the R21 pipeline: without roc-verify-ocaml and
+# roc-solve-extracted built first, tests/test_r21_cross_language_
+# agreement.py, tests/test_r21_canonical_vectors.py, tests/test_r21_
+# extracted_generator.py, and tests/test_r21_demonstration.py all skip
+# gracefully rather than fail (by design, so a plain `make check-python`
+# without an OCaml/opam-or-apt toolchain still passes) -- which means the
+# python job on its own can go green while those tests silently never
+# ran. The r21 job builds both binaries first and then explicitly fails
+# if the pytest run reports ANY skip, closing that gap.
 
 on:
   push:
@@ -88,3 +99,36 @@ jobs:
       - run: opam exec -- make check-ocaml
       - run: opam exec -- make check-assembly-parity
       - run: opam exec -- make check-contribution-parity
+
+  r21:
+    # Pinned to ubuntu-24.04, not ubuntu-latest: apt-installs coq, ocaml,
+    # and the three -ocaml-dev packages (zarith/yojson/sha) roc-verify-
+    # ocaml and roc-solve-extracted need, matching this repository's own
+    # Dockerfile exactly (see that file's own comment on why these three
+    # packages are the "apt, not opam" route for this one job) so the
+    # served versions stay the ones this job was actually checked against.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            coq ocaml ocaml-findlib \
+            libzarith-ocaml-dev libyojson-ocaml-dev libsha-ocaml-dev
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: python -m pip install -U pip
+      - run: pip install -r requirements.txt
+      - run: make check-r21-ocaml
+      - run: make check-r21-extraction
+      - name: Run the full pytest suite and require zero skips
+        run: |
+          set -o pipefail
+          output="$(python3 -m pytest -q 2>&1)" || { echo "$output"; exit 1; }
+          echo "$output"
+          if echo "$output" | grep -qi "skipped"; then
+            echo "::error::pytest reported skipped tests with both R21 binaries built -- every R21 test should run, not skip, in this job. This job exists specifically to catch that gap." >&2
+            exit 1
+          fi
+          echo "$output" | grep -qE "^[0-9]+ passed( in [0-9.]+s)?$" || { echo "::error::pytest did not report a clean 'N passed' summary line" >&2; exit 1; }

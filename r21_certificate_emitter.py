@@ -47,8 +47,7 @@ def build_certificate(D: List[List[Fraction]], r: List[Fraction]) -> dict:
 
 
 def read_input(path: str):
-    with open(path, "r") as f:
-        doc = strict_json_load(f)
+    doc = strict_json_load(path)
     if not isinstance(doc, dict) or doc.get("schema") != INPUT_SCHEMA:
         raise ValueError(f"unrecognized input schema: {doc.get('schema') if isinstance(doc, dict) else doc!r}")
     validate_closed_keys(doc, INPUT_KEYS, "input file")

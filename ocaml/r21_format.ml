@@ -34,12 +34,19 @@ let input_schema = "roc-input/v1"
 let result_repair = "repair"
 let result_separator = "separator"
 
-(* Must match r21_certificate_format.py's MAX_RATIONAL_CHARS/MAX_DIMENSION
-   exactly -- the cross-language agreement corpus tests both checkers at
-   and around these limits, so a mismatch here would itself be a
-   cross-language disagreement. *)
-let max_rational_chars = 100_000
+(* Must match r21_certificate_format.py's resource-limit constants exactly
+   -- the cross-language agreement corpus tests both checkers at and
+   around these limits, so a mismatch here would itself be a
+   cross-language disagreement. See that module's own header for why
+   max_rational_chars is 1,000, not a larger figure: CPython's `int(str)`
+   conversion refuses strings over ~4,300 digits by default regardless of
+   any limit this module claims, so a shared bound has to sit under that
+   ceiling -- Zarith has no comparable limit at all, so the constraint is
+   entirely on the Python side, not this one. *)
+let max_rational_chars = 1_000
 let max_dimension = 10_000
+let max_total_entries = 1_000_000
+let max_input_bytes = 10 * 1024 * 1024
 
 let input_keys = [ "schema"; "D"; "r" ]
 let certificate_keys_repair = [ "schema"; "input_digest"; "result"; "repair" ]
@@ -53,7 +60,15 @@ let certificate_keys_separator = [ "schema"; "input_digest"; "result"; "separato
    not a generic primitive. *)
 (* ------------------------------------------------------------------ *)
 
+(* ASCII digits only -- deliberately '0'..'9' by character range, not any
+   locale/Unicode-aware notion of "digit" -- so this parser cannot accept
+   e.g. Arabic-indic or fullwidth digit characters that would parse
+   successfully but never round-trip through q_to_canonical_string below. *)
 let is_digit c = c >= '0' && c <= '9'
+
+let q_to_canonical_string (q : Q.t) : string =
+  if Z.equal (Q.den q) Z.one then Z.to_string (Q.num q)
+  else Z.to_string (Q.num q) ^ "/" ^ Z.to_string (Q.den q)
 
 let parse_rational (s : string) : Q.t =
   let len = String.length s in
@@ -67,23 +82,31 @@ let parse_rational (s : string) : Q.t =
   if !i = num_start then raise (Reject (Printf.sprintf "not a canonical exact-rational string: %S" s));
   let num_digits = String.sub s num_start (!i - num_start) in
   let signed_num = if negative then "-" ^ num_digits else num_digits in
-  if !i = len then Q.of_bigint (Z.of_string signed_num)
-  else if s.[!i] = '/' then begin
-    incr i;
-    let den_start = !i in
-    while !i < len && is_digit s.[!i] do incr i done;
-    if !i = den_start || !i <> len then
-      raise (Reject (Printf.sprintf "not a canonical exact-rational string: %S" s));
-    let den_digits = String.sub s den_start (!i - den_start) in
-    let den = Z.of_string den_digits in
-    if Z.equal den Z.zero then raise (Reject (Printf.sprintf "zero denominator: %S" s));
-    Q.make (Z.of_string signed_num) den
-  end
-  else raise (Reject (Printf.sprintf "not a canonical exact-rational string: %S" s))
-
-let q_to_canonical_string (q : Q.t) : string =
-  if Z.equal (Q.den q) Z.one then Z.to_string (Q.num q)
-  else Z.to_string (Q.num q) ^ "/" ^ Z.to_string (Q.den q)
+  let value =
+    if !i = len then Q.of_bigint (Z.of_string signed_num)
+    else if s.[!i] = '/' then begin
+      incr i;
+      let den_start = !i in
+      while !i < len && is_digit s.[!i] do incr i done;
+      if !i = den_start || !i <> len then
+        raise (Reject (Printf.sprintf "not a canonical exact-rational string: %S" s));
+      let den_digits = String.sub s den_start (!i - den_start) in
+      let den = Z.of_string den_digits in
+      if Z.equal den Z.zero then raise (Reject (Printf.sprintf "zero denominator: %S" s));
+      Q.make (Z.of_string signed_num) den
+    end
+    else raise (Reject (Printf.sprintf "not a canonical exact-rational string: %S" s))
+  in
+  (* Canonicality check: "03", "6/2", "3/1", "02/10", and "-0" are all
+     syntactically valid per the grammar above, but none is the canonical
+     string q_to_canonical_string would produce for the value it denotes
+     -- matching r21_certificate_format.py's own round-trip check exactly,
+     since both must reject the same non-canonical inputs for the two
+     verifiers to keep agreeing. *)
+  let canonical = q_to_canonical_string value in
+  if s <> canonical then
+    raise (Reject (Printf.sprintf "non-canonical rational representation: %S (canonical form is %S)" s canonical));
+  value
 
 (* ------------------------------------------------------------------ *)
 (* JSON: Yojson.Safe for lexing/parsing (a mature library, not hand-
@@ -104,7 +127,20 @@ let rec check_no_duplicate_keys (j : Yojson.Safe.t) : unit =
   | `List l -> List.iter check_no_duplicate_keys l
   | _ -> ()
 
+let check_file_size (path : string) : unit =
+  let size =
+    try
+      let ic = open_in_bin path in
+      let n = in_channel_length ic in
+      close_in ic;
+      n
+    with Sys_error msg -> raise (Reject msg)
+  in
+  if size > max_input_bytes then
+    raise (Reject (Printf.sprintf "file %S is %d bytes, exceeding MAX_INPUT_BYTES=%d" path size max_input_bytes))
+
 let strict_json_load (path : string) : Yojson.Safe.t =
+  check_file_size path;
   let j =
     try Yojson.Safe.from_file path
     with
@@ -153,6 +189,8 @@ let parse_vector (label : string) (j : Yojson.Safe.t) : Q.t array =
   let n = List.length items in
   if n > max_dimension then
     raise (Reject (Printf.sprintf "vector length %d exceeds MAX_DIMENSION=%d" n max_dimension));
+  if n > max_total_entries then
+    raise (Reject (Printf.sprintf "vector length %d exceeds MAX_TOTAL_ENTRIES=%d" n max_total_entries));
   Array.of_list (List.map (fun x -> parse_rational (get_string (label ^ " entry") x)) items)
 
 let parse_matrix (label : string) (j : Yojson.Safe.t) : Q.t array array =
@@ -166,7 +204,10 @@ let parse_matrix (label : string) (j : Yojson.Safe.t) : Q.t array array =
     Array.iter
       (fun row -> if Array.length row <> n then raise (Reject "matrix is not rectangular: rows have differing lengths"))
       parsed;
-    if n > max_dimension then raise (Reject (Printf.sprintf "column count %d exceeds MAX_DIMENSION=%d" n max_dimension))
+    if n > max_dimension then raise (Reject (Printf.sprintf "column count %d exceeds MAX_DIMENSION=%d" n max_dimension));
+    let total = Array.length parsed * n in
+    if total > max_total_entries then
+      raise (Reject (Printf.sprintf "matrix has %d total entries, exceeding MAX_TOTAL_ENTRIES=%d" total max_total_entries))
   end;
   parsed
 

@@ -14,6 +14,73 @@ current boundary.
 
 ## Unreleased
 
+## v0.20-r21-front-to-back
+
+### R21 release-integrity hardening, post-review
+
+An external review of the pushed `v0.20-r21-front-to-back` tag found
+several confirmed defects, independently reproduced before being fixed
+(not taken on faith):
+
+- **Canonicalisation was not actually enforced.** `"03"`, `"6/2"`,
+  `"3/1"`, `"02/10"`, `"1/05"`, and `"-0"` were all accepted as exact
+  rational values, despite each being a non-canonical representation the
+  schema's own name and documentation already claimed was rejected. Both
+  `r21_certificate_format.parse_rational` (Python) and `ocaml/r21_format.
+  ml`'s `parse_rational` (OCaml) now recompute the canonical string for
+  the parsed value and reject if it does not equal the input exactly.
+- **Python's rational regex accepted Unicode digits.** `\d` is
+  Unicode-aware and matched Arabic-indic and fullwidth digit characters
+  (`"١/٢"`, `"１２/３"`) that the OCaml parser's always-ASCII grammar
+  rejected -- a genuine cross-language disagreement. The regex now uses
+  `[0-9]` explicitly.
+- **The published `MAX_RATIONAL_CHARS = 100_000` limit was fiction on the
+  Python side.** CPython's own `int(str)` conversion refuses strings over
+  `sys.get_int_max_str_digits()` (4,300 by default, a CVE-2020-10735
+  mitigation), so Python silently rejected legitimate values the OCaml
+  side (Zarith, no comparable ceiling) accepted -- confirmed directly: a
+  5,001-digit rational was accepted by `roc-verify-ocaml` and rejected by
+  `r21_certificate_checker.py`. Lowered to `MAX_RATIONAL_CHARS = 1_000` on
+  both sides -- comfortably under 4,300, needing no interpreter
+  reconfiguration, and already far more digits than this repository's own
+  examples use.
+- **No limit on total matrix entries or raw file size.** `MAX_DIMENSION`
+  (10,000) bounds rows and columns individually but not their product (a
+  nominal 10,000 x 10,000 matrix is 100 million entries). Added
+  `MAX_TOTAL_ENTRIES` (1,000,000) and `MAX_INPUT_BYTES` (10 MB, checked
+  before the file is even opened for JSON parsing) to both `r21_
+  certificate_format.py` and `ocaml/r21_format.ml`.
+- **19 `subprocess.run` calls across the R21 test files had no
+  `timeout=`.** A hung checker or generator could hang the suite
+  indefinitely instead of failing the test. All 19 now pass
+  `timeout=30`.
+- **CI never built or exercised the R21 OCaml/extraction binaries.** The
+  Python CI job ran `make check-python` alone, under which 105-123 R21
+  tests skip gracefully (by design, so a plain `pytest` without an
+  OCaml/opam-or-apt toolchain still passes) -- meaning CI could go green
+  while that coverage silently never ran. Added a fifth CI job (`r21`)
+  that apt-installs the same packages this repository's own Dockerfile
+  uses, builds both binaries, and explicitly fails if the pytest run
+  reports any skip.
+- **Module-count and test-count drift across README/STATUS/
+  REPRODUCIBILITY/CHANGELOG.** "27 proof modules plus ExtractR21" (= 28)
+  was an off-by-one -- `rocq/*.v` has 27 files total (26 proof modules
+  plus `ExtractR21.v`), not 28. Test counts had also drifted as new R21
+  test files were added without updating every count claim
+  (`REPRODUCIBILITY.md` still said 212). Corrected throughout; current
+  counts are 254 passed (no R21 OCaml/extraction toolchain) or 377 passed,
+  0 skipped (both binaries built).
+- Pinned `pytest==9.1.1` in `requirements.txt` (previously unpinned).
+- Added `version: v0.20-r21-front-to-back` to `CITATION.cff`.
+
+None of this changes the mathematical-soundness TCB (`docs/design/
+R21_CERTIFICATE_TCB.md`'s own layered account already scoped
+canonicalisation/resource-limit defects to provenance-binding/DoS
+resistance, not soundness) -- every fix here is either a stricter input
+gate (reject more, never accept more) or process/documentation hygiene.
+See that document's own "Hardening" section for the corrected, detailed
+account.
+
 ### R21 end-to-end demonstration and independence nuance
 
 - Added `docs/R21_END_TO_END_DEMONSTRATION.md`: a canonical reference
@@ -76,9 +143,12 @@ current boundary.
   confirmed by rerunning the full existing R21 test suite unchanged
   after the refactor.
 - Added `rocq/ExtractR21.v` to `ROCQ_MODULES` (compiled and `coqchk`-ed
-  alongside the 27 proof modules, despite having no `Theorem`/`Lemma` of
+  alongside the 26 proof modules, despite having no `Theorem`/`Lemma` of
   its own) so `check-rocq-inventory`'s exact-match discipline is not
-  carved out for it. The active Rocq chain is now 28 modules.
+  carved out for it. The active Rocq chain is now 27 modules (26 proof
+  modules plus ExtractR21) -- an earlier revision of this entry said 28,
+  an off-by-one that also propagated into README.md/STATUS.md/
+  REPRODUCIBILITY.md before being caught and corrected.
 - Added `make extract-r21` and `make check-r21-extraction` (compiles
   `roc-solve-extracted`); `check-all` now runs
   `check-r21-ocaml` -> `check-r21-extraction` -> `check-python`, so the

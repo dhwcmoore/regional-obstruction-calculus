@@ -34,6 +34,10 @@ ocaml_checker_missing = pytest.mark.skipif(
     reason="roc-verify-ocaml not built; run `make check-r21-ocaml` first",
 )
 
+# A hung checker or generator must fail the test loudly, not hang the
+# suite indefinitely.
+SUBPROCESS_TIMEOUT = 30
+
 REPAIRABLE_INPUT = {"schema": "roc-input/v1", "D": [["1", "0"], ["0", "1"]], "r": ["3", "5"]}
 REPAIRABLE_EXPECTED_DIGEST = "sha256:6ed797d190fcb066aece62d0a70065c8ea46f812b4e8e819cbdd8433a4f08b62"
 REPAIRABLE_EXPECTED_WITNESS = ["3", "5"]
@@ -50,7 +54,7 @@ FOUR_CYCLE_EXPECTED_WITNESS = ["1/5", "1/5", "1/5", "-1/5"]
 def run_extracted_solve(input_path, cert_path):
     result = subprocess.run(
         [str(EXTRACTED_BINARY), str(input_path), "--certificate", str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     return result.stdout
@@ -59,13 +63,16 @@ def run_extracted_solve(input_path, cert_path):
 def run_python_checker(input_path, cert_path) -> int:
     result = subprocess.run(
         [sys.executable, str(REPO_ROOT / "r21_certificate_checker.py"), str(input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     return result.returncode
 
 
 def run_ocaml_checker(input_path, cert_path) -> int:
-    result = subprocess.run([str(OCAML_CHECKER), str(input_path), str(cert_path)], capture_output=True, text=True)
+    result = subprocess.run(
+        [str(OCAML_CHECKER), str(input_path), str(cert_path)],
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
+    )
     return result.returncode
 
 
@@ -117,7 +124,8 @@ def test_digest_agreement_documented_in_demonstration(tmp_path):
 
     python_digest = canonical_input_digest(parse_matrix(FOUR_CYCLE_INPUT["D"]), parse_vector(FOUR_CYCLE_INPUT["r"]))
     ocaml_result = subprocess.run(
-        [str(OCAML_CHECKER), "--digest", str(input_path)], capture_output=True, text=True,
+        [str(OCAML_CHECKER), "--digest", str(input_path)],
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert ocaml_result.returncode == 0
     ocaml_digest = ocaml_result.stdout.strip()

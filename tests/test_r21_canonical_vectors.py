@@ -32,9 +32,7 @@ directly, never calling `canonical_input_digest` itself.
 
 import json
 import os
-import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -53,6 +51,9 @@ ocaml_missing = pytest.mark.skipif(
     reason="roc-verify-ocaml not built; run `make check-r21-ocaml` first",
 )
 
+# A hung checker must fail the test loudly, not hang the suite indefinitely.
+SUBPROCESS_TIMEOUT = 30
+
 
 @pytest.mark.parametrize("vector", VECTORS, ids=[v["name"] for v in VECTORS])
 def test_python_digest_matches_frozen_vector(vector):
@@ -68,7 +69,7 @@ def test_ocaml_digest_matches_frozen_vector(vector, tmp_path):
     input_path.write_text(json.dumps(vector["input"]))
     result = subprocess.run(
         [str(OCAML_BINARY), "--digest", str(input_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip() == vector["digest"]

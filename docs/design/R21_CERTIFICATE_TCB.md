@@ -246,11 +246,44 @@ test:
   of `json`'s default last-value-wins behaviour, which would let two
   readers of the same raw bytes (e.g. a human auditing the file and this
   checker) disagree about what the certificate actually says.
-- **Resource limits.** `MAX_RATIONAL_CHARS` (100,000) bounds a single
+- **Resource limits.** `MAX_RATIONAL_CHARS` (1,000) bounds a single
   rational literal's length; `MAX_DIMENSION` (10,000) bounds matrix/vector
-  row and column counts. Both are generous relative to this repository's
-  own examples and are resource limits, not soundness checks — see the
-  digest discussion above for the same category distinction.
+  row and column counts individually; `MAX_TOTAL_ENTRIES` (1,000,000)
+  bounds a matrix's total declared entries (`rows * columns`), which
+  `MAX_DIMENSION` alone does not — 10,000 rows and 10,000 columns are
+  each individually permitted, but their product is 100 million; and
+  `MAX_INPUT_BYTES` (10 MB) bounds the raw file size, checked before the
+  file is even opened for JSON parsing. All four are resource limits, not
+  soundness checks — see the digest discussion above for the same
+  category distinction. `MAX_RATIONAL_CHARS` is deliberately far smaller
+  than an earlier revision's 100,000: CPython's own `int(str)` conversion
+  refuses strings over `sys.get_int_max_str_digits()` (4,300 by default)
+  regardless of what this module claimed, so 100,000 was fiction on the
+  Python side while Zarith's GMP-backed parser had no comparable ceiling
+  at all — a genuine cross-language disagreement in the (4,300, 100,000]
+  character range that an external review caught directly (a 5,001-digit
+  value was accepted by the OCaml checker and rejected by the Python one
+  with an undocumented, unrelated CPython security-limit error). 1,000 is
+  comfortably under 4,300, needs no interpreter reconfiguration, and is
+  already far more digits than any coefficient this repository's own
+  examples would use.
+- **Canonicality, not just syntactic validity.** The same external review
+  found that `"03"`, `"6/2"`, `"3/1"`, `"02/10"`, and `"-0"` were all
+  accepted as certificate/input values, despite each being a non-canonical
+  representation of a value the schema's own name and prior documentation
+  already claimed only had one accepted string form. Both `parse_rational`
+  implementations now recompute the canonical string for the value they
+  just parsed and reject if it does not equal the input string exactly —
+  closing that gap identically on both sides.
+- **ASCII digits only.** The same review found Python's regex used `\d`,
+  which is Unicode-aware and accepted Arabic-indic and fullwidth digit
+  characters (e.g. `"١/٢"`, `"１２/３"`) that `ocaml/r21_format.ml`'s
+  hand-written, always-ASCII-only parser rejected — a real cross-language
+  disagreement. Python's regex now uses `[0-9]` explicitly, matching the
+  OCaml side's grammar exactly (the canonicality check above would also
+  have caught most such cases as a side effect, since `str(Fraction(...))`
+  never produces non-ASCII digits, but the syntax-level fix is the
+  clearer, primary one).
 - **Shape validation at input time.** `parse_matrix` rejects a ragged `D`
   (rows of differing length); `validate_problem_shape` rejects an `r`
   whose length does not match `D`'s row count. Both close a gap where
@@ -265,7 +298,13 @@ test:
   than "REJECT."
 
 None of this touches the mathematical-soundness TCB (§ above) — these are
-independent, additional gates a certificate must also pass.
+independent, additional gates a certificate must also pass. All of the
+corrections in this section (canonicality, ASCII-only digits, the
+rational-length limit, total-entry and file-size limits, and 19 missing
+subprocess timeouts across the R21 test files) were found by an external
+review of the pushed `v0.20-r21-front-to-back` tag, independently
+reproduced before being fixed, not merely taken on faith — see
+`CHANGELOG.md`'s corresponding entry for the full list.
 
 ## What this closes, relative to the six-stage roadmap
 

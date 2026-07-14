@@ -42,6 +42,10 @@ from r21_certificate_format import (
     CERTIFICATE_SCHEMA,
 )
 
+# Every subprocess call in this file passes this timeout: a hung checker
+# or generator must fail the test loudly, not hang the suite indefinitely.
+SUBPROCESS_TIMEOUT = 30
+
 IDENTITY_D = [[F(1), F(0)], [F(0), F(1)]]
 IDENTITY_R = [F(3), F(5)]
 
@@ -187,12 +191,12 @@ def test_cli_roundtrip_repair(tmp_path):
     )
     solve = subprocess.run(
         [sys.executable, "r21_certificate_emitter.py", str(input_path), "--certificate", str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert solve.returncode == 0, solve.stderr
     verify = subprocess.run(
         [sys.executable, "r21_certificate_checker.py", str(input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert verify.returncode == 0, verify.stdout + verify.stderr
     assert "ACCEPT" in verify.stdout
@@ -208,12 +212,12 @@ def test_cli_roundtrip_separator(tmp_path):
     )
     solve = subprocess.run(
         [sys.executable, "r21_certificate_emitter.py", str(input_path), "--certificate", str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert solve.returncode == 0, solve.stderr
     verify = subprocess.run(
         [sys.executable, "r21_certificate_checker.py", str(input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert verify.returncode == 0, verify.stdout + verify.stderr
     assert "ACCEPT" in verify.stdout
@@ -231,11 +235,11 @@ def test_cli_verify_rejects_wrong_input_file(tmp_path):
     )
     subprocess.run(
         [sys.executable, "r21_certificate_emitter.py", str(input_path), "--certificate", str(cert_path)],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, check=True, timeout=SUBPROCESS_TIMEOUT,
     )
     verify = subprocess.run(
         [sys.executable, "r21_certificate_checker.py", str(other_input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     assert verify.returncode == 1
     assert "REJECT" in verify.stdout
@@ -257,7 +261,7 @@ def test_repeated_emission_is_byte_identical(tmp_path):
     for out in (cert_a, cert_b):
         subprocess.run(
             [sys.executable, "r21_certificate_emitter.py", str(input_path), "--certificate", str(out)],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, check=True, timeout=SUBPROCESS_TIMEOUT,
         )
     assert cert_a.read_bytes() == cert_b.read_bytes()
 
@@ -282,7 +286,7 @@ def test_reject_after_mutating_one_matrix_coefficient(tmp_path):
     )
     subprocess.run(
         [sys.executable, "r21_certificate_emitter.py", str(input_path), "--certificate", str(cert_path)],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, check=True, timeout=SUBPROCESS_TIMEOUT,
     )
     result = check_files(str(mutated_path), str(cert_path))
     assert not result.accepted
@@ -300,7 +304,7 @@ def test_reject_after_mutating_one_residue_coefficient(tmp_path):
     )
     subprocess.run(
         [sys.executable, "r21_certificate_emitter.py", str(input_path), "--certificate", str(cert_path)],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, check=True, timeout=SUBPROCESS_TIMEOUT,
     )
     result = check_files(str(mutated_path), str(cert_path))
     assert not result.accepted

@@ -71,7 +71,11 @@ python run_associator_obstruction.py examples/four_cycle_associator.json
 python -m pytest -q
 ```
 
-Expected: `212 passed`.
+Expected: `254 passed` (no OCaml/opam-or-apt toolchain: the R21 OCaml
+cross-language, canonical-vector, extracted-generator, and demonstration
+tests skip gracefully). With `make check-r21-ocaml` and `make check-r21-
+extraction` run first (as `make check-all` always does), expect `377
+passed, 0 skipped` instead -- see the R21 second-checker section below.
 
 ## Individual checks
 

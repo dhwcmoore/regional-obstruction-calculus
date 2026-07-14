@@ -13,7 +13,7 @@ Local validity does not guarantee global coherence. Pairwise-compatible regional
 
 The distinctive contribution is the separation of these obligations. "There is an obstruction" is not treated as one monolithic claim.
 
-Everything computational is exact rational arithmetic using Python `Fraction`, with no floating-point reasoning in any active path. The active Rocq chain contains 28 modules and is checked with both `coqc` and `coqchk`, with no project-added `Admitted`, `Axiom`, `Parameter`, or `sorry`.
+Everything computational is exact rational arithmetic using Python `Fraction`, with no floating-point reasoning in any active path. The active Rocq chain contains 27 modules and is checked with both `coqc` and `coqchk`, with no project-added `Admitted`, `Axiom`, `Parameter`, or `sorry`.
 
 ## Central mathematical architecture
 
@@ -266,16 +266,16 @@ docs/diagnostics/
     realisability and computational diagnostic accounts
 
 rocq/
-    28 active machine-checked proof modules (27 proof modules plus ExtractR21, the extraction entry point)
+    27 active machine-checked modules (26 proof modules plus ExtractR21, the extraction entry point)
 
 examples/
     exact JSON witness data
 
 tests/
-    245-test Python regression suite (347 including the R21 OCaml
-    cross-language, canonical-vector, and extraction suites, once
-    `make check-r21-ocaml`/`check-r21-extraction` have built their
-    binaries)
+    254-test Python regression suite (377 including the R21 OCaml
+    cross-language, canonical-vector, extracted-generator, and
+    demonstration suites, once `make check-r21-ocaml`/`check-r21-
+    extraction` have built their binaries)
 
 ocaml/
     independent refinement and parity checkers
@@ -298,7 +298,7 @@ make check-python
 Expected result:
 
 ```text
-245 passed
+254 passed
 ```
 
 ### Complete verification
@@ -320,7 +320,7 @@ check-assembly-parity
 check-contribution-parity
 ```
 
-The active formal chain contains 28 Rocq modules (27 proof modules plus ExtractR21, the extraction entry point). `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
+The active formal chain contains 27 Rocq modules (26 proof modules plus ExtractR21, the extraction entry point). `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
 
 ### Pinned container
 

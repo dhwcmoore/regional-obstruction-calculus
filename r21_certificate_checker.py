@@ -157,8 +157,7 @@ def _check_certificate(D: List[List[Fraction]], r: List[Fraction], cert: dict, r
 
 
 def read_input(path: str):
-    with open(path, "r") as f:
-        doc = strict_json_load(f)
+    doc = strict_json_load(path)
     if not isinstance(doc, dict) or doc.get("schema") != INPUT_SCHEMA:
         raise ValueError(f"unrecognized input schema: {doc.get('schema') if isinstance(doc, dict) else doc!r}")
     validate_closed_keys(doc, INPUT_KEYS, "input file")
@@ -176,8 +175,7 @@ def check_files(input_path: str, certificate_path: str) -> CheckResult:
         result.reject(f"malformed input file: {e}")
         return result
     try:
-        with open(certificate_path, "r") as f:
-            cert = strict_json_load(f)
+        cert = strict_json_load(certificate_path)
     except Exception as e:
         result = CheckResult()
         result.reject(f"malformed certificate file: {e}")

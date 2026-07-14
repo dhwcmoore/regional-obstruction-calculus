@@ -53,6 +53,11 @@ from r21_certificate_format import MAX_DIMENSION, MAX_RATIONAL_CHARS, canonical_
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OCAML_BINARY = REPO_ROOT / "roc-verify-ocaml"
 
+# Every subprocess call in this file passes this timeout: a hung checker
+# (deadlock, unexpected interactive prompt, runaway parse) must fail the
+# test loudly, not hang the suite indefinitely.
+SUBPROCESS_TIMEOUT = 30
+
 ocaml_missing = pytest.mark.skipif(
     not os.access(OCAML_BINARY, os.X_OK),
     reason="roc-verify-ocaml not built; run `make check-r21-ocaml` first",
@@ -117,7 +122,7 @@ def dot_reference(u, v):
 def run_python_checker(input_path, cert_path) -> int:
     result = subprocess.run(
         [sys.executable, str(REPO_ROOT / "r21_certificate_checker.py"), str(input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     return result.returncode
 
@@ -125,7 +130,7 @@ def run_python_checker(input_path, cert_path) -> int:
 def run_ocaml_checker(input_path, cert_path) -> int:
     result = subprocess.run(
         [str(OCAML_BINARY), str(input_path), str(cert_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
     return result.returncode
 
@@ -373,6 +378,46 @@ def _case_truncated_json_input(tmp_path):
     return input_path, cert_path
 
 
+def _noncanonical_case(value):
+    """Builds a case mutating the base certificate's witness to a
+    syntactically valid but non-canonical rational representation --
+    each of these is an exact value equal to a value the schema already
+    accepts, but not in the one canonical string form `str(Fraction(...))`
+    (Python) / `q_to_canonical_string` (OCaml) would produce for it."""
+    def build(tmp_path):
+        input_path, cert_path = _base_input_and_cert(tmp_path)
+        cert = json.loads(cert_path.read_text())
+        cert["repair"][0] = value
+        write_json_file(cert_path, cert)
+        return input_path, cert_path
+    return build
+
+
+def _case_oversized_total_entries(tmp_path):
+    # 1001 x 1000 = 1,001,000 entries, exceeding MAX_TOTAL_ENTRIES (1,000,000)
+    # while each dimension (1001, 1000) individually stays under
+    # MAX_DIMENSION (10,000) -- isolates the total-entry-count limit from
+    # the per-dimension one.
+    rows = [["1"] * 1000 for _ in range(1001)]
+    input_path = write_json_file(tmp_path / "input.json", {"schema": "roc-input/v1", "D": rows, "r": ["0"]})
+    cert_path = _dummy_cert_path(tmp_path)
+    return input_path, cert_path
+
+
+def _case_oversized_file_size(tmp_path):
+    # ~11,000 legitimately-sized (999-char, under MAX_RATIONAL_CHARS=1000)
+    # entries: roughly 11 MB of raw JSON bytes, exceeding MAX_INPUT_BYTES
+    # (10 MB), checked before the file is even parsed as JSON -- so this
+    # fires regardless of what MAX_DIMENSION/MAX_TOTAL_ENTRIES would
+    # separately say about 11,000 entries in one vector.
+    big_number = "9" * 999
+    input_path = write_json_file(
+        tmp_path / "input.json", {"schema": "roc-input/v1", "D": [], "r": [big_number] * 11_000}
+    )
+    cert_path = _dummy_cert_path(tmp_path)
+    return input_path, cert_path
+
+
 # --------------------------------------------------------------------------
 # The full corpus.
 # --------------------------------------------------------------------------
@@ -401,6 +446,15 @@ CASES = [
     ("noncanonical_rational", _case_noncanonical_rational, "reject"),
     ("truncated_json_certificate", _case_truncated_json_certificate, "reject"),
     ("truncated_json_input", _case_truncated_json_input, "reject"),
+    ("noncanonical_leading_zero", _noncanonical_case("03"), "reject"),
+    ("noncanonical_unreduced_fraction", _noncanonical_case("6/2"), "reject"),
+    ("noncanonical_denominator_one", _noncanonical_case("3/1"), "reject"),
+    ("noncanonical_denominator_leading_zero", _noncanonical_case("1/05"), "reject"),
+    ("noncanonical_negative_zero", _noncanonical_case("-0"), "reject"),
+    ("unicode_arabic_indic_digits", _noncanonical_case("١/٢"), "reject"),
+    ("unicode_fullwidth_digits", _noncanonical_case("１２/３"), "reject"),
+    ("oversized_total_entries", _case_oversized_total_entries, "reject"),
+    ("oversized_file_size", _case_oversized_file_size, "reject"),
 ]
 
 CASE_IDS = [name for name, _, _ in CASES]
