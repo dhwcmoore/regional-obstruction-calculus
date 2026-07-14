@@ -14,6 +14,83 @@ current boundary.
 
 ## Unreleased
 
+### R21 Rocq extraction: a proof-derived generator, still gated by both checkers
+
+- Extracted `compute_repair_or_separator` -- the function `compute_
+  repair_or_separator_correct` proves sound against the original `D`, `r`
+  -- from Rocq to OCaml via a new tracked entry point,
+  `rocq/ExtractR21.v`, using only Coq 8.18.0's own official extraction
+  realisation files (`ExtrOcamlBasic`, `ExtrOcamlZBigInt`,
+  `ExtrOcamlNatBigInt`) -- zero project-defined `Extract Constant`/
+  `Extract Inductive` directives. `make extract-r21` regenerates
+  `ocaml/r21_extracted.ml`/`.mli` fresh every time; neither is committed
+  (the same discipline already applied to `.vo`/`.cmi`/`.cmx`).
+- Preceded by an untracked bounded extraction spike (not committed):
+  extracted the definition exactly as it stood, with no redesign, and
+  inspected the output by hand -- no `failwith`/`Obj.magic`/axiom stubs;
+  confirmed `Z`/`positive`/`nat` extract to Zarith's own `Z.t` (a
+  same-type compatibility shim, not a wrapper); ran it on the
+  repository's own four-cycle data and reproduced R1's exact canonical
+  witness; ran it on a 30-digit-numerator case, cross-checked
+  independently against Python's `Fraction`; every resulting certificate
+  was accepted by both existing checkers. The tracked `ExtractR21.v`
+  reproduces this spike's output byte-for-byte.
+- Added `ocaml/r21_extracted_solve.ml` (`roc-solve-extracted`), a thin
+  adapter: converts Coq's unreduced `Qmake { Qnum ; Qden }` extraction
+  representation to `Zarith.Q` (one `Q.make` call each way -- the single
+  representation adapter this pipeline needed, predicted before the
+  spike was run and confirmed by it), runs the extracted computation,
+  and emits the same `repair-or-separator/v1` certificate the
+  hand-written generator does.
+- Factored `ocaml/r21_verifier.ml`'s schema/canonicalisation/JSON/digest
+  code out into a new shared module, `ocaml/r21_format.ml`, reused by
+  both the checker and the new adapter -- mirroring `r21_certificate_
+  format.py`'s existing role on the Python side. No behavioural change;
+  confirmed by rerunning the full existing R21 test suite unchanged
+  after the refactor.
+- Added `rocq/ExtractR21.v` to `ROCQ_MODULES` (compiled and `coqchk`-ed
+  alongside the 27 proof modules, despite having no `Theorem`/`Lemma` of
+  its own) so `check-rocq-inventory`'s exact-match discipline is not
+  carved out for it. The active Rocq chain is now 28 modules.
+- Added `make extract-r21` and `make check-r21-extraction` (compiles
+  `roc-solve-extracted`); `check-all` now runs
+  `check-r21-ocaml` -> `check-r21-extraction` -> `check-python`, so the
+  R21 cross-language, canonical-vector, and extracted-generator test
+  suites all find their binaries already built rather than skipping.
+- Added `tests/test_r21_extracted_generator.py` (48 tests): every
+  certificate the extracted generator produces is judged by whether
+  **both existing checkers** independently accept it -- never by the
+  generator's own opinion. Covers repairable, separator, R1's four-cycle
+  (exact witness match), zero-/minimal-dimensional boundaries,
+  rectangular matrices, a case requiring a row swap, a case requiring
+  non-trivial rational pivot normalisation, negative coefficients,
+  30-digit exact numerators, and 30 deterministically-seeded random
+  small systems (`r` defined as `D@b` via a from-scratch reference
+  computation, not either checker's own code). Two deliberately
+  different comparisons against the hand-written Python generator:
+  witness-identity parity for determinate systems (both algorithms use
+  the same pivot-selection order, so they coincide), vs. semantic
+  equivalence only (both accepted, witnesses not required to match) for
+  an underdetermined system with more than one valid repair.
+- `r21_repair_or_separator.py` (the hand-written generator) is
+  unchanged and retained -- as a reference implementation, the parity
+  suite's differential-testing partner, an independent source of test
+  cases, and a diagnostic fallback needing only Python.
+- Documented two installation paths for `zarith`/`yojson`/`sha` in
+  `REPRODUCIBILITY.md` (apt, matching this repository's "apt not opam"
+  policy; opam, for developers without root) -- unchanged by this phase,
+  since extraction needs no library beyond what the second checker
+  already required (`ExtrOcamlZBigInt`/`ExtrOcamlNatBigInt` are part of
+  the Coq distribution itself).
+- Added `docs/design/R21_EXTRACTION_TCB.md`: the exact Rocq definition
+  extracted, the theorem proving it sound, every extraction directive
+  used (itemised, all from Coq's own official files), the representation
+  adapter, confirmation the generated OCaml is never committed, and what
+  this phase does and does not establish -- explicitly, that both
+  checkers still gate every certificate from either generator, and that
+  extraction does not shrink the mathematical-soundness TCB the way the
+  second checker did.
+
 ### R21 second checker: OCaml, cross-language agreement, canonical digest vectors
 
 - Added `ocaml/r21_verifier.ml` (`roc-verify-ocaml`), a second,

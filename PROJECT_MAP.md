@@ -72,7 +72,10 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `r21_repair_or_separator.py` — untrusted (hand-written, not extracted) generator: augmented Gauss-Jordan elimination on `[D | r | I_m]` producing a repair `b` or separator `y`.
 - `r21_certificate_emitter.py` (`roc-solve` CLI) — runs the generator and emits a digest-bound certificate.
 - `r21_certificate_checker.py` (`roc-verify` CLI) — independent checker: imports neither the generator nor the emitter, recomputes `Db = r` or `D^Ty = 0 /\ y.r = 1` via `rational_linear_algebra.py`'s primitives, fail-closed. See `docs/design/R21_CERTIFICATE_TCB.md` for the trusted-computing-base statement.
+- `ocaml/r21_format.ml` — shared OCaml schema/canonicalisation/JSON module, used by both `r21_verifier.ml` and `r21_extracted_solve.ml` (not solver logic, the same narrow sharing exception `r21_certificate_format.py` documents on the Python side).
 - `ocaml/r21_verifier.ml` (`roc-verify-ocaml` CLI, built by `make check-r21-ocaml`) — a SECOND, independently written checker for the same `repair-or-separator/v1` certificates: shares with the Python side only the published schema, canonicalisation rule, resource limits, and test fixtures (not any code), using `Zarith.Q` for exact-rational arithmetic, `Yojson.Safe` for JSON, and the `sha` library for SHA-256. `tests/test_r21_cross_language_agreement.py` (23 cases: hand-authored, constructed-by-construction, and malformed/tampered/resource-limit) and `tests/test_r21_canonical_vectors.py` (frozen digest vectors in `tests/r21_canonical_vectors.json`, generated independently of either checker) both require exact agreement.
+- `rocq/ExtractR21.v` (`make extract-r21`) — extracts `compute_repair_or_separator` (R21's proved computational function) to `ocaml/r21_extracted.ml`/`.mli` using only Coq's official `ExtrOcamlBasic`/`ExtrOcamlZBigInt`/`ExtrOcamlNatBigInt` realisation files (zero project-defined extraction directives). Declared in `ROCQ_MODULES` (compiled/`coqchk`-checked alongside the proof chain) despite having no theorems of its own. Output not committed — regenerated fresh every run, like `.vo`/`.cmi`/`.cmx`.
+- `ocaml/r21_extracted_solve.ml` (`roc-solve-extracted` CLI, built by `make check-r21-extraction`) — thin adapter around the extracted generator: converts Coq's unreduced `Qmake` representation to `Zarith.Q` (`Q.make`, one line each way) and emits the same `repair-or-separator/v1` certificate the hand-written generator does. Not part of the acceptance TCB — every certificate it emits is still gated by both `r21_certificate_checker.py` and `roc-verify-ocaml`. `tests/test_r21_extracted_generator.py` (48 tests: repairable/separator/four-cycle/boundary/rectangular/row-swap/rational-pivot/negative/large-number/random cases, both-checkers-ACCEPT as the oracle, plus witness-identity parity against the hand-written generator for determinate systems). See `docs/design/R21_EXTRACTION_TCB.md` for the itemised extraction trusted-computing-base statement.
 
 ## 5. Realisability diagnostics
 
@@ -90,7 +93,7 @@ The diagnostic ladder — see `docs/diagnostics/REALISABILITY_ROADMAP.md` for th
 
 ## 6. Rocq proof artefacts
 
-All 25 active modules compile cleanly with no project-added
+All 28 active modules (27 proof modules plus ExtractR21, the extraction entry point) compile cleanly with no project-added
 `Admitted`, `Axiom`, `Parameter`, or `sorry`. `make check-rocq-trust`
 runs `coqchk` over the complete declared dependency closure.
 

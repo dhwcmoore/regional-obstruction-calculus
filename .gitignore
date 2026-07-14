@@ -23,6 +23,9 @@ refinement_checker_ocaml
 assembly_checker
 associator_contribution_checker
 roc-verify-ocaml
+roc-solve-extracted
+ocaml/r21_extracted.ml
+ocaml/r21_extracted.mli
 Nontrivial
 .lia.cache
 rocq/.lia.cache

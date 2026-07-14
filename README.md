@@ -13,7 +13,7 @@ Local validity does not guarantee global coherence. Pairwise-compatible regional
 
 The distinctive contribution is the separation of these obligations. "There is an obstruction" is not treated as one monolithic claim.
 
-Everything computational is exact rational arithmetic using Python `Fraction`, with no floating-point reasoning in any active path. The active Rocq chain contains 25 modules and is checked with both `coqc` and `coqchk`, with no project-added `Admitted`, `Axiom`, `Parameter`, or `sorry`.
+Everything computational is exact rational arithmetic using Python `Fraction`, with no floating-point reasoning in any active path. The active Rocq chain contains 28 modules and is checked with both `coqc` and `coqchk`, with no project-added `Admitted`, `Axiom`, `Parameter`, or `sorry`.
 
 ## Central mathematical architecture
 
@@ -207,7 +207,7 @@ by running verified exact-rational Gauss-Jordan elimination and extracting which
 
 R21 recovers R1's own four-cycle witness exactly: the internal elimination finds the paper's canonical cycle `z = (-1,-1,-1,1)` with pairing `-5` before normalisation, and the public certificate is the normalised `-1/5 z = (1/5,1/5,1/5,-1/5)`.
 
-R21's Rocq proof is not itself the deployed executable path. A `roc-solve` CLI (`r21_certificate_emitter.py`) implements a digest-bound `repair-or-separator/v1` certificate from an untrusted hand-written mirror of R21's algorithm (not a Rocq extraction). Two independent `roc-verify` checkers verify it -- `r21_certificate_checker.py` (Python) and `ocaml/r21_verifier.ml` (OCaml, `roc-verify-ocaml`) -- sharing no code, only the published schema, canonicalisation rule, and test fixtures; each recomputes `Db = r` or `D^Ty = 0 /\ y.r = 1` directly and fails closed, and both are checked against each other and against frozen canonical-digest vectors neither was allowed to generate for the other. See `docs/design/R21_CERTIFICATE_TCB.md` for exactly what this closes and what remains open (Rocq extraction and per-domain input adapters) -- cross-language agreement reduces implementation risk but does not by itself prove either checker correct.
+R21's Rocq proof is not itself the deployed executable path, but a `repair-or-separator/v1` certificate now bridges both directions. Two generators emit it: `r21_certificate_emitter.py`'s hand-written mirror of R21's algorithm (`roc-solve`), and, as of this phase, `compute_repair_or_separator` -- the function R21 proves sound -- actually extracted from Rocq (`rocq/ExtractR21.v`, `make extract-r21`) and wrapped by a thin adapter (`ocaml/r21_extracted_solve.ml`, `roc-solve-extracted`). Two independent `roc-verify` checkers verify either generator's output identically -- `r21_certificate_checker.py` (Python) and `ocaml/r21_verifier.ml` (OCaml, `roc-verify-ocaml`) -- sharing no code, only the published schema, canonicalisation rule, and test fixtures; each recomputes `Db = r` or `D^Ty = 0 /\ y.r = 1` directly and fails closed, and both are checked against each other, against frozen canonical-digest vectors neither was allowed to generate for the other, and against the extracted generator's output. Extraction does not make either checker redundant: both still gate every certificate, from either generator. See `docs/design/R21_CERTIFICATE_TCB.md` and `docs/design/R21_EXTRACTION_TCB.md` for exactly what this closes and what remains open (per-domain input adapters) -- cross-language agreement reduces implementation risk but does not by itself prove either checker correct, and extraction does not shrink the acceptance trusted computing base the second checker already established.
 
 It proves no general efficiency or numerical-stability property, and computes no rank, determinant, or general matrix inverse.
 
@@ -266,14 +266,16 @@ docs/diagnostics/
     realisability and computational diagnostic accounts
 
 rocq/
-    25 active machine-checked proof modules
+    28 active machine-checked proof modules (27 proof modules plus ExtractR21, the extraction entry point)
 
 examples/
     exact JSON witness data
 
 tests/
-    245-test Python regression suite (299 including the R21 OCaml
-    cross-language suite, once `make check-r21-ocaml` has built it)
+    245-test Python regression suite (347 including the R21 OCaml
+    cross-language, canonical-vector, and extraction suites, once
+    `make check-r21-ocaml`/`check-r21-extraction` have built their
+    binaries)
 
 ocaml/
     independent refinement and parity checkers
@@ -308,6 +310,8 @@ make check-all
 This runs, in order:
 
 ```text
+check-r21-ocaml
+check-r21-extraction
 check-python
 check-rocq
 check-rocq-trust
@@ -316,7 +320,7 @@ check-assembly-parity
 check-contribution-parity
 ```
 
-The active formal chain contains 26 Rocq modules. `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
+The active formal chain contains 28 Rocq modules (27 proof modules plus ExtractR21, the extraction entry point). `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
 
 ### Pinned container
 

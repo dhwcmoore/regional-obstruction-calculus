@@ -18,18 +18,20 @@ Python  3.12
 pytest  9.1.1
 Coq/Rocq 8.18.0    (coqc, coqchk)
 OCaml   4.14.1     (ocamlopt)
-zarith  1.13       (Ubuntu apt) / 1.14 (opam) -- for check-r21-ocaml only
+zarith  1.13       (Ubuntu apt) / 1.14 (opam) -- for check-r21-ocaml
+                    and check-r21-extraction only
 yojson  2.1.2 (apt package version; its META ships no version field, so
                     `ocamlfind list` itself reports "n/a") / 3.0.0 (opam)
-                    -- for check-r21-ocaml only
-sha     1.15.4     -- for check-r21-ocaml only
+                    -- for check-r21-ocaml and check-r21-extraction only
+sha     1.15.4     -- for check-r21-ocaml and check-r21-extraction only
 ```
 
 `make check-all` reproduces every check below, in this order, stopping
-at the first failure: `check-r21-ocaml`, `check-python` (which now
-includes the R21 cross-language agreement and canonical-digest-vector
-suites), `check-rocq`, `check-rocq-trust`, `check-ocaml`, `check-
-assembly-parity`, `check-contribution-parity`.
+at the first failure: `check-r21-ocaml`, `check-r21-extraction`,
+`check-python` (which now includes the R21 cross-language agreement,
+canonical-digest-vector, and extracted-generator suites), `check-rocq`,
+`check-rocq-trust`, `check-ocaml`, `check-assembly-parity`,
+`check-contribution-parity`.
 
 ## Pinned container
 
@@ -104,7 +106,7 @@ one a real check rather than a formality:
 ```sh
 make check-rocq-inventory   # rocq/*.v matches the Makefile's declared build chain exactly, in both directions
 make check-rocq-scan        # fast preliminary text scan for Admitted/Axiom/Parameter outside comments -- not a substitute for the next two
-make check-rocq             # compiles all 25 .v files from a clean state, in dependency order (runs the inventory and scan checks first)
+make check-rocq             # compiles all 28 .v files from a clean state, in dependency order (runs the inventory and scan checks first)
 make check-rocq-trust       # runs coqchk over the complete declared module list (runs check-rocq first)
 ```
 
@@ -139,17 +141,22 @@ coqc PairwiseDiagnosticCertificate.v
 coqc GlobalCoherenceCertificate.v
 coqc PairwiseToGlobalAssembly.v
 coqc AssociatorContributionCertificate.v
+coqc ExactRationalRepairOrSeparator.v
+coqc ExtractR21.v
 ```
 
-All 25 `.v` files contain no `Admitted`, `Axiom`, or `sorry` outside a
+All 28 `.v` files contain no `Admitted`, `Axiom`, or `sorry` outside a
 comment -- `make check-rocq-scan` checks this itself (comments stripped
 first, so a doc comment that merely *mentions* the word `Axiom` is not
 a false positive); grep them yourself to check independently, nothing
-here depends on taking this file's word for it.
+here depends on taking this file's word for it. (`ExtractR21.v` has no
+theorem of its own -- it is the extraction entry point, see
+`docs/design/R21_EXTRACTION_TCB.md` -- so this claim is vacuous for that
+one file specifically, not a proof-content claim about it.)
 
 `make check-rocq-trust` then runs `coqchk`, Rocq's own independent,
 from-scratch proof checker (a separate program from `coqc`), over the
-complete 25-module dependency closure:
+complete 28-module dependency closure:
 
 ```sh
 cd rocq && coqchk -Q . "" \
@@ -164,7 +171,8 @@ cd rocq && coqchk -Q . "" \
   RefinementWitnessParallelComposition CoupledParallelCompatibility \
   ConflictResolutionTrilemma ConflictResolutionLowerBound ConflictDiagnosticCompleteness \
   TypedDiagnosticCalculus PairwiseDiagnosticCertificate GlobalCoherenceCertificate \
-  PairwiseToGlobalAssembly AssociatorContributionCertificate
+  PairwiseToGlobalAssembly AssociatorContributionCertificate \
+  ExactRationalRepairOrSeparator ExtractR21
 ```
 
 Expected: `Modules were successfully checked`, with no `Axioms:` section
@@ -280,6 +288,47 @@ triggers) find the binary already built and actually exercise it rather
 than skipping -- a plain `make check-python` or `pytest` without this
 toolchain still passes, just skipping that coverage (see those two
 files' own module docstrings).
+
+## R21 Rocq extraction (optional, requires `coqc` + the same zarith/yojson/sha as above)
+
+```sh
+make extract-r21          # regenerates ocaml/r21_extracted.ml/.mli (never committed)
+make check-r21-extraction # + compiles roc-solve-extracted
+```
+
+Extracts `compute_repair_or_separator` -- the function `compute_repair_
+or_separator_correct` proves sound against the original `D`, `r` -- from
+`rocq/ExactRationalRepairOrSeparator.v`, via `rocq/ExtractR21.v`, using
+only Coq's own official extraction realisation files (no project-defined
+`Extract Constant`/`Extract Inductive` directives). `ocaml/r21_extracted_
+solve.ml` is the thin adapter around it (`roc-solve-extracted`),
+converting Coq's unreduced `Qmake` representation to `Zarith.Q` via one
+`Q.make` call. See `docs/design/R21_EXTRACTION_TCB.md` for the full
+account: exactly what was extracted, every extraction directive used,
+and what trusting this pipeline does and does not require.
+
+`ocaml/r21_extracted.ml`/`.mli` are **not committed** -- `make extract-
+r21` regenerates them fresh every time, the same discipline this
+repository already applies to `.vo`/`.cmi`/`.cmx`. Needs the same
+`zarith`/`yojson`/`sha` packages as `check-r21-ocaml` (apt or opam, see
+above) -- no additional external dependency, since the extraction
+realisation files (`ExtrOcamlZBigInt`/`ExtrOcamlNatBigInt`) are part of
+the Coq distribution itself.
+
+Once built, `roc-solve-extracted` has the same contract as `roc-solve`:
+
+```sh
+./roc-solve-extracted input.json --certificate cert.json   # roc-solve, Rocq-extracted generator
+./roc-verify-ocaml input.json cert.json                     # still gated by both checkers
+python r21_certificate_checker.py input.json cert.json      # -- extraction does not bypass either
+```
+
+`make check-all` runs `check-r21-extraction` right after
+`check-r21-ocaml` and before `check-python`, so `tests/test_r21_
+extracted_generator.py` (48 tests: repairable/separator/four-cycle/
+boundary/rectangular/row-swap/rational-pivot/negative/large-number/
+random cases) finds `roc-solve-extracted` already built and exercises it
+rather than skipping.
 
 ## Expected truth table (`refinement_checker.py`)
 

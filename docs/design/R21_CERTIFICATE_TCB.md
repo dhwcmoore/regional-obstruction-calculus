@@ -131,13 +131,17 @@ worth stating precisely which kind, in four layers:
    `canonical_input_digest` (via a from-scratch `Fraction`/`hashlib`
    script, not through the function under test) rather than treating one
    checker's output as ground truth for the other.
-4. **Still-untrusted components.** The generator
-   (`r21_repair_or_separator.py`), any future domain adapter, the
-   operating system, both language runtimes and their compilers
-   (`python3`, `ocamlopt`), and the correspondence between the Rocq
-   definition and either executable checker (neither is a Rocq
-   extraction). See "The trusted computing base, stated precisely" below
-   for the itemised version, and "What remains open" for what would
+4. **Still-untrusted components.** Both generators
+   (`r21_repair_or_separator.py`, hand-written; `roc-solve-extracted`,
+   Rocq-extracted -- see `docs/design/R21_EXTRACTION_TCB.md`), any future
+   domain adapter, the operating system, both language runtimes and
+   their compilers (`python3`, `ocamlopt`), the extraction mechanism and
+   its ~40 individual `Extract Constant`/`Extract Inductive` realisations
+   (itemised in `R21_EXTRACTION_TCB.md`), and the correspondence between
+   the Rocq definition and either *checker* (neither checker is a Rocq
+   extraction; only the generator now has an extracted alternative). See
+   "The trusted computing base, stated precisely" below for the itemised
+   version, and "What remains open" for what would
    shrink this list further.
 
 **What cross-language agreement does and does not establish.** Two
@@ -277,18 +281,18 @@ independent, additional gates a certificate must also pass.
 
 ## What remains open
 
-- **Stage 2 (Rocq extraction):** not attempted. The generator is still a
-  hand-written mirror, not an extraction of `compute_repair_or_separator`.
-  Per the explicit instruction that motivated this document, extraction
-  was deferred until the certificate interface and an independent checker
-  were complete; now that a *second*, cross-language-agreeing checker also
-  exists, extraction is the next candidate phase, not a claim made here.
-  Per the same instruction: extraction's main benefit is confidence that a
-  valid certificate is produced whenever one exists, and correspondence
-  between the proved algorithm and the runtime generator — it does not by
-  itself reduce the *acceptance* TCB the way the second checker just did,
-  since even an extracted generator would still be treated as untrusted by
-  both external verifiers.
+- **Stage 2 (Rocq extraction): done.** `compute_repair_or_separator` is
+  now extracted from Rocq (`rocq/ExtractR21.v`, `make extract-r21`) and
+  wrapped by a thin adapter (`ocaml/r21_extracted_solve.ml`,
+  `roc-solve-extracted`) — see `docs/design/R21_EXTRACTION_TCB.md` for
+  the full account: exactly what was extracted, every extraction
+  directive used (all from Coq's own official realisation files, none
+  project-defined), the one representation adapter needed, and what
+  extraction does and does not establish. Confirming the prediction made
+  when this stage was still open: extraction does not by itself reduce
+  the acceptance TCB the way the second checker did — both existing
+  checkers still gate every certificate the extracted generator
+  produces, exactly as they gate the hand-written one's.
 - **A third, independently-implemented checker:** not built. Two exist
   (Python, OCaml); nothing here claims two is a stopping point in
   principle, only that it is the scope this phase covered.
@@ -307,16 +311,22 @@ independent, additional gates a certificate must also pass.
 
 ## The honest current claim, updated
 
-You can now say: for the rational-matrix layer specifically, a `roc-solve`
-plus a *pair* of independent, cross-language-agreeing checkers
-(`roc-verify` in Python, `roc-verify-ocaml` in OCaml) exists such that the
-*reported* ACCEPT/REJECT depends only on the trusted computing base
-listed above — not on trusting the generator, the elimination trace, or
-any internal solver state — and agreement between two independently
-written implementations has been checked against a corpus covering
-hand-authored fixtures, by-construction certificates, tampering, resource
-limits, and a set of frozen canonical-digest vectors neither
-implementation was allowed to generate for the other.
+You can now say: for the rational-matrix layer specifically, either a
+hand-written or a **Rocq-extracted** generator (`roc-solve` /
+`roc-solve-extracted`) plus a *pair* of independent, cross-language-
+agreeing checkers (`roc-verify` in Python, `roc-verify-ocaml` in OCaml)
+exists such that the *reported* ACCEPT/REJECT depends only on the
+trusted computing base listed above — not on trusting either generator,
+the elimination trace, or any internal solver state — and agreement
+between two independently written implementations has been checked
+against a corpus covering hand-authored fixtures, by-construction
+certificates, tampering, resource limits, and a set of frozen
+canonical-digest vectors neither implementation was allowed to generate
+for the other. The extracted generator additionally lets you say that
+its witnesses are produced by the actual function `compute_repair_or_
+separator_correct` proves sound, translated by Rocq's own extraction —
+see `docs/design/R21_EXTRACTION_TCB.md` for exactly what trusting that
+translation requires.
 
 You still cannot say that this proves either checker correct, or that it
 validates the specification the two checkers share (§ "The four-layer

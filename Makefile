@@ -9,7 +9,14 @@ OCAMLOPT ?= ocamlopt
 # after everything it Requires). check-rocq-inventory below fails the
 # build if this list and rocq/*.v ever disagree, in either direction --
 # a new .v file added without being wired in here must break the build,
-# not silently go unchecked.
+# not silently go unchecked. ExtractR21 (last) is not a proof module like
+# the other 27 -- it has no Theorem/Lemma of its own, only a Require of
+# ExactRationalRepairOrSeparator and an Extraction command -- but it is
+# still a real rocq/*.v file, so it is still declared here rather than
+# carved out of the inventory check; compiling it via coqc, here or via
+# `make extract-r21`, regenerates ocaml/r21_extracted.ml/.mli as a side
+# effect (see ExtractR21.v's own header, and docs/design/
+# R21_EXTRACTION_TCB.md).
 ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   FourCycleObstruction RepeatedTripleSupportCandidate3b \
   CandidateThreeBDistinctSupportClassification CochainNaturalityDescent \
@@ -24,12 +31,12 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   ConflictDiagnosticCompleteness TypedDiagnosticCalculus \
   PairwiseDiagnosticCertificate GlobalCoherenceCertificate \
   PairwiseToGlobalAssembly AssociatorContributionCertificate \
-  ExactRationalRepairOrSeparator
+  ExactRationalRepairOrSeparator ExtractR21
 
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
   check-assembly-parity check-contribution-parity check-associator check-diagnostics \
-  check-certificates check-r21-ocaml check-all
+  check-certificates check-r21-ocaml extract-r21 check-r21-extraction check-all
 
 check: check-python
 
@@ -38,23 +45,26 @@ check: check-python
 # nonzero exit from any one of them aborts check-all immediately without
 # running the rest. This is the single command a CI job (or a human) can
 # run to reproduce every claim this repository makes about itself, all at
-# once. check-r21-ocaml runs BEFORE check-python deliberately: it builds
-# roc-verify-ocaml first, so that when check-python's pytest run reaches
-# tests/test_r21_cross_language_agreement.py and tests/test_r21_
-# canonical_vectors.py, the binary already exists and those tests
-# actually exercise cross-language agreement instead of skipping (they
-# skip gracefully, not fail, when the binary is absent -- see those
-# files' own module docstrings -- so a plain `make check-python` without
-# an OCaml/opam toolchain still passes, just without that coverage).
+# once. check-r21-ocaml and check-r21-extraction run BEFORE check-python
+# deliberately: they build roc-verify-ocaml and roc-solve-extracted
+# first, so that when check-python's pytest run reaches tests/test_r21_
+# cross_language_agreement.py, tests/test_r21_canonical_vectors.py, and
+# tests/test_r21_extracted_generator.py, both binaries already exist and
+# those tests actually exercise cross-language agreement and the
+# extracted generator instead of skipping (they skip gracefully, not
+# fail, when a binary is absent -- see those files' own module
+# docstrings -- so a plain `make check-python` without a Rocq/OCaml/
+# opam-or-apt toolchain still passes, just without that coverage).
 check-all:
 	$(MAKE) check-r21-ocaml
+	$(MAKE) check-r21-extraction
 	$(MAKE) check-python
 	$(MAKE) check-rocq
 	$(MAKE) check-rocq-trust
 	$(MAKE) check-ocaml
 	$(MAKE) check-assembly-parity
 	$(MAKE) check-contribution-parity
-	@echo "check-all: check-r21-ocaml, check-python (including R21 cross-language agreement), check-rocq, check-rocq-trust, check-ocaml, check-assembly-parity, and check-contribution-parity all passed."
+	@echo "check-all: check-r21-ocaml, check-r21-extraction, check-python (including R21 cross-language agreement and extracted-generator suites), check-rocq, check-rocq-trust, check-ocaml, check-assembly-parity, and check-contribution-parity all passed."
 
 check-python:
 	$(PYTHON) residue_classifier.py examples/four_cycle.json
@@ -210,12 +220,46 @@ check-contribution-parity:
 # is run inside this recipe so the switch's own ocamlfind and OCAMLPATH
 # are used, without requiring the invoking shell to have sourced them.
 check-r21-ocaml:
-	rm -f ocaml/r21_verifier.cmi ocaml/r21_verifier.cmx ocaml/r21_verifier.o roc-verify-ocaml
-	cd ocaml && eval $$(opam env 2>/dev/null) && ocamlfind ocamlopt -package zarith,yojson,sha -linkpkg r21_verifier.ml -o ../roc-verify-ocaml
+	rm -f ocaml/r21_format.cmi ocaml/r21_format.cmx ocaml/r21_format.o \
+	  ocaml/r21_verifier.cmi ocaml/r21_verifier.cmx ocaml/r21_verifier.o roc-verify-ocaml
+	cd ocaml && eval $$(opam env 2>/dev/null) && ocamlfind ocamlopt -package zarith,yojson,sha -linkpkg \
+	  r21_format.ml r21_verifier.ml -o ../roc-verify-ocaml
 	@echo "check-r21-ocaml: roc-verify-ocaml compiled from a clean state."
+
+# Regenerates ocaml/r21_extracted.ml/.mli from rocq/ExtractR21.v, fresh,
+# every time -- NOT committed to this repository (see that file's own
+# header for why: the same discipline already applied to .vo/.cmi/.cmx).
+# Recompiles ExactRationalRepairOrSeparator.v first so the .vo extraction
+# actually runs against is never stale. Uses only Coq's own official
+# extraction realisation files (ExtrOcamlBasic/ZBigInt/NatBigInt) -- no
+# project-defined Extract Constant/Inductive directives; see
+# docs/design/R21_EXTRACTION_TCB.md for the itemised extraction TCB.
+extract-r21:
+	rm -f rocq/ExactRationalRepairOrSeparator.vo* rocq/ExactRationalRepairOrSeparator.glob rocq/.ExactRationalRepairOrSeparator.aux
+	rm -f rocq/ExtractR21.vo* rocq/ExtractR21.glob rocq/.ExtractR21.aux
+	rm -f ocaml/r21_extracted.ml ocaml/r21_extracted.mli
+	cd rocq && $(COQC) -Q . "" ExactRationalRepairOrSeparator.v
+	cd rocq && $(COQC) -Q . "" ExtractR21.v
+	@test -f ocaml/r21_extracted.ml && test -f ocaml/r21_extracted.mli
+	@echo "extract-r21: ocaml/r21_extracted.ml regenerated from the proved Rocq definition."
+
+# Compiles roc-solve-extracted: the thin adapter (ocaml/r21_extracted_
+# solve.ml) around the just-extracted generator. Depends on extract-r21
+# having been run first (not declared as a Make prerequisite, so
+# check-all controls the exact ordering explicitly -- see its own
+# comment). Still gated by both independent checkers: this target does
+# not run or replace check-r21-ocaml/check-python.
+check-r21-extraction: extract-r21
+	rm -f ocaml/r21_extracted.cmi ocaml/r21_extracted.cmx ocaml/r21_extracted.o \
+	  ocaml/r21_format.cmi ocaml/r21_format.cmx ocaml/r21_format.o \
+	  ocaml/r21_extracted_solve.cmi ocaml/r21_extracted_solve.cmx ocaml/r21_extracted_solve.o \
+	  roc-solve-extracted
+	cd ocaml && eval $$(opam env 2>/dev/null) && ocamlfind ocamlopt -package zarith,yojson,sha -linkpkg \
+	  r21_extracted.mli r21_extracted.ml r21_format.ml r21_extracted_solve.ml -o ../roc-solve-extracted
+	@echo "check-r21-extraction: roc-solve-extracted compiled from the freshly extracted Rocq definition."
 
 clean:
 	rm -rf __pycache__ tests/__pycache__ .pytest_cache
-	rm -f refinement_checker_ocaml assembly_checker associator_contribution_checker roc-verify-ocaml
-	rm -f ocaml/*.cmi ocaml/*.cmx ocaml/*.o
+	rm -f refinement_checker_ocaml assembly_checker associator_contribution_checker roc-verify-ocaml roc-solve-extracted
+	rm -f ocaml/*.cmi ocaml/*.cmx ocaml/*.o ocaml/r21_extracted.ml ocaml/r21_extracted.mli
 	rm -f rocq/*.vo rocq/*.vok rocq/*.vos rocq/*.glob rocq/.*.aux
