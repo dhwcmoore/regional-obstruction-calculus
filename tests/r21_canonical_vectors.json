@@ -1,0 +1,183 @@
+[
+  {
+    "name": "negative_rationals_and_denominators",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [
+        [
+          "-1/2"
+        ]
+      ],
+      "r": [
+        "3/6"
+      ]
+    },
+    "canonical": "1x1\n-1/2\n1/2",
+    "digest": "sha256:f5cd3af7c0143987e186223dbdf987dfe510a284d7d6eb89fbf3f170c0b77736"
+  },
+  {
+    "name": "zero_normalisation",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [
+        [
+          "0",
+          "-0"
+        ]
+      ],
+      "r": [
+        "0"
+      ]
+    },
+    "canonical": "1x2\n0,0\n0",
+    "digest": "sha256:4dcc563978d660e5dd7ae73615c6ce41f23bf1c60e653b71583370b0323c52d5"
+  },
+  {
+    "name": "row_order_a",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [
+        [
+          "1",
+          "2"
+        ],
+        [
+          "3",
+          "4"
+        ]
+      ],
+      "r": [
+        "5",
+        "6"
+      ]
+    },
+    "canonical": "2x2\n1,2\n3,4\n5,6",
+    "digest": "sha256:4a4a64eb257bac1a0023e79f080106f47beea0e62f1b60d05b05b87a52d9014a"
+  },
+  {
+    "name": "row_order_b_swapped",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [
+        [
+          "3",
+          "4"
+        ],
+        [
+          "1",
+          "2"
+        ]
+      ],
+      "r": [
+        "6",
+        "5"
+      ]
+    },
+    "canonical": "2x2\n3,4\n1,2\n6,5",
+    "digest": "sha256:cdaa32cd8b817b4f154c5f9f40ce22704a18ea42b8ef7fd9feb09f75a1e91c38"
+  },
+  {
+    "name": "empty_collections",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [],
+      "r": []
+    },
+    "canonical": "0x0\n",
+    "digest": "sha256:682fbb22114e95876c4eae23a5952ef81ac6dfa997563a05ba0404cf12840a74"
+  },
+  {
+    "name": "multi_digit_dimensions",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ],
+        [
+          "1"
+        ]
+      ],
+      "r": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    "canonical": "12x1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1,2,3,4,5,6,7,8,9,10,11,12",
+    "digest": "sha256:07521c35456f6f5062c1c01cfc68333adc72b64b619fa9e1097e6376dfd63b4f"
+  },
+  {
+    "name": "large_integers_near_limits",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [
+        [
+          "123456789012345678901234567890/3"
+        ]
+      ],
+      "r": [
+        "-999999999999999999999999999999"
+      ]
+    },
+    "canonical": "1x1\n41152263004115226300411522630\n-999999999999999999999999999999",
+    "digest": "sha256:dc32b2625972d5712c506f42e7aa223834dfd1b60cae14d028e6123f7c513266"
+  },
+  {
+    "name": "column_order",
+    "input": {
+      "schema": "roc-input/v1",
+      "D": [
+        [
+          "1",
+          "2",
+          "3"
+        ]
+      ],
+      "r": [
+        "7"
+      ]
+    },
+    "canonical": "1x3\n1,2,3\n7",
+    "digest": "sha256:bd1b0a4b89d6a6d7f0fc4f1775597a7b045cb25e9d21b6e2f2845929231d2df6"
+  }
+]

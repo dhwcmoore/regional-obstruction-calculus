@@ -31,6 +31,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       coq \
       ocaml \
+      ocaml-findlib \
+      libzarith-ocaml-dev \
+      libyojson-ocaml-dev \
+      libsha-ocaml-dev \
       python3 \
       python3-venv \
       python3-pip \
@@ -38,6 +42,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       git \
       ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# ocaml-findlib and the three -ocaml-dev packages above are needed only
+# for check-r21-ocaml (ocaml/r21_verifier.ml, the second independent
+# checker for R21's repair-or-separator/v1 certificates): unlike every
+# other OCaml file in this repository ("depends only on the OCaml
+# standard library"), that one reads untrusted external JSON and needs
+# exact-rational arithmetic that cannot silently overflow, so it uses
+# zarith (GMP-backed rationals), yojson (JSON parsing), and sha (SHA-256)
+# -- all three available from Ubuntu 24.04's own apt archive, keeping
+# this image's "apt, not opam" policy intact. Confirmed by hand: fetching
+# and extracting these five .debs and compiling ocaml/r21_verifier.ml
+# against them with the plain system ocamlfind (no OCAMLPATH override
+# needed, since apt installs under /usr/lib/ocaml -- already on
+# ocamlfind's default search path) succeeds and reproduces the same
+# ACCEPT/REJECT verdicts as the opam-based developer setup documented in
+# REPRODUCIBILITY.md.
 
 # Fail loudly, not silently, if the archive ever serves different
 # pinned versions than the ones REPRODUCIBILITY.md names and this
@@ -52,7 +72,21 @@ RUN coqc_version="$(coqc --version | head -1)" && \
       4.14.1) ;; \
       *) echo "ERROR: expected OCaml 4.14.1, got: $ocaml_version" >&2; exit 1 ;; \
     esac && \
-    echo "verified: Coq/Rocq $coqc_version, OCaml $ocaml_version"
+    zarith_version="$(ocamlfind list | grep '^zarith ' | sed 's/.*version: *//;s/).*//')" && \
+    case "$zarith_version" in \
+      1.13) ;; \
+      *) echo "ERROR: expected zarith 1.13, got: $zarith_version" >&2; exit 1 ;; \
+    esac && \
+    if ! ocamlfind list | grep -q '^yojson '; then \
+      echo "ERROR: yojson package not found via ocamlfind" >&2; exit 1; \
+    fi && \
+    yojson_version="present (Ubuntu's libyojson-ocaml-dev package's own META has no version field, confirmed by hand -- unlike zarith/sha above, so this checks presence, not a pinned version)" && \
+    sha_version="$(ocamlfind list | grep '^sha ' | sed 's/.*version: *//;s/).*//')" && \
+    case "$sha_version" in \
+      v1.15.4) ;; \
+      *) echo "ERROR: expected sha 1.15.4, got: $sha_version" >&2; exit 1 ;; \
+    esac && \
+    echo "verified: Coq/Rocq $coqc_version, OCaml $ocaml_version, zarith $zarith_version, yojson $yojson_version, sha $sha_version"
 
 WORKDIR /repo
 COPY . .

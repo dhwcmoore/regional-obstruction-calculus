@@ -356,6 +356,14 @@ def test_reject_duplicate_key_in_input_file(tmp_path):
         checker_read_input(str(input_path))
 
 
+def test_reject_zero_denominator():
+    cert = build_certificate(IDENTITY_D, IDENTITY_R)
+    cert["repair"][0] = "3/0"
+    result = check_certificate(IDENTITY_D, IDENTITY_R, cert)
+    assert not result.accepted
+    assert any("zero denominator" in reason for reason in result.reasons)
+
+
 def test_reject_oversized_rational_string():
     huge = "1" * (MAX_RATIONAL_CHARS + 1)
     cert = build_certificate(IDENTITY_D, IDENTITY_R)

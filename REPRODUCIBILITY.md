@@ -18,13 +18,18 @@ Python  3.12
 pytest  9.1.1
 Coq/Rocq 8.18.0    (coqc, coqchk)
 OCaml   4.14.1     (ocamlopt)
+zarith  1.13       (Ubuntu apt) / 1.14 (opam) -- for check-r21-ocaml only
+yojson  2.1.2 (apt package version; its META ships no version field, so
+                    `ocamlfind list` itself reports "n/a") / 3.0.0 (opam)
+                    -- for check-r21-ocaml only
+sha     1.15.4     -- for check-r21-ocaml only
 ```
 
 `make check-all` reproduces every check below, in this order, stopping
-at the first failure: `check-python`, `check-rocq`, `check-rocq-trust`,
-`check-ocaml`, `check-assembly-parity`, `check-contribution-parity`
-(the last of these was previously missing from this sentence, even
-though the Makefile's own `check-all` target had always run it).
+at the first failure: `check-r21-ocaml`, `check-python` (which now
+includes the R21 cross-language agreement and canonical-digest-vector
+suites), `check-rocq`, `check-rocq-trust`, `check-ocaml`, `check-
+assembly-parity`, `check-contribution-parity`.
 
 ## Pinned container
 
@@ -218,6 +223,63 @@ Incompatible evidence, and every `AssemblyUnresolved` reason. The
 program's own self-check asserts its independently computed outcome
 matches each of those nine already-verified values exactly and exits
 `1` on any mismatch.
+
+## R21 second checker (OCaml, optional, requires `ocamlfind` + zarith/yojson/sha)
+
+```sh
+make check-r21-ocaml
+```
+
+Compiles `roc-verify-ocaml` from `ocaml/r21_verifier.ml` -- the second,
+independently written checker for R21's `repair-or-separator/v1`
+certificates (see `docs/design/R21_CERTIFICATE_TCB.md`). Unlike every
+other OCaml file in this repository, it needs three libraries beyond the
+standard library: `zarith` (exact-rational arithmetic over GMP, so an
+untrusted numerator or denominator cannot silently overflow a machine
+int), `yojson` (JSON parsing), and `sha` (SHA-256, for the `input_digest`
+binding). Two ways to get them, either is fine:
+
+**Apt (matches this repository's Docker image, no opam):**
+
+```sh
+sudo apt-get install ocaml-findlib libzarith-ocaml-dev libyojson-ocaml-dev libsha-ocaml-dev
+make check-r21-ocaml
+```
+
+**Opam (no root required):**
+
+```sh
+opam init --bare -a --disable-sandboxing -y   # only if opam has never been initialised
+opam switch create default --packages="ocaml-system" -y
+eval $(opam env)
+opam install zarith yojson sha -y
+make check-r21-ocaml
+```
+
+`check-r21-ocaml`'s recipe runs `eval $(opam env 2>/dev/null)` before
+invoking `ocamlfind`, so either path works unmodified: with the apt path,
+opam is absent and that `eval` is a silent no-op, falling through to the
+system `ocamlfind` (which already sees the apt-installed packages, since
+they land under `/usr/lib/ocaml`, already on its default search path);
+with the opam path, the switch's own `ocamlfind` and library paths are
+picked up instead.
+
+Once built, `roc-verify-ocaml` has the same contract as `roc-verify`
+(`r21_certificate_checker.py`):
+
+```sh
+python r21_certificate_emitter.py input.json --certificate cert.json   # roc-solve (either checker)
+./roc-verify-ocaml input.json cert.json                                # ACCEPT/REJECT, exit 0/1
+./roc-verify-ocaml --digest input.json                                 # print only "sha256:<hex>"
+```
+
+`make check-all` runs `check-r21-ocaml` before `check-python`
+specifically so that `tests/test_r21_cross_language_agreement.py` and
+`tests/test_r21_canonical_vectors.py` (in the pytest run `check-python`
+triggers) find the binary already built and actually exercise it rather
+than skipping -- a plain `make check-python` or `pytest` without this
+toolchain still passes, just skipping that coverage (see those two
+files' own module docstrings).
 
 ## Expected truth table (`refinement_checker.py`)
 

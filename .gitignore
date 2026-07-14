@@ -22,4 +22,7 @@ __pycache__/
 refinement_checker_ocaml
 assembly_checker
 associator_contribution_checker
+roc-verify-ocaml
 Nontrivial
+.lia.cache
+rocq/.lia.cache

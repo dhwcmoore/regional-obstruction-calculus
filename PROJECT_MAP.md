@@ -72,6 +72,7 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `r21_repair_or_separator.py` — untrusted (hand-written, not extracted) generator: augmented Gauss-Jordan elimination on `[D | r | I_m]` producing a repair `b` or separator `y`.
 - `r21_certificate_emitter.py` (`roc-solve` CLI) — runs the generator and emits a digest-bound certificate.
 - `r21_certificate_checker.py` (`roc-verify` CLI) — independent checker: imports neither the generator nor the emitter, recomputes `Db = r` or `D^Ty = 0 /\ y.r = 1` via `rational_linear_algebra.py`'s primitives, fail-closed. See `docs/design/R21_CERTIFICATE_TCB.md` for the trusted-computing-base statement.
+- `ocaml/r21_verifier.ml` (`roc-verify-ocaml` CLI, built by `make check-r21-ocaml`) — a SECOND, independently written checker for the same `repair-or-separator/v1` certificates: shares with the Python side only the published schema, canonicalisation rule, resource limits, and test fixtures (not any code), using `Zarith.Q` for exact-rational arithmetic, `Yojson.Safe` for JSON, and the `sha` library for SHA-256. `tests/test_r21_cross_language_agreement.py` (23 cases: hand-authored, constructed-by-construction, and malformed/tampered/resource-limit) and `tests/test_r21_canonical_vectors.py` (frozen digest vectors in `tests/r21_canonical_vectors.json`, generated independently of either checker) both require exact agreement.
 
 ## 5. Realisability diagnostics
 

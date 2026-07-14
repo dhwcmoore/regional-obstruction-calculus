@@ -75,15 +75,22 @@ _RATIONAL_RE = re.compile(r"^-?\d+(/\d+)?$")
 
 def parse_rational(s) -> Fraction:
     """Strict exact-rational parser: only `-?digits` or `-?digits/digits`.
-    Raises ValueError on anything else, including decimal notation, and on
-    a string longer than `MAX_RATIONAL_CHARS` (a resource limit, not a
-    soundness check -- see module header)."""
+    Raises ValueError on anything else, including decimal notation, a
+    string longer than `MAX_RATIONAL_CHARS` (a resource limit, not a
+    soundness check -- see module header), and a zero denominator (which
+    the regex alone does not exclude, since `\\d+` permits `0`) -- raised
+    explicitly here as `ValueError` rather than left to surface as
+    `ZeroDivisionError` from `Fraction`'s own constructor, so every caller
+    that catches `(ValueError, TypeError)` around this function catches it
+    directly instead of relying on a broader, less specific handler."""
     if not isinstance(s, str):
         raise ValueError(f"not a canonical exact-rational string: {s!r}")
     if len(s) > MAX_RATIONAL_CHARS:
         raise ValueError(f"rational string exceeds {MAX_RATIONAL_CHARS} characters")
     if not _RATIONAL_RE.match(s):
         raise ValueError(f"not a canonical exact-rational string: {s!r}")
+    if "/" in s and s.split("/", 1)[1].lstrip("0") == "":
+        raise ValueError(f"zero denominator: {s!r}")
     return Fraction(s)
 
 

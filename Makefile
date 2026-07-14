@@ -29,24 +29,32 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
   check-assembly-parity check-contribution-parity check-associator check-diagnostics \
-  check-certificates check-all
+  check-certificates check-r21-ocaml check-all
 
 check: check-python
 
-# Runs all four independent checks in a fixed order, stopping at the
-# first failure -- each $(MAKE) line below is its own shell invocation,
-# so a nonzero exit from any one of them aborts check-all immediately
-# without running the rest. This is the single command a CI job (or a
-# human) can run to reproduce every claim this repository makes about
-# itself, all at once.
+# Runs all independent checks in a fixed order, stopping at the first
+# failure -- each $(MAKE) line below is its own shell invocation, so a
+# nonzero exit from any one of them aborts check-all immediately without
+# running the rest. This is the single command a CI job (or a human) can
+# run to reproduce every claim this repository makes about itself, all at
+# once. check-r21-ocaml runs BEFORE check-python deliberately: it builds
+# roc-verify-ocaml first, so that when check-python's pytest run reaches
+# tests/test_r21_cross_language_agreement.py and tests/test_r21_
+# canonical_vectors.py, the binary already exists and those tests
+# actually exercise cross-language agreement instead of skipping (they
+# skip gracefully, not fail, when the binary is absent -- see those
+# files' own module docstrings -- so a plain `make check-python` without
+# an OCaml/opam toolchain still passes, just without that coverage).
 check-all:
+	$(MAKE) check-r21-ocaml
 	$(MAKE) check-python
 	$(MAKE) check-rocq
 	$(MAKE) check-rocq-trust
 	$(MAKE) check-ocaml
 	$(MAKE) check-assembly-parity
 	$(MAKE) check-contribution-parity
-	@echo "check-all: check-python, check-rocq, check-rocq-trust, check-ocaml, check-assembly-parity, and check-contribution-parity all passed."
+	@echo "check-all: check-r21-ocaml, check-python (including R21 cross-language agreement), check-rocq, check-rocq-trust, check-ocaml, check-assembly-parity, and check-contribution-parity all passed."
 
 check-python:
 	$(PYTHON) residue_classifier.py examples/four_cycle.json
@@ -184,8 +192,30 @@ check-contribution-parity:
 	./associator_contribution_checker
 	@echo "check-contribution-parity: OCaml contribution-certificate mirror compiled from a clean state; all fourteen parity cases matched their independently computed expected outcome."
 
+# Compiles roc-verify-ocaml, the second independent checker for R21's
+# repair-or-separator/v1 certificates (ocaml/r21_verifier.ml), fresh from
+# a clean state. Unlike this repository's other OCaml mirrors, this one
+# needs three OCaml libraries beyond the standard library -- zarith
+# (exact-rational arithmetic over GMP), yojson (JSON parsing), and sha
+# (SHA-256) -- because, unlike the hardcoded-fixture mirrors above, this
+# checker reads untrusted external JSON files and must not silently
+# overflow on an arbitrarily large numerator or denominator. This is a
+# deliberate, narrow exception to "this project's OCaml side has never
+# needed a JSON dependency" (see assembly_checker.ml's header): see
+# ocaml/r21_verifier.ml's own header and docs/design/R21_CERTIFICATE_TCB.md
+# for why a mature library is used here rather than a hand-written JSON
+# lexer or bignum implementation. Requires an opam switch with these three
+# packages installed (`opam install zarith yojson sha`; see
+# REPRODUCIBILITY.md for the exact one-time setup) -- `eval $$(opam env)`
+# is run inside this recipe so the switch's own ocamlfind and OCAMLPATH
+# are used, without requiring the invoking shell to have sourced them.
+check-r21-ocaml:
+	rm -f ocaml/r21_verifier.cmi ocaml/r21_verifier.cmx ocaml/r21_verifier.o roc-verify-ocaml
+	cd ocaml && eval $$(opam env 2>/dev/null) && ocamlfind ocamlopt -package zarith,yojson,sha -linkpkg r21_verifier.ml -o ../roc-verify-ocaml
+	@echo "check-r21-ocaml: roc-verify-ocaml compiled from a clean state."
+
 clean:
 	rm -rf __pycache__ tests/__pycache__ .pytest_cache
-	rm -f refinement_checker_ocaml assembly_checker associator_contribution_checker
+	rm -f refinement_checker_ocaml assembly_checker associator_contribution_checker roc-verify-ocaml
 	rm -f ocaml/*.cmi ocaml/*.cmx ocaml/*.o
 	rm -f rocq/*.vo rocq/*.vok rocq/*.vos rocq/*.glob rocq/.*.aux

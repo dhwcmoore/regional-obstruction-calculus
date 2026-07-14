@@ -1,9 +1,12 @@
 # R21 Certificate Pipeline: What Is Proved, What Is Checked, and the Trusted Computing Base
 
-**Status (2026-07-13): tracked and implemented** —
-`r21_certificate_format.py`, `r21_repair_or_separator.py`,
-`r21_certificate_emitter.py`, `r21_certificate_checker.py`,
-`tests/test_r21_certificates.py`. This document records precisely what
+**Status (2026-07-14): tracked and implemented, now with a second,
+independent checker** — `r21_certificate_format.py`, `r21_repair_or_
+separator.py`, `r21_certificate_emitter.py`, `r21_certificate_checker.py`
+(Python), `ocaml/r21_verifier.ml` (OCaml, `roc-verify-ocaml`),
+`tests/test_r21_certificates.py`, `tests/test_r21_cross_language_
+agreement.py`, `tests/test_r21_canonical_vectors.py`,
+`tests/r21_canonical_vectors.json`. This document records precisely what
 this pipeline closes relative to R21 (`rocq/
 ExactRationalRepairOrSeparator.v`) and what it deliberately still leaves
 open, so neither gets overstated later.
@@ -53,42 +56,124 @@ possibly-untrusted generator (r21_repair_or_separator.py)
         v
 repair-or-separator/v1 certificate  (bound to (D,r) via input_digest)
         |
-        v
-independent checker (r21_certificate_checker.py) --- imports neither
-        |                                            the generator nor
-        v                                            the emitter
-ACCEPT (verdict follows the certificate)  or  REJECT (no verdict)
+        +-------------------------+
+        v                         v
+Python checker              OCaml checker
+(r21_certificate_checker.py)  (ocaml/r21_verifier.ml, roc-verify-ocaml)
+imports neither the           independently written: shares only the
+generator nor the emitter     published spec, not the Python code,
+        |                     with the Python checker
+        v                         v
+     ACCEPT/REJECT             ACCEPT/REJECT
+        +-------------------------+
+                    |
+                    v
+     both must agree (make check-all fails otherwise)
 ```
 
-## What the checker actually verifies
+Both checkers are independent implementations of the same specification,
+not one derived from the other: `ocaml/r21_verifier.ml`'s own header
+states the independence boundary precisely — it shares with the Python
+side only the published schema, the canonicalisation rule, the resource
+limits, and the test fixtures, and contains no translated or generated
+copy of `r21_certificate_checker.py` or `r21_certificate_format.py`.
 
-For a claimed repair `b`: `mat_vec(D, b) == r`, exactly, over `Fraction`.
+## What each checker actually verifies
 
-For a claimed separator `y`: `mat_vec(transpose(D), y)` is the all-zero
-vector, exactly, AND `dot(y, r) == 1`, exactly.
+For a claimed repair `b`: `Db = r`, exactly, over an exact-rational type
+(Python's `Fraction`; OCaml's `Zarith.Q`).
 
-Both checks reuse `rational_linear_algebra.py`'s `mat_vec`/`transpose`/
-`dot`/`is_zero` — the same already-audited primitives every checker in
-this repository reuses (`first_order_certificate_checker.py`,
-`refinement_checker.py`) rather than each reimplementing matrix
-multiplication independently. The checker never calls `solve_over_Q` or
-`r21_repair_or_separator.repair_or_separate`: verifying a supplied witness
-is evaluation, not search, which is exactly what keeps the checker's
-trusted surface smaller than the generator's.
+For a claimed separator `y`: `D^Ty` is the all-zero vector, exactly, AND
+`y.r == 1`, exactly.
+
+The Python checker computes this via `rational_linear_algebra.py`'s
+`mat_vec`/`transpose`/`dot`/`is_zero` — the same already-audited
+primitives every Python checker in this repository reuses
+(`first_order_certificate_checker.py`, `refinement_checker.py`) rather
+than each reimplementing matrix multiplication independently. The OCaml
+checker computes the same four operations from scratch, over `Zarith.Q`
+arrays, in `ocaml/r21_verifier.ml` itself — a second, independent
+implementation, not a port. Neither checker calls a solver
+(`solve_over_Q` or `r21_repair_or_separator.repair_or_separate`):
+verifying a supplied witness is evaluation, not search, which is exactly
+what keeps each checker's trusted surface smaller than the generator's.
+
+## The four-layer picture
+
+The second checker changes what kind of claim is available, and it is
+worth stating precisely which kind, in four layers:
+
+1. **Mathematical specification.** The Rocq R21 theorem
+   (`rational_repair_or_separator`, `repair_and_separator_disjoint`) and
+   the two certificate equations it licenses (`Db = r`; `D^Ty = 0 /\
+   y.r = 1`). This layer is proved, `coqchk`-clean, zero project-added
+   axioms.
+2. **Independent runtime checkers.** `r21_certificate_checker.py`
+   (Python) and `ocaml/r21_verifier.ml` (OCaml) each separately validate
+   the same two equations, in different languages, over different
+   exact-arithmetic types (`Fraction` vs. `Zarith.Q`), using different
+   JSON parsers (`json` vs. `Yojson.Safe`) and different SHA-256
+   implementations (`hashlib` vs. the `sha` opam/apt package). Both are
+   tested, individually and against each other, on the same corpus
+   (`tests/test_r21_cross_language_agreement.py`).
+3. **Shared specification surface.** What the two checkers deliberately
+   have in common, and the only thing they are allowed to have in
+   common: the `repair-or-separator/v1` and `roc-input/v1` schema
+   versions, the canonicalisation rule for `input_digest`, the resource
+   limits (`MAX_RATIONAL_CHARS`, `MAX_DIMENSION`), and the test
+   fixtures/vectors both are checked against
+   (`tests/r21_canonical_vectors.json` and the corpus in
+   `test_r21_cross_language_agreement.py`). A bug in this shared surface
+   — the specification itself, not either implementation — would not be
+   caught by cross-language agreement, since both checkers would
+   faithfully implement the same mistake. This is why `tests/test_r21_
+   canonical_vectors.py`'s vectors were generated independently of
+   `canonical_input_digest` (via a from-scratch `Fraction`/`hashlib`
+   script, not through the function under test) rather than treating one
+   checker's output as ground truth for the other.
+4. **Still-untrusted components.** The generator
+   (`r21_repair_or_separator.py`), any future domain adapter, the
+   operating system, both language runtimes and their compilers
+   (`python3`, `ocamlopt`), and the correspondence between the Rocq
+   definition and either executable checker (neither is a Rocq
+   extraction). See "The trusted computing base, stated precisely" below
+   for the itemised version, and "What remains open" for what would
+   shrink this list further.
+
+**What cross-language agreement does and does not establish.** Two
+independent implementations agreeing on every case in a substantial
+corpus materially reduces the risk of an implementation-specific mistake
+— a sign error, a transpose/row-vs-column confusion, an overly permissive
+parser, a canonicalisation slip, a mishandled edge case — surviving
+undetected, because such a mistake would have to be made identically in
+both implementations to go unnoticed. It does **not** prove either
+checker correct in any absolute sense, and it does not, by itself,
+certify the specification layer (§3 above): both checkers could still
+correctly implement the same mistaken written specification, and
+agreement between them would not reveal that. The Rocq certificate
+theorem (§1) is what supplies the mathematical reference; the fixed
+canonicalisation vectors (§3) and the two independent code paths (§2)
+reduce implementation and provenance risk relative to that reference —
+they do not replace it.
 
 ## The trusted computing base, stated precisely
 
-To trust a `roc-verify` ACCEPT as meaning "this `(D, r)` really has this
-repair / this separator," you must trust:
+To trust a `roc-verify`/`roc-verify-ocaml` ACCEPT as meaning "this
+`(D, r)` really has this repair / this separator," you must trust:
 
-1. **Python's `Fraction` arithmetic** — exact rational arithmetic, no
-   floating point anywhere in this pipeline.
-2. **`rational_linear_algebra.py`'s `mat_vec`, `transpose`, `dot`,
-   `is_zero`** — four short, already-shared, already-exercised functions,
-   not new code written for this pipeline.
+1. **Exact-rational arithmetic** — Python's `Fraction` (Python checker)
+   or `Zarith.Q`, a GMP-backed rational type (OCaml checker). No floating
+   point anywhere in either pipeline.
+2. **Each checker's own matrix/vector primitives** —
+   `rational_linear_algebra.py`'s `mat_vec`/`transpose`/`dot`/`is_zero`
+   (Python, already shared and exercised elsewhere in this repository) or
+   `ocaml/r21_verifier.ml`'s own from-scratch equivalents (OCaml, new
+   code written for this checker specifically, exercised only by this
+   file's own test suites so far).
 3. **`r21_certificate_format.py`'s strict rational parser and canonical
-   digest.** This item needs two separate claims, not one, because it sits
-   in two different TCBs:
+   digest (Python), and `ocaml/r21_verifier.ml`'s independent
+   reimplementation of the same rule (OCaml).** This item needs two
+   separate claims, not one, because it sits in two different TCBs:
    - *Mathematical-soundness TCB:* a defect here cannot by itself bypass
      the independent mathematical checks. The digest gate and the `Db=r`
      / `D^Ty=0, y.r=1` gate are both independent preconditions for
@@ -107,19 +192,26 @@ repair / this separator," you must trust:
      certificate was specifically bound to the original encoded problem,
      when in fact it was bound to that problem *or a colliding one*. The
      digest implementation is therefore inside the provenance-binding
-     TCB, though outside the mathematical-soundness TCB.
-4. **The Python interpreter and `hashlib.sha256`/`json` from the standard
-   library** — not audited by this repository, standard for any Python
-   tool.
-5. **That `roc-verify` was actually run, and its exit code actually
-   checked**, by whatever system reports the final user-facing verdict.
-   This pipeline provides the fail-closed check; it does not yet wire
-   itself into any application's reported-verdict path — see below.
+     TCB, though outside the mathematical-soundness TCB. `tests/test_r21_
+     canonical_vectors.py` exists specifically to give this item
+     independent, frozen ground truth rather than leaving it checked only
+     against itself.
+4. **The language runtimes, standard/third-party libraries, and
+   compilers** — the Python interpreter and `hashlib`/`json` from its
+   standard library; the OCaml runtime, `ocamlopt`, and the `zarith`/
+   `yojson`/`sha` libraries (see REPRODUCIBILITY.md for exact pinned
+   versions). None of these are audited by this repository; all are
+   widely used, independently maintained dependencies.
+5. **That the checker(s) were actually run, and their exit code(s)
+   actually checked**, by whatever system reports the final user-facing
+   verdict. This pipeline provides the fail-closed check(s); it does not
+   yet wire itself into any application's reported-verdict path — see
+   below.
 
 Explicitly **not** in the trusted computing base: `r21_repair_or_
 separator.py` (the generator), `r21_certificate_emitter.py`, and any
 future replacement generator (extracted or otherwise) — none of their
-correctness is a precondition for trusting an ACCEPT.
+correctness is a precondition for trusting an ACCEPT from either checker.
 
 ## Hardening: fail-closed mathematical checking is not DoS resistance
 
@@ -127,8 +219,11 @@ Getting the two certificate equations right is necessary but not
 sufficient — a checker that safely rejects every unsound witness could
 still be crashed, or made to spend unbounded time or memory, by an input
 crafted before either equation is ever evaluated. `r21_certificate_
-format.py` and both CLIs now additionally enforce, and
-`tests/test_r21_certificates.py` (§5-6) test:
+format.py`, the Python CLIs, and `ocaml/r21_verifier.ml` (independently,
+using the same limits per the shared specification surface) all enforce,
+and `tests/test_r21_certificates.py` (§5-6) and `tests/test_r21_cross_
+language_agreement.py` (§3, the malformed/tampered/resource-limit corpus)
+test:
 
 - **A closed schema.** Both the `roc-input/v1` file and the
   `repair-or-separator/v1` certificate reject any field beyond the
@@ -164,10 +259,14 @@ independent, additional gates a certificate must also pass.
 
 - **Stage 1 (freeze the certificate contract):** done —
   `repair-or-separator/v1`, digest-bound.
-- **Stage 3 (a tiny independent checker):** done for the Python side.
-  Only one independent checker exists so far (Python); a second,
-  cross-language checker (e.g. OCaml) and a cross-language agreement
-  test are not yet built.
+- **Stage 3 (a tiny independent checker):** done, now with two
+  independent checkers (Python, OCaml), a full cross-language agreement
+  corpus (`tests/test_r21_cross_language_agreement.py`, 23 cases x 3
+  assertions each), and frozen canonical-digest test vectors
+  (`tests/test_r21_canonical_vectors.py`) that both are checked against
+  independently of each other. `make check-all` fails if either checker
+  rejects a case both should accept, accepts one both should reject, or
+  the two disagree with each other.
 - **Stage 4 (bind certificates to inputs):** done — `input_digest` over a
   canonical serialisation of `D` and `r`.
 - **Stage 5 (an end-to-end command):** done at the CLI level —
@@ -181,10 +280,18 @@ independent, additional gates a certificate must also pass.
 - **Stage 2 (Rocq extraction):** not attempted. The generator is still a
   hand-written mirror, not an extraction of `compute_repair_or_separator`.
   Per the explicit instruction that motivated this document, extraction
-  is deferred until this interface and checker were complete — they now
-  are, so extraction is the next candidate phase, not a claim made here.
-- **A second, independently-implemented checker and cross-language
-  agreement tests:** not built. Only one checker exists.
+  was deferred until the certificate interface and an independent checker
+  were complete; now that a *second*, cross-language-agreeing checker also
+  exists, extraction is the next candidate phase, not a claim made here.
+  Per the same instruction: extraction's main benefit is confidence that a
+  valid certificate is produced whenever one exists, and correspondence
+  between the proved algorithm and the runtime generator — it does not by
+  itself reduce the *acceptance* TCB the way the second checker just did,
+  since even an extracted generator would still be treated as untrusted by
+  both external verifiers.
+- **A third, independently-implemented checker:** not built. Two exist
+  (Python, OCaml); nothing here claims two is a stopping point in
+  principle, only that it is the scope this phase covered.
 - **Domain adapters (Stage 6):** entirely out of scope here. Nothing in
   this pipeline says anything about whether a real sensor-fusion,
   GIS, financial, or configuration problem was correctly compiled into
@@ -201,11 +308,26 @@ independent, additional gates a certificate must also pass.
 ## The honest current claim, updated
 
 You can now say: for the rational-matrix layer specifically, a `roc-solve`
-/ `roc-verify` pair exists such that the *reported* ACCEPT/REJECT depends
-only on the trusted computing base listed above, not on trusting the
-generator, the elimination trace, or any internal solver state. You still
-cannot say that every result produced by a deployed application is
-formally verified from original domain input to final reported verdict —
-that needs Stage 6 (a verified domain adapter per application) and the
-verdict-binding step just described, neither of which this document
-claims to have done.
+plus a *pair* of independent, cross-language-agreeing checkers
+(`roc-verify` in Python, `roc-verify-ocaml` in OCaml) exists such that the
+*reported* ACCEPT/REJECT depends only on the trusted computing base
+listed above — not on trusting the generator, the elimination trace, or
+any internal solver state — and agreement between two independently
+written implementations has been checked against a corpus covering
+hand-authored fixtures, by-construction certificates, tampering, resource
+limits, and a set of frozen canonical-digest vectors neither
+implementation was allowed to generate for the other.
+
+You still cannot say that this proves either checker correct, or that it
+validates the specification the two checkers share (§ "The four-layer
+picture" above) — both could implement the same mistake identically, and
+cross-language agreement alone would not reveal it; only the Rocq theorem
+(layer 1) and the frozen, independently-generated test vectors (part of
+layer 3) give that layer any check at all, and neither is a substitute
+for a proof that the checkers implement the theorem.
+
+You still cannot say that every result produced by a deployed application
+is formally verified from original domain input to final reported
+verdict — that needs Stage 6 (a verified domain adapter per application)
+and the verdict-binding step described above, neither of which this
+document claims to have done.

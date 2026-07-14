@@ -14,6 +14,67 @@ current boundary.
 
 ## Unreleased
 
+### R21 second checker: OCaml, cross-language agreement, canonical digest vectors
+
+- Added `ocaml/r21_verifier.ml` (`roc-verify-ocaml`), a second,
+  independently written checker for `repair-or-separator/v1`
+  certificates. Shares with the Python checker only the published
+  specification -- schema, canonicalisation rule, resource limits, test
+  fixtures -- and no code: independent strict rational parsing, JSON
+  handling (`Yojson.Safe`, with its own duplicate-key detection),
+  canonicalisation/digest (`Sha256`), and matrix/vector arithmetic, all
+  over `Zarith.Q` (GMP-backed, so an untrusted numerator/denominator
+  cannot silently overflow a machine int) rather than Python's
+  `Fraction`. Not a generator, not a Rocq extraction.
+- Fixed `r21_certificate_format.parse_rational` to explicitly raise
+  `ValueError` on a zero denominator (e.g. `"3/0"`) instead of leaving
+  `ZeroDivisionError` to surface from `Fraction`'s own constructor --
+  still caught fail-closed either way, but now caught by the same
+  specific handlers as every other malformed-rational case, and now has
+  its own dedicated test.
+- Added `tests/test_r21_cross_language_agreement.py`: a 23-case corpus
+  spanning hand-authored fixtures (simple repair, simple separator, R1's
+  own four-cycle separator, zero- and minimal-dimensional boundary
+  cases, each with `Db=r` or `D^Ty=0,y.r=1` checked by hand in a
+  comment), constructed-valid certificates (`D` and the witness chosen
+  first, `r` defined from them via a from-scratch reference computation,
+  not either checker's own code), and malformed/tampered/resource-limit
+  cases (schema, duplicate keys, unknown fields, changed matrix/residue/
+  witness/digest, oversized rationals/dimensions, ragged matrices, shape
+  mismatches, zero denominators, non-canonical rationals, truncated
+  JSON) -- every case run through both checkers and required to agree,
+  69 tests total (23 x Python-verdict, OCaml-verdict, agreement).
+- Added `tests/test_r21_canonical_vectors.py` and `tests/r21_canonical_
+  vectors.json`: 8 frozen canonical-digest vectors (negative rationals,
+  zero normalisation, denominators, row order, column order, empty
+  collections, multi-digit dimensions, large integers) generated with a
+  from-scratch `Fraction`/`hashlib` script, never through `canonical_
+  input_digest` itself -- both checkers are tested against this fixed
+  third value, not against each other's live output, so a mistake shared
+  by both implementations of the canonicalisation rule would still be
+  caught.
+- Added `make check-r21-ocaml` (builds `roc-verify-ocaml`) and reordered
+  `check-all` to run it before `check-python`, so the cross-language and
+  canonical-vector suites exercise the OCaml checker instead of skipping
+  during a full `make check-all` run; a plain `make check-python`/
+  `pytest` without the OCaml/opam-or-apt toolchain still passes, with
+  those cases skipped rather than failed.
+- Documented two installation paths in `REPRODUCIBILITY.md`: apt
+  (`libzarith-ocaml-dev`, `libyojson-ocaml-dev`, `libsha-ocaml-dev`,
+  matching this repository's existing "apt, not opam" policy) and opam
+  (for developers without root). Updated `Dockerfile` to install the
+  three apt packages and added them to its pinned-version check.
+- Rewrote `docs/design/R21_CERTIFICATE_TCB.md` around a four-layer
+  picture -- mathematical specification (Rocq), independent runtime
+  checkers (Python, OCaml), shared specification surface (schema,
+  canonicalisation, limits, test vectors), and still-untrusted
+  components (generator, domain adapter, runtimes, compilers) -- and
+  states explicitly what cross-language agreement does and does not
+  establish: it reduces implementation risk, but does not prove either
+  checker correct, and does not by itself validate the shared
+  specification layer, which only the Rocq theorem and the
+  independently-generated digest vectors give any check at all.
+
 ### R21 certificate pipeline: schema, untrusted generator, independent checker
 
 - Added the `repair-or-separator/v1` certificate schema
