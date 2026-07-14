@@ -115,7 +115,15 @@ worth stating precisely which kind, in four layers:
    JSON parsers (`json` vs. `Yojson.Safe`) and different SHA-256
    implementations (`hashlib` vs. the `sha` opam/apt package). Both are
    tested, individually and against each other, on the same corpus
-   (`tests/test_r21_cross_language_agreement.py`).
+   (`tests/test_r21_cross_language_agreement.py`). **Nuance, since the
+   Rocq-extracted generator (`docs/design/R21_EXTRACTION_TCB.md`) was
+   added:** its OCaml adapter (`ocaml/r21_extracted_solve.ml`) shares
+   `ocaml/r21_format.ml` with this OCaml checker — schema/canonicalisation
+   code, not the arithmetic check itself (see that document's own "A
+   nuance the independence claim needs stated precisely" section for the
+   full account). The Python checker shares no code with any OCaml file
+   in this pipeline, so it remains the one checker whose independence
+   from either generator is unconditional.
 3. **Shared specification surface.** What the two checkers deliberately
    have in common, and the only thing they are allowed to have in
    common: the `repair-or-separator/v1` and `roc-input/v1` schema

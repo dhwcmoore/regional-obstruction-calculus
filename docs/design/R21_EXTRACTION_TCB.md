@@ -155,6 +155,60 @@ r21_extracted.ml` defines its own local `module Z` (the small subset
 real `Z` if the file were `open`ed — `r21_extracted_solve.ml` avoids this
 by never opening `R21_extracted`, only referencing it qualified.
 
+## A nuance the independence claim needs stated precisely
+
+`ocaml/r21_extracted_solve.ml` (the generator-side adapter) and `ocaml/
+r21_verifier.ml` (the OCaml checker) both depend on `ocaml/r21_format.ml`
+for schema parsing, closed-key validation, and — most importantly —
+canonicalisation and digest construction. This means the extracted
+generator's OCaml side and the OCaml verifier are **not** independent
+with respect to that code: a defect in `r21_format.ml`'s canonicalisation
+would be shared by both, not caught by comparing them to each other.
+
+This does not reopen the mathematical-soundness TCB `docs/design/
+R21_CERTIFICATE_TCB.md` already establishes, for the same reason a digest
+defect there was already scoped to provenance-binding, not soundness: the
+OCaml verifier's `Db=r` / `D^Ty=0,y.r=1` check is computed directly from
+the caller-supplied `D`, `r`, and the certificate's own claimed witness —
+never from anything `r21_format.ml`'s canonicalisation produces. A shared
+canonicalisation bug could at most cause a spuriously matching or
+mismatching digest; it cannot manufacture agreement on the arithmetic
+check itself.
+
+But it does mean the *actual* independence relationship, once the
+extracted generator is in the picture, is not "three-way, all pairwise
+independent." It is:
+
+```text
+extracted generator + its OCaml adapter (shares r21_format.ml with:)
+                    |
+                    v
+              OCaml verifier
+                    |
+        (both OCaml-side, share r21_format.ml)
+                    |
+                    v
+         certificate artefact, checked by BOTH
+                    |
+        +-----------+-----------+
+        v                       v
+  Python verifier          OCaml verifier
+  (fully independent —     (shares r21_format.ml
+   no shared code with      with the extracted
+   any OCaml file)          generator's adapter)
+```
+
+A defect shared between the extracted generator's OCaml adapter and the
+OCaml verifier — in `r21_format.ml`, or in any future OCaml-side sharing
+— must still survive the Python verifier, which shares no code with any
+OCaml file in this pipeline, to produce an ACCEPT. The Python verifier is
+therefore the one checker whose independence from the generator side is
+unconditional; the OCaml verifier's independence from the *hand-written*
+Python generator remains exactly as strong as `docs/design/
+R21_CERTIFICATE_TCB.md` already states, but its independence from the
+*extracted* generator's adapter is narrower, in this one specific,
+itemised way.
+
 ## Whether the generated OCaml is committed or regenerated
 
 **Not committed.** `ocaml/r21_extracted.ml`/`.mli` are `.gitignore`d and
