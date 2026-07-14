@@ -14,6 +14,33 @@ current boundary.
 
 ## Unreleased
 
+### R21 end-to-end demonstration and independence nuance
+
+- Added `docs/R21_END_TO_END_DEMONSTRATION.md`: a canonical reference
+  example using real, actually-run commands and captured output from a
+  fresh clone -- not reconstructed from memory. Covers one repairable
+  system and R1's own four-cycle obstruction, from `roc-input/v1` through
+  `make extract-r21` and `roc-solve-extracted` to the emitted
+  `repair-or-separator/v1` certificate, ACCEPT from both independent
+  verifiers, the exact equations checked, byte-identical independently
+  computed digests, and the exact git commit / Rocq / OCaml / Python /
+  library versions used. States explicitly that the verified boundary
+  begins at canonical rational `(D, r)`, not raw domain data.
+- Added `tests/test_r21_demonstration.py` (3 tests) so the demonstration
+  document cannot silently drift from what the repository actually does:
+  re-runs both captured pipelines and asserts the certificate contents,
+  digests, and verdicts still match what the document records verbatim.
+- Documented, in both `docs/design/R21_CERTIFICATE_TCB.md` and
+  `docs/design/R21_EXTRACTION_TCB.md`, a precise independence nuance:
+  the extracted generator's OCaml adapter (`ocaml/r21_extracted_
+  solve.ml`) and the OCaml verifier (`ocaml/r21_verifier.ml`) share
+  `ocaml/r21_format.ml` (schema/canonicalisation code, not the
+  arithmetic check itself), so they are not independent with respect to
+  that code -- only the Python verifier's independence from either
+  generator is unconditional. Does not reopen the mathematical-soundness
+  TCB (the arithmetic check never depends on `r21_format.ml`'s output),
+  but the exact relationship was not stated anywhere until now.
+
 ### R21 Rocq extraction: a proof-derived generator, still gated by both checkers
 
 - Extracted `compute_repair_or_separator` -- the function `compute_
