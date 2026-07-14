@@ -64,7 +64,7 @@ python run_associator_obstruction.py examples/four_cycle_associator.json
 python -m pytest -q
 ```
 
-Expected: `181 passed`.
+Expected: `212 passed`.
 
 ## Individual checks
 

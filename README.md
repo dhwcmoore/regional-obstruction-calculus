@@ -207,6 +207,8 @@ by running verified exact-rational Gauss-Jordan elimination and extracting which
 
 R21 recovers R1's own four-cycle witness exactly: the internal elimination finds the paper's canonical cycle `z = (-1,-1,-1,1)` with pairing `-5` before normalisation, and the public certificate is the normalised `-1/5 z = (1/5,1/5,1/5,-1/5)`.
 
+R21's Rocq proof is not itself the deployed executable path. A separate `roc-solve` / `roc-verify` CLI pair (`r21_certificate_emitter.py` / `r21_certificate_checker.py`) implements a digest-bound `repair-or-separator/v1` certificate: the generator is an untrusted hand-written mirror of R21's algorithm (not a Rocq extraction), and the independent checker imports neither the generator nor the emitter, recomputing `Db = r` or `D^Ty = 0 /\ y.r = 1` directly and failing closed. See `docs/design/R21_CERTIFICATE_TCB.md` for exactly what this closes and what remains open (extraction, a second cross-language checker, and per-domain input adapters).
+
 It proves no general efficiency or numerical-stability property, and computes no rank, determinant, or general matrix inverse.
 
 ### Applied provenance bridges

@@ -14,6 +14,54 @@ current boundary.
 
 ## Unreleased
 
+### R21 certificate pipeline: schema, untrusted generator, independent checker
+
+- Added the `repair-or-separator/v1` certificate schema
+  (`r21_certificate_format.py`): binds a certificate to the exact `(D, r)`
+  it certifies via a canonical SHA-256 `input_digest`, so a certificate
+  valid for one problem cannot be attached to another.
+- Added `r21_repair_or_separator.py`, a hand-written (not extracted)
+  Python mirror of R21's augmented-elimination algorithm on
+  `[D | r | I_m]` (Route C2 of `docs/design/
+  EXACT_RATIONAL_SEPARATION_SPEC.md`) -- deliberately treated as
+  untrusted; see the module's own docstring for why a bug here can only
+  produce a certificate the checker then rejects, never one it wrongly
+  accepts.
+- Added `r21_certificate_emitter.py` (`roc-solve`) and
+  `r21_certificate_checker.py` (`roc-verify`) as a genuine two-process
+  command pair: the checker does not import the generator or the
+  emitter, independently recomputes `Db = r` or `D^Ty = 0 /\ y.r = 1`
+  from the certificate's own claimed witness using
+  `rational_linear_algebra.py`'s already-audited primitives, and is
+  fail-closed -- every rejection path is an explicit `.reject(...)`,
+  never a silent pass-through accept.
+- 31 tests (`tests/test_r21_certificates.py`): valid certificates for both
+  outcomes (including the four-cycle separator recovering R1's own
+  normalised witness `(1/5,1/5,1/5,-1/5)` through the full CLI
+  roundtrip), malformed certificates, tampered certificates, a
+  certificate genuinely valid for one problem rejected against another,
+  determinism (byte-identical repeated emission, digest stability), and
+  hardening (closed schema, duplicate JSON keys, oversized rationals and
+  dimensions, ragged matrices, mismatched residue length).
+- Hardening added to `r21_certificate_format.py` after review: a closed
+  certificate/input schema (`validate_closed_keys`), rejection of
+  duplicate JSON keys at any level (`strict_json_load`), resource limits
+  on rational-string length and matrix/vector dimension
+  (`MAX_RATIONAL_CHARS`, `MAX_DIMENSION`), rectangularity and
+  `D`/`r`-shape validation at input time, and a top-level `try`/`except`
+  in `check_certificate` so an unexpected exception is a rejection, never
+  a crash. Fail-closed mathematical checking is not the same as
+  resistance to a certificate or input file crafted to exhaust memory or
+  CPU before either equation is evaluated.
+- Corrected the digest's trusted-computing-base claim: a defect in
+  `canonical_input_digest` cannot bypass the independent mathematical
+  checks (mathematical-soundness TCB), but it could weaken the claimed
+  identity binding between a certificate and its input
+  (provenance-binding TCB) -- these are two different claims, not one.
+- See `docs/design/R21_CERTIFICATE_TCB.md` for what this closes and what
+  it does not: the generator is still a hand-written mirror of the Rocq
+  algorithm, not an extraction of it.
+
 ### Exact rational repair-or-separator
 
 - Added R21, `rocq/ExactRationalRepairOrSeparator.v`: a general

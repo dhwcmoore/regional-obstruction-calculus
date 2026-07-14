@@ -68,6 +68,10 @@ Where to start, by layer. See [STATUS.md](STATUS.md) for what each layer actuall
 - `certificate_emitter.py` (shared with layer 2) — proof-carrying certificate schema.
 - `first_order_certificate_checker.py` — independent certificate checker.
 - `rocq/FirstOrderClassifierCertificate.v` — Rocq proof of the two certificate forms' soundness.
+- `r21_certificate_format.py` — shared, solver-independent `repair-or-separator/v1` schema, strict rational parsing, and the canonical `(D, r)` input digest.
+- `r21_repair_or_separator.py` — untrusted (hand-written, not extracted) generator: augmented Gauss-Jordan elimination on `[D | r | I_m]` producing a repair `b` or separator `y`.
+- `r21_certificate_emitter.py` (`roc-solve` CLI) — runs the generator and emits a digest-bound certificate.
+- `r21_certificate_checker.py` (`roc-verify` CLI) — independent checker: imports neither the generator nor the emitter, recomputes `Db = r` or `D^Ty = 0 /\ y.r = 1` via `rational_linear_algebra.py`'s primitives, fail-closed. See `docs/design/R21_CERTIFICATE_TCB.md` for the trusted-computing-base statement.
 
 ## 5. Realisability diagnostics
 
