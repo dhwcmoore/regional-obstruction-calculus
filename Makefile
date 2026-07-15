@@ -9,14 +9,23 @@ OCAMLOPT ?= ocamlopt
 # after everything it Requires). check-rocq-inventory below fails the
 # build if this list and rocq/*.v ever disagree, in either direction --
 # a new .v file added without being wired in here must break the build,
-# not silently go unchecked. ExtractR21 (last) is not a proof module like
-# the other 27 -- it has no Theorem/Lemma of its own, only a Require of
+# not silently go unchecked. ExtractR21 is not a proof module like the
+# other 33 -- it has no Theorem/Lemma of its own, only a Require of
 # ExactRationalRepairOrSeparator and an Extraction command -- but it is
 # still a real rocq/*.v file, so it is still declared here rather than
 # carved out of the inventory check; compiling it via coqc, here or via
 # `make extract-r21`, regenerates ocaml/r21_extracted.ml/.mli as a side
 # effect (see ExtractR21.v's own header, and docs/design/
-# R21_EXTRACTION_TCB.md).
+# R21_EXTRACTION_TCB.md). The seven modules after it are R22 (cycle-
+# quotient duality): AbstractSeparation/QuotientEvaluation/
+# CycleQuotientDuality form the abstract layer (a new AbelianVSpace
+# record, stronger than the existing minimal VSpace elsewhere in this
+# directory -- see AbstractSeparation.v's own header for why a separate
+# record, not an extension of it); RationalCanonicalVectors/
+# R21VectorTransport/RationalSeparationInstance/R21CycleQuotientBridge
+# discharge it concretely for R21's own repair operators, over Vector.t
+# Qc n (Rocq's canonical-rational type) rather than list Q, for reasons
+# R21VectorTransport.v's header documents precisely.
 ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   FourCycleObstruction RepeatedTripleSupportCandidate3b \
   CandidateThreeBDistinctSupportClassification CochainNaturalityDescent \
@@ -31,7 +40,10 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   ConflictDiagnosticCompleteness TypedDiagnosticCalculus \
   PairwiseDiagnosticCertificate GlobalCoherenceCertificate \
   PairwiseToGlobalAssembly AssociatorContributionCertificate \
-  ExactRationalRepairOrSeparator ExtractR21
+  ExactRationalRepairOrSeparator ExtractR21 \
+  AbstractSeparation QuotientEvaluation CycleQuotientDuality \
+  RationalCanonicalVectors R21VectorTransport RationalSeparationInstance \
+  R21CycleQuotientBridge
 
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
