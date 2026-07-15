@@ -110,7 +110,7 @@ one a real check rather than a formality:
 ```sh
 make check-rocq-inventory   # rocq/*.v matches the Makefile's declared build chain exactly, in both directions
 make check-rocq-scan        # fast preliminary text scan for Admitted/Axiom/Parameter outside comments -- not a substitute for the next two
-make check-rocq             # compiles all 28 .v files from a clean state, in dependency order (runs the inventory and scan checks first)
+make check-rocq             # compiles all 37 .v files from a clean state, in dependency order (runs the inventory and scan checks first)
 make check-rocq-trust       # runs coqchk over the complete declared module list (runs check-rocq first)
 ```
 
@@ -160,7 +160,7 @@ one file specifically, not a proof-content claim about it.)
 
 `make check-rocq-trust` then runs `coqchk`, Rocq's own independent,
 from-scratch proof checker (a separate program from `coqc`), over the
-complete 28-module dependency closure:
+complete 37-module dependency closure:
 
 ```sh
 cd rocq && coqchk -Q . "" \
@@ -176,7 +176,11 @@ cd rocq && coqchk -Q . "" \
   ConflictResolutionTrilemma ConflictResolutionLowerBound ConflictDiagnosticCompleteness \
   TypedDiagnosticCalculus PairwiseDiagnosticCertificate GlobalCoherenceCertificate \
   PairwiseToGlobalAssembly AssociatorContributionCertificate \
-  ExactRationalRepairOrSeparator ExtractR21
+  ExactRationalRepairOrSeparator ExtractR21 \
+  AbstractSeparation QuotientEvaluation CycleQuotientDuality \
+  RationalCanonicalVectors R21VectorTransport RationalSeparationInstance \
+  R21CycleQuotientBridge \
+  InvertiblePresentation CertificateTransport R24CertificateTransportExamples
 ```
 
 Expected: `Modules were successfully checked`, with no `Axioms:` section

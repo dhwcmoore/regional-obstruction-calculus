@@ -14,6 +14,58 @@ current boundary.
 
 ## Unreleased
 
+### R24: certificate transport under presentation change
+
+- Added `rocq/InvertiblePresentation.v`, `rocq/CertificateTransport.v`,
+  `rocq/R24CertificateTransportExamples.v`: certified invertible linear
+  presentation changes (`D' = B D A^{-1}`, `r' = B r`, explicit
+  two-sided-inverse witnesses via `InvertibleMatrix`, no constructive
+  matrix inversion) transport repair witnesses, separator witnesses, and
+  separator pairings exactly, in both directions, and therefore
+  transport the repairable-versus-obstructed VERDICT itself:
+  `r in im(D) <-> r' in im(D')` (`repairable_iff_transport_repairable`)
+  and its negation (`nonrepairable_iff_transport_nonrepairable`), plus
+  the annihilation-side iff
+  (`separator_annihilates_iff_transport_annihilates`) and exact pairing
+  preservation both ways (`transport_pairing`/`transport_pairing_reverse`).
+- Preceded by an untracked spike (per this repository's own established
+  discipline: scope first, spike untracked, confirm the architecture
+  works before writing tracked files) that answered the open question in
+  `docs/design/CERTIFICATE_TRANSPORT_SPEC.md` §5: the generic theorem,
+  over arbitrary certified-invertible `A`/`B`, succeeded cleanly with no
+  need for a large new matrix-algebra library or a split into an
+  elementary-operations-only milestone plus a follow-up. Almost the
+  entire development is built from vector-action lemmas (matrix
+  multiplication acts associatively on vectors; transpose reverses
+  multiplication under vector action; a two-sided inverse undoes its own
+  action and its transpose's action) rather than full matrix Leibniz
+  identities -- the sole exception, `transpose_qc_involutive` (double
+  transpose), was the only one needed anywhere.
+- `PresentationEquivalence` bundles a transformed system with the
+  `InvertibleMatrix` witnesses used to reach it, so later results (R23
+  signature transport, compositional transport, Meridian-facing
+  presentation changes) can depend on one proposition instead of
+  repeatedly unfolding `transform_operator`/`transform_residue`.
+- Instantiated on a coordinate swap, a nonzero rational scaling, an
+  elementary shear, and R1's own four-cycle obstruction under a
+  residue-space swap, each checked both directly and by applying the
+  generic theorems. Recorded a genuine implementation wrinkle, not a
+  soundness bug: exact-rational cancellation (several `1/5` terms
+  summing to `0`) can reach the same canonical `Qc` value via two
+  computation paths whose `canon` proof components differ syntactically
+  even though the rational values agree (no default proof irrelevance
+  for `Prop` in Coq's kernel) -- `Qc_is_canon`, not a custom
+  extensionality axiom, is the correct repair.
+- Explicitly out of scope, stated in every new file's header and in
+  `docs/design/CERTIFICATE_TRANSPORT_SPEC.md` §4: translations, affine
+  maps, projections, cropping, resolution loss, dimension changes,
+  nonlinear transformations, approximate numerical equivalence, and
+  arbitrary refinement/common-subdivision.
+- Added `InvertiblePresentation`, `CertificateTransport`, and
+  `R24CertificateTransportExamples` to `ROCQ_MODULES` (37 modules total,
+  36 proof modules plus `ExtractR21`), `coqchk`-clean, zero
+  project-added axioms across the full dependency closure.
+
 ## v0.20-r21-front-to-back
 
 ### R21 release-integrity hardening, post-review

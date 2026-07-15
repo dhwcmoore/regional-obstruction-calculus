@@ -1168,3 +1168,41 @@ dependency closure (self-contained: no `Require` of any other file in
 this repository). No axioms, typeclasses, quotient constructions, or
 new morphism scaffold beyond the setoid (`Forall2`-based `VecEq`/
 `MatEq`) equality infrastructure the file builds for itself.
+
+## R22. Cycle-quotient duality
+
+```text
+r in im(D)  <->  every annihilator of im(D) vanishes at r
+```
+
+`rocq/R21CycleQuotientBridge.v`'s `r21_membership_iff_all_annihilate`. A separator is not merely one witness of non-repairability (R21's "or" branch): it is one instance of the COMPLETE dual description of the obstruction quotient. Membership in the image is exactly equivalent to vanishing under every linear functional that annihilates the image -- not just the one functional R21's elimination happens to construct.
+
+Proved in two layers. The abstract layer (`rocq/AbstractSeparation.v`, `QuotientEvaluation.v`, `CycleQuotientDuality.v`) works over a new `AbelianVSpace` record -- stronger than this repository's pre-existing minimal `VSpace` (which lacks right-identity, commutativity, and scale-by-one), confirmed by compiling `Fail` probes against the existing record rather than assumed -- and proves `membership_iff_all_annihilate` given only decidability of membership and a `SeparatesOutside` hypothesis (an annihilator exists for every point outside the subspace). Decidability is threaded as an explicit local hypothesis (`forall x, B x \/ ~ B x`), not obtained from classical logic: the natural proof needs double-negation elimination for an arbitrary `B`, and the file deliberately does not import it.
+
+The concrete layer realises this abstractly-scoped theorem for R21's actual repair operators, over `Vector.t Qc n` (Rocq's canonical-rational type) rather than R21's own `list Q`: `list Q`'s `Qeq`/setoid equality is not Leibniz equality (the same reason a plain `QSpace : VSpace` instance already failed, documented in `docs/design/CYCLE_QUOTIENT_DUALITY_SPEC.md` §5), while `Qc`'s `Qc_is_canon` makes `Qeq`-equal values Leibniz-equal, so the whole vector-space layer (`RationalCanonicalVectors.v`) goes through with ordinary `rewrite`, not setoid rewriting. `R21VectorTransport.v` bridges one direction only (`Qc` vector to `list Q`, via `vec_to_list`/`mat_to_list` -- the reverse direction is never needed, by design). `RationalSeparationInstance.v` builds the concrete `B`/decidability/`SeparatesOutside` instances from R21's own `compute_repair_or_separator_correct` and `repair_and_separator_disjoint`. `R21CycleQuotientBridge.v` assembles the headline theorem -- R21 appears only in its PROOF, not its public statement -- and checks it against a repairable 2x2 identity example and R1's own four-cycle obstruction (`D4`, `r4`, the canonical normalised separator `y4 = (1/5,1/5,1/5,-1/5)`), via `vm_compute`.
+
+**What this establishes**: the annihilator-completeness half of a cycle/quotient duality -- membership is exactly characterised by all annihilators, not just witnessed by one. All 34 modules through this point compile clean and `coqchk`-clean, zero project-added axioms.
+
+**What this does not establish**: the full vector-space isomorphism `C1/im(D) ~= (im(D)^perp)*` -- that needs a basis/dimension theory this repository does not build (flagged in `docs/design/CYCLE_QUOTIENT_DUALITY_SPEC.md` §5 as the highest-risk, unattempted route).
+
+## R24. Certificate transport under presentation change
+
+```text
+D' = B D A^{-1},   r' = B r
+r in im(D)      <->  r' in im(D')
+r not in im(D)  <->  r' not in im(D')
+```
+
+If the same finite rational system is expressed in two presentations related by a certified invertible linear change of basis on the repair space (`A`) and the residue space (`B`), do repairability, non-repairability, and exact certificate values transport correctly? Yes -- and R24 promotes that from witness manipulation to a verdict-invariance theorem: the repairable-versus-obstructed VERDICT itself transports, not merely individual witnesses.
+
+`InvertibleMatrix` (`rocq/InvertiblePresentation.v`) supplies explicit two-sided-inverse witnesses (`fwd`, `bwd`, and both cancellation proofs) rather than a constructive rational matrix-inversion procedure -- deliberately the smaller first step. Repair witnesses transport as `b' = A b` (`transport_repair`); separator witnesses transport contravariantly as `y' = B^{-T} y` (`transport_separator`); the pairing `y . r` is preserved EXACTLY, not merely up to a scalar (`transport_pairing`) -- all three, plus their backward directions (`transport_repair_backward`, `transport_separator_backward`, `transport_pairing_reverse`), combine into the verdict-invariance iffs (`repairable_iff_transport_repairable`, `nonrepairable_iff_transport_nonrepairable`, `separator_annihilates_iff_transport_annihilates`, `rocq/CertificateTransport.v`).
+
+The development follows a proof hierarchy stated and held to throughout: matrix multiplication acts associatively on vectors (`mat_vec_qc_mat_mat_assoc`); transpose reverses multiplication under vector action (already available from R22's own adjoint identity, `dot_qc_mat_vec_adjoint`); a two-sided inverse undoes its own action directly (`mat_vec_qc_left_inverse`, pure equational -- no nondegeneracy needed, since cancelling an invertible matrix's direct action from both sides of an equation is substitution) and undoes its transpose's action given nondegeneracy (`mat_vec_qc_transpose_inverse`, needing one standard-basis-vector nondegeneracy lemma, `dot_qc_ext`); the transport equations and their inverses follow by chaining these. Only ONE full matrix Leibniz identity was needed anywhere in the entire development: `transpose_qc_involutive` (double transpose is the identity), used inside a single supporting lemma -- no `transpose(P.Q) = transpose(Q).transpose(P)` identity, and no general matrix-inversion or determinant machinery, was ever required.
+
+Instantiated on four concrete cases (`rocq/R24CertificateTransportExamples.v`), each checked both directly and by applying the generic theorems: a self-inverse coordinate swap, a nonzero rational scaling (x3 / x1/3), an elementary shear (row addition), and R1's own four-cycle obstruction (`D4`, `r4`, `y4`) under a residue-space coordinate swap -- confirming the original separator is accepted, the transported separator annihilates the transformed matrix, the pairing against the transformed residue stays exactly 1, and transporting back recovers the original separator exactly.
+
+One implementation wrinkle is worth recording because it looks like a soundness bug the first time it is hit and is not one: summing several `1/5` terms to exactly `0` (as `D4`/`y4`'s dot products do) can reach the same canonical `Qc` value through two different computation paths whose `canon` proof components differ syntactically even though the underlying rational values agree (confirmed with `Set Printing All`) -- Coq has no default proof irrelevance for `Prop`, so `vm_compute; reflexivity` can fail on the whole `Qcmake this canon` record for this reason alone. The repair is `Qc_is_canon` (an existing `Qcanon` library lemma, needing only `Qeq`), applied per vector index -- not a custom extensionality axiom.
+
+**What this establishes**: exact, bidirectional, verdict-level invariance of the repair-or-separator decision under certified invertible linear presentation changes, over exact rationals, built almost entirely from vector-action lemmas rather than matrix algebra. All 37 modules compile clean and `coqchk`-clean, zero project-added axioms.
+
+**What this does not establish**: anything about translations, affine maps (`x' = Bx + t`), projections, cropping, resolution loss, dimension changes, nonlinear transformations, approximate/numerical equivalence, or arbitrary refinement/common-subdivision -- none of these are certified invertible linear changes of basis in the sense this theorem needs, and none are covered, decomposed, or claimed here (`docs/design/CERTIFICATE_TRANSPORT_SPEC.md` §4). It also does not decompose any real Meridian zoom/resolution/coordinate-frame scenario into an invertible-linear part this theorem covers and a lossy part it does not -- that domain-adapter-level work remains out of scope for the calculus itself.

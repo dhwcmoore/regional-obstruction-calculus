@@ -106,7 +106,7 @@ The same residue is independently generated from explicit associator-field data 
 
 ## Main results
 
-See [`RESULTS.md`](RESULTS.md) for the complete R1-R21 account and [`STATUS.md`](STATUS.md) for the distinction between proved, computed, diagnostic, and unclaimed results.
+See [`RESULTS.md`](RESULTS.md) for the complete R1-R24 account and [`STATUS.md`](STATUS.md) for the distinction between proved, computed, diagnostic, and unclaimed results.
 
 ### R1-R5: obstruction, repair, refinement, and certificates
 
@@ -211,6 +211,27 @@ R21's Rocq proof is not itself the deployed executable path, but a `repair-or-se
 
 It proves no general efficiency or numerical-stability property, and computes no rank, determinant, or general matrix inverse.
 
+### R22: cycle-quotient duality
+
+`r in im(D) <-> every annihilator of im(D) vanishes at r` (`rocq/R21CycleQuotientBridge.v`'s `r21_membership_iff_all_annihilate`): a separator is not merely one witness of non-repairability but the complete dual description of the obstruction quotient. Proved abstractly first (`AbstractSeparation.v`/`QuotientEvaluation.v`/`CycleQuotientDuality.v`), then realised concretely over `Vector.t Qc n` -- Rocq's canonical-rational type, chosen for the same Leibniz-equality reasons R21's own `list Q` representation runs into `Qeq`/setoid friction that `Qc` avoids (`RationalCanonicalVectors.v`, `R21VectorTransport.v`, `RationalSeparationInstance.v`). R21 appears only in the proof of the concrete instance, not in the theorem's public statement.
+
+Does not claim the full vector-space isomorphism `C1/im(D) ~= (im(D)^perp)*` -- that would need a basis/dimension theory this repository does not build.
+
+### R24: certificate transport under presentation change
+
+If the same finite rational system is expressed in two presentations related by a certified invertible linear change of basis on both the repair space and the residue space, do repairability, non-repairability, and the exact certificate values transport correctly between the two presentations? R24 answers yes, and promotes it to a verdict-invariance theorem, not merely witness manipulation:
+
+```text
+r in im(D)      <->  r' in im(D')
+r not in im(D)  <->  r' not in im(D')
+```
+
+for `D' = B D A^{-1}` and `r' = B r`, given explicit two-sided-inverse witnesses for `A` (repair space) and `B` (residue space) -- no constructive matrix-inversion procedure is built (`InvertibleMatrix`, `rocq/InvertiblePresentation.v`). Repair witnesses transport as `b' = A b`; separator witnesses transport contravariantly as `y' = B^{-T} y`; the pairing `y . r` is preserved *exactly*, not merely up to a scalar (`rocq/CertificateTransport.v`'s `transport_repair`/`transport_separator`/`transport_pairing` and their backward directions, combined into `repairable_iff_transport_repairable`/`nonrepairable_iff_transport_nonrepairable`/`separator_annihilates_iff_transport_annihilates`).
+
+Almost every step is proved at the level of how matrices ACT on vectors -- associativity, a transpose/adjoint identity, two inverse-action facts, and one nondegeneracy lemma -- rather than full matrix Leibniz identities; the sole exception (`transpose_qc_involutive`, double transpose) was the only such identity the development needed. `rocq/R24CertificateTransportExamples.v` instantiates the theorems on a coordinate swap, a nonzero rational scaling, an elementary shear, and R1's own four-cycle obstruction under a residue-space swap, each checked both directly and by applying the generic theorems.
+
+R24 covers certified invertible *linear* changes of domain and residue coordinates over exact rationals, and nothing more: not translations, affine maps, projections, cropping, resolution loss, dimension changes, nonlinear transformations, approximate numerical equivalence, or arbitrary refinement/common-subdivision. See `docs/design/CERTIFICATE_TRANSPORT_SPEC.md` for the precise scope statement.
+
 ### Applied provenance bridges
 
 The unnumbered pairwise-to-global assembly and associator-contribution results connect the mathematical certificates to the applied `veribound-fce` architecture.
@@ -242,7 +263,7 @@ README.md
     project overview and scope
 
 RESULTS.md
-    complete R1-R21 result account
+    complete R1-R24 result account
 
 STATUS.md
     proved, computed, diagnostic, and unclaimed results
@@ -266,7 +287,7 @@ docs/diagnostics/
     realisability and computational diagnostic accounts
 
 rocq/
-    27 active machine-checked modules (26 proof modules plus ExtractR21, the extraction entry point)
+    37 active machine-checked modules (36 proof modules plus ExtractR21, the extraction entry point)
 
 examples/
     exact JSON witness data
@@ -320,7 +341,7 @@ check-assembly-parity
 check-contribution-parity
 ```
 
-The active formal chain contains 27 Rocq modules (26 proof modules plus ExtractR21, the extraction entry point). `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
+The active formal chain contains 37 Rocq modules (36 proof modules plus ExtractR21, the extraction entry point). `check-rocq-trust` runs `coqchk` over the complete declared dependency closure.
 
 ### Pinned container
 
@@ -374,7 +395,7 @@ The later manuscript:
 
 packages the realisability classification and refinement-witness composition results.
 
-The repository has now grown beyond both manuscripts. R11-R21, the typed diagnostic and certificate bridges, the common-subdivision verdict theorem, and the quotient-preservation/reflection theory should be treated as repository results unless and until they are incorporated into a revised manuscript.
+The repository has now grown beyond both manuscripts. R11-R24, the typed diagnostic and certificate bridges, the common-subdivision verdict theorem, and the quotient-preservation/reflection theory should be treated as repository results unless and until they are incorporated into a revised manuscript.
 
 See [`paper/README.md`](paper/README.md) for the manuscript-level map.
 

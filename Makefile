@@ -25,7 +25,15 @@ OCAMLOPT ?= ocamlopt
 # R21VectorTransport/RationalSeparationInstance/R21CycleQuotientBridge
 # discharge it concretely for R21's own repair operators, over Vector.t
 # Qc n (Rocq's canonical-rational type) rather than list Q, for reasons
-# R21VectorTransport.v's header documents precisely.
+# R21VectorTransport.v's header documents precisely. The final three
+# modules are R24 (certificate transport under presentation change):
+# InvertiblePresentation (matrices/vectors over qcvec, InvertibleMatrix,
+# and the vector-action lemmas -- associativity, the transpose adjoint
+# identity, both inverse-action facts -- everything is built from);
+# CertificateTransport (the headline repair/separator/pairing transport
+# theorems, their backward directions, verdict-invariance iffs, and
+# PresentationEquivalence); R24CertificateTransportExamples (swap/
+# scale/shear regression instances plus R1's four-cycle, transported).
 ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   FourCycleObstruction RepeatedTripleSupportCandidate3b \
   CandidateThreeBDistinctSupportClassification CochainNaturalityDescent \
@@ -43,7 +51,8 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   ExactRationalRepairOrSeparator ExtractR21 \
   AbstractSeparation QuotientEvaluation CycleQuotientDuality \
   RationalCanonicalVectors R21VectorTransport RationalSeparationInstance \
-  R21CycleQuotientBridge
+  R21CycleQuotientBridge \
+  InvertiblePresentation CertificateTransport R24CertificateTransportExamples
 
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
