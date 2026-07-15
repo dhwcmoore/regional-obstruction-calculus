@@ -13,7 +13,7 @@ Local validity does not guarantee global coherence. Pairwise-compatible regional
 
 The distinctive contribution is the separation of these obligations. "There is an obstruction" is not treated as one monolithic claim.
 
-Everything computational is exact rational arithmetic using Python `Fraction`, with no floating-point reasoning in any active path. The active Rocq chain contains 27 modules and is checked with both `coqc` and `coqchk`, with no project-added `Admitted`, `Axiom`, `Parameter`, or `sorry`.
+Everything computational is exact rational arithmetic using Python `Fraction`, with no floating-point reasoning in any active path. The active Rocq chain contains 37 modules and is checked with both `coqc` and `coqchk`, with no project-added `Admitted`, `Axiom`, `Parameter`, or `sorry`.
 
 ## Central mathematical architecture
 
@@ -213,7 +213,11 @@ It proves no general efficiency or numerical-stability property, and computes no
 
 ### R22: cycle-quotient duality
 
-`r in im(D) <-> every annihilator of im(D) vanishes at r` (`rocq/R21CycleQuotientBridge.v`'s `r21_membership_iff_all_annihilate`): a separator is not merely one witness of non-repairability but the complete dual description of the obstruction quotient. Proved abstractly first (`AbstractSeparation.v`/`QuotientEvaluation.v`/`CycleQuotientDuality.v`), then realised concretely over `Vector.t Qc n` -- Rocq's canonical-rational type, chosen for the same Leibniz-equality reasons R21's own `list Q` representation runs into `Qeq`/setoid friction that `Qc` avoids (`RationalCanonicalVectors.v`, `R21VectorTransport.v`, `RationalSeparationInstance.v`). R21 appears only in the proof of the concrete instance, not in the theorem's public statement.
+`r in im(D) <-> every annihilator of im(D) vanishes at r` (`rocq/R21CycleQuotientBridge.v`'s `r21_membership_iff_all_annihilate`): membership in the finite rational repair image is completely characterised by annihilating linear functionals -- a separator is not merely one witness of non-repairability but the complete dual description of the obstruction quotient.
+
+Two layers, kept deliberately distinct rather than flattened into a single "classical finite-dimensional duality" claim. The **abstract** theorem (`AbstractSeparation.v`/`QuotientEvaluation.v`/`CycleQuotientDuality.v`'s `membership_iff_all_annihilate`) assumes only decidable membership -- an explicit local hypothesis, not classical logic -- and a `SeparatesOutside` witness-existence hypothesis (an annihilator exists for every point outside the subspace). The **concrete** instance (`RationalCanonicalVectors.v`, `R21VectorTransport.v`, `RationalSeparationInstance.v`, `R21CycleQuotientBridge.v`) *derives* both from R21's own verified `compute_repair_or_separator_correct`/`repair_and_separator_disjoint`, rather than assuming them -- R21 appears only in this derivation, not in the theorem's public statement.
+
+The concrete layer works over `Vector.t Qc n` (`qcvec`, Rocq's canonical-rational, length-indexed type) rather than R21's own `list Q`, for the same reason R21's `list Q` runs into `Qeq`/setoid friction `Qc` avoids: `qcvec` gives genuine Leibniz equality (needed for the abstract vector-space layer) and rules out length mismatches by construction. R21's certificate and executable boundary remains `list Q` throughout -- the two representations coexist by design, connected by a proved one-directional transport (`R21VectorTransport.v`), not by one replacing the other. Checked against a repairable 2x2 identity instance and R1's own four-cycle obstruction, recovering the canonical normalised separator `(1/5,1/5,1/5,-1/5)`.
 
 Does not claim the full vector-space isomorphism `C1/im(D) ~= (im(D)^perp)*` -- that would need a basis/dimension theory this repository does not build.
 

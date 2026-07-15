@@ -65,6 +65,15 @@ current boundary.
   `R24CertificateTransportExamples` to `ROCQ_MODULES` (37 modules total,
   36 proof modules plus `ExtractR21`), `coqchk`-clean, zero
   project-added axioms across the full dependency closure.
+- Also backfills R22's own public documentation, never added when R22
+  was committed (`60eb501`): README.md, STATUS.md, RESULTS.md, and
+  PROJECT_MAP.md previously had no R22 entry at all, and the Rocq
+  module count had silently drifted (27 in one file, 28 in another,
+  neither counting R22's seven modules). Both gaps are now fixed, and
+  `tests/test_documentation_module_count.py` checks that the module
+  count and both R22's and R24's presence in the docs stay in sync
+  going forward -- a real drift, not a hypothetical one, motivated this
+  test.
 
 ## v0.20-r21-front-to-back
 
