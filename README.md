@@ -420,5 +420,7 @@ Citation metadata is provided in [`CITATION.cff`](CITATION.cff).
 
 Licence: AGPL-3.0-or-later.
 
+This project is available under the AGPL-3.0-or-later; a commercial licence for use in proprietary or non-disclosed products is available on request at dhwcmoore@gmail.com.
+
 Duston Moore
 Independent Researcher
