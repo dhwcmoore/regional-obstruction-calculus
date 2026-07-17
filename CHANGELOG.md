@@ -689,7 +689,9 @@ account.
 ## Initial import
 
 - `d7de826`: associator-fields paper (`paper/associator_fields_ACS_revised.tex`
-  / `.pdf`) and its accompanying code: `residue_classifier.py` (working,
-  exact-rational four-region obstruction witness), plus the
-  refinement-persistence scaffolding later found to be non-functional and
-  superseded above.
+  / `.pdf` — this manuscript and its later companion have since been
+  moved, with their own commit history, to the separate
+  `obstruction-calculus-manuscripts` repository) and its accompanying
+  code: `residue_classifier.py` (working, exact-rational four-region
+  obstruction witness), plus the refinement-persistence scaffolding
+  later found to be non-functional and superseded above.

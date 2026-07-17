@@ -314,10 +314,12 @@ tests/
 
 ocaml/
     independent refinement and parity checkers
-
-paper/
-    two manuscripts and their relationship to the current repository
 ```
+
+The two manuscripts formerly kept in `paper/` now live, with their full
+commit history, in the separate
+[`obstruction-calculus-manuscripts`](https://github.com/dhwcmoore/obstruction-calculus-manuscripts)
+repository.
 
 ## Quick start
 
@@ -412,7 +414,9 @@ packages the realisability classification and refinement-witness composition res
 
 The repository has now grown beyond both manuscripts. R11-R24, the typed diagnostic and certificate bridges, the common-subdivision verdict theorem, and the quotient-preservation/reflection theory should be treated as repository results unless and until they are incorporated into a revised manuscript.
 
-See [`paper/README.md`](paper/README.md) for the manuscript-level map.
+Both manuscripts, with their full commit history, now live in the
+separate [`obstruction-calculus-manuscripts`](https://github.com/dhwcmoore/obstruction-calculus-manuscripts)
+repository, which also has the manuscript-level map.
 
 ## Citation, licence, and contact
 
