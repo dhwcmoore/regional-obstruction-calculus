@@ -57,7 +57,8 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
 .PHONY: test check clean check-python check-residue check-refinements check-random \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
   check-assembly-parity check-contribution-parity check-associator check-diagnostics \
-  check-certificates check-r21-ocaml extract-r21 check-r21-extraction check-all
+  check-certificates check-r21-ocaml extract-r21 check-r21-extraction check-all \
+  check-tracking-adapter
 
 check: check-python
 
@@ -80,12 +81,13 @@ check-all:
 	$(MAKE) check-r21-ocaml
 	$(MAKE) check-r21-extraction
 	$(MAKE) check-python
+	$(MAKE) check-tracking-adapter
 	$(MAKE) check-rocq
 	$(MAKE) check-rocq-trust
 	$(MAKE) check-ocaml
 	$(MAKE) check-assembly-parity
 	$(MAKE) check-contribution-parity
-	@echo "check-all: check-r21-ocaml, check-r21-extraction, check-python (including R21 cross-language agreement and extracted-generator suites), check-rocq, check-rocq-trust, check-ocaml, check-assembly-parity, and check-contribution-parity all passed."
+	@echo "check-all: check-r21-ocaml, check-r21-extraction, check-python (including R21 cross-language agreement and extracted-generator suites), check-tracking-adapter, check-rocq, check-rocq-trust, check-ocaml, check-assembly-parity, and check-contribution-parity all passed."
 
 check-python:
 	$(PYTHON) residue_classifier.py examples/four_cycle.json
@@ -93,6 +95,16 @@ check-python:
 	$(PYTHON) run_associator_obstruction.py examples/four_cycle_associator.json
 	$(MAKE) check-diagnostics
 	$(PYTEST) -q
+
+# Runs after check-python deliberately (so pytest's own tracking-adapter
+# suites, and this repo's discipline of never trusting a script's own
+# claim of success over pytest, both already ran) and after check-r21-
+# ocaml (so roc-verify-ocaml already exists and this actually exercises
+# it rather than skipping) -- see run_tracking_adapter_pipeline.py's own
+# module docstring for the full front-to-back chain this reproduces and
+# its explicit "untrusted coordinator" trust-boundary statement.
+check-tracking-adapter:
+	$(PYTHON) run_tracking_adapter_pipeline.py
 
 check-diagnostics:
 	$(PYTHON) realisability_diagnostic.py

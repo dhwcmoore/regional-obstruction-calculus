@@ -546,7 +546,7 @@ def test_chain_cli_exits_zero_on_accept(tmp_path):
     r21_cert_path.write_text(json.dumps(r21_cert))
 
     result = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "tracking_adapter_certificate.py"),
+        [sys.executable, str(REPO_ROOT / "tracking_adapter_certificate.py"), "verify-chain",
          str(snapshot_path), str(cert_path), str(r21_cert_path)],
         capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )
@@ -568,7 +568,7 @@ def test_chain_cli_exits_one_on_reject(tmp_path):
     r21_cert_path.write_text(json.dumps(r21_cert))
 
     result = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "tracking_adapter_certificate.py"),
+        [sys.executable, str(REPO_ROOT / "tracking_adapter_certificate.py"), "verify-chain",
          str(snapshot_path), str(cert_path), str(r21_cert_path)],
         capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT,
     )

@@ -411,19 +411,28 @@ def _verify_chain(snapshot_doc: Any, certificate: Any, r21_certificate: Any, res
     # 10. Every stage agreed -- ACCEPT.
 
 
-def main() -> None:
-    """CLI (`tracking-adapter-verify-chain <snapshot.json> <certificate.
-    json> <r21_certificate.json>`), matching R21's own `roc-verify`
-    fail-closed convention: exit 0 only if the complete chain is
-    accepted, exit 1 otherwise, printing every rejection reason."""
-    import argparse
+def _cli_emit(args) -> None:
+    """`emit <snapshot.json> --output <certificate.json>`: emits a
+    tracking-adapter-certificate/v1, refusing (exit 1) unless the
+    independent verifier accepts the snapshot first (emission authority,
+    this module's own docstring)."""
+    doc = strict_json_load(args.snapshot)
+    try:
+        certificate = emit_certificate(doc)
+    except CertificateError as e:
+        print(f"EMIT REJECTED: {e}")
+        raise SystemExit(1)
+    with open(args.output, "w") as f:
+        json.dump(certificate, f, indent=2)
+    print(f"EMIT ACCEPT: wrote {args.output}")
+    raise SystemExit(0)
 
-    parser = argparse.ArgumentParser(description="Verify the complete tracking-adapter evidence chain.")
-    parser.add_argument("snapshot", help="path to a tracking-adapter/v1 snapshot JSON file")
-    parser.add_argument("certificate", help="path to a tracking-adapter-certificate/v1 file")
-    parser.add_argument("r21_certificate", help="path to a repair-or-separator/v1 R21 certificate file")
-    args = parser.parse_args()
 
+def _cli_verify_chain(args) -> None:
+    """`verify-chain <snapshot.json> <certificate.json> <r21_certificate
+    .json>`: matches R21's own `roc-verify` fail-closed convention --
+    exit 0 only if the complete chain is accepted, exit 1 otherwise,
+    printing every rejection reason."""
     result = verify_chain_files(args.snapshot, args.certificate, args.r21_certificate)
     if result.accepted:
         print("CHAIN ACCEPT")
@@ -432,6 +441,27 @@ def main() -> None:
     for reason in result.reasons:
         print(f"  - {reason}")
     raise SystemExit(1)
+
+
+def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Emit or verify tracking-adapter certificates.")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    emit_parser = subparsers.add_parser("emit", help="emit a tracking-adapter-certificate/v1 from a snapshot")
+    emit_parser.add_argument("snapshot", help="path to a tracking-adapter/v1 snapshot JSON file")
+    emit_parser.add_argument("--output", required=True, help="path to write the certificate JSON to")
+    emit_parser.set_defaults(func=_cli_emit)
+
+    chain_parser = subparsers.add_parser("verify-chain", help="verify the complete tracking-adapter evidence chain")
+    chain_parser.add_argument("snapshot", help="path to a tracking-adapter/v1 snapshot JSON file")
+    chain_parser.add_argument("certificate", help="path to a tracking-adapter-certificate/v1 file")
+    chain_parser.add_argument("r21_certificate", help="path to a repair-or-separator/v1 R21 certificate file")
+    chain_parser.set_defaults(func=_cli_verify_chain)
+
+    args = parser.parse_args()
+    args.func(args)
 
 
 if __name__ == "__main__":
