@@ -21,13 +21,23 @@ UNMODIFIED `tracking_adapter_verifier.py` remains that authority (design
 doc SS5's emission-authority requirement), exercised unchanged via
 `tracking_adapter_certificate.emit_certificate`.
 
-SCOPE (10B only): the COHERENT per-track transformation family -- the
-REPAIRABLE case, using the same offsets `(0,1,3,2)` already tracked in
-`examples/tracking_adapter/repairable_snapshot.json`, so this fixture's
-independently reconstructed `(D, r)` can be cross-checked against an
-already-verified value. The incoherent, OBSTRUCTED case is step 10C's
-job, not this one's -- introducing it here would conflate two separate
-claims this milestone needs kept apart.
+SCOPE: two declared TRANSFORMATION POLICIES over the exact same Stone
+Soup track evidence (step 10C) -- `"coherent"` (the REPAIRABLE case,
+offsets `(0,1,3,2)` matching `examples/tracking_adapter/repairable_
+snapshot.json` exactly) and `"canonical_obstruction"` (the OBSTRUCTED
+case, edge-specific incoherent offsets matching `examples/tracking_
+adapter/obstructed_snapshot.json`'s own construction, reproducing the
+repository's canonical `r=(1,1,1,-2)`). `build_local_tracks()` -- the
+genuine Stone Soup evidence itself -- is identical for both policies;
+only `build_transformations_and_edges(policy)` differs. This is
+deliberate: it isolates the structural claim precisely. Stone Soup
+supplies the track evidence; the DECLARED TRANSFORMATION POLICY, not
+Stone Soup, determines whether the resulting pairwise comparisons
+assemble into a globally consistent correction or not. Neither `r`,
+`b`, nor `y` is ever inserted as a literal anywhere in this file --
+every one is derived from the transformation policy and the shared
+track evidence, then independently reconstructed by the unmodified
+verifier and certified by the unmodified R21 pipeline.
 
 DETERMINISM POLICY, enforced by `tests/test_stonesoup_source_policy.py`'s
 AST scan of this file's own source (not merely asserted in this
@@ -84,9 +94,27 @@ EDGES = [("e12", "t1", "t2"), ("e23", "t2", "t3"), ("e34", "t3", "t4"), ("e14", 
 
 # Coherent per-track transformation offsets -- the REPAIRABLE case,
 # reproducing examples/tracking_adapter/repairable_snapshot.json's own
-# construction exactly, for cross-checking.
+# construction exactly, for cross-checking. Keyed by track_id ONLY: the
+# same offset applies regardless of which edge references the track.
 COHERENT_OFFSETS = {"t1": "0", "t2": "1", "t3": "3", "t4": "2"}
-GROUND_TRUTH_VALUE = 100  # every track observes the same raw position
+
+# Incoherent, edge-specific transformation offsets -- the OBSTRUCTED
+# case, reproducing examples/tracking_adapter/obstructed_snapshot.json's
+# own construction exactly. Keyed by (edge_id, track_id): the SAME track
+# gets a DIFFERENT offset depending on which edge references it (e.g.
+# t2 is 1 under e12 but 0 under e23) -- this incoherence, not Stone
+# Soup's tracks themselves, is what makes the residue fail to be a
+# coboundary of any single global assignment (design doc SS5).
+INCOHERENT_OFFSETS = {
+    ("e12", "t1"): "0", ("e12", "t2"): "1",
+    ("e23", "t2"): "0", ("e23", "t3"): "1",
+    ("e34", "t3"): "0", ("e34", "t4"): "1",
+    ("e14", "t1"): "0", ("e14", "t4"): "-2",
+}
+
+TRANSFORMATION_POLICIES = ("coherent", "canonical_obstruction")
+
+GROUND_TRUTH_VALUE = 100  # every track observes the same raw position, both policies
 
 QUANTISATION_POLICY = {
     "position_decimal_places": 6,
@@ -179,30 +207,46 @@ def build_local_track(tracker_id: str) -> Dict:
     }
 
 
-def build_snapshot() -> dict:
-    local_tracks = {tid: build_local_track(tid) for tid in TRACKER_IDS}
+def build_local_tracks() -> Dict[str, Dict]:
+    """The shared Stone Soup evidence -- IDENTICAL regardless of which
+    transformation policy is later declared over it. Called once per
+    policy in `build_snapshot`, but produces byte-identical sources/
+    detections/tracks each time since every input (seeds, timestamp,
+    ground truth value) is fixed."""
+    return {tid: build_local_track(tid) for tid in TRACKER_IDS}
 
-    sources = [local_tracks[tid]["source"] for tid in TRACKER_IDS]
-    detections = [local_tracks[tid]["detection"] for tid in TRACKER_IDS]
-    tracks = [local_tracks[tid]["track"] for tid in TRACKER_IDS]
 
+def _offset_for(policy: str, edge_id: str, track_id: str) -> str:
+    if policy == "coherent":
+        return COHERENT_OFFSETS[track_id]
+    if policy == "canonical_obstruction":
+        return INCOHERENT_OFFSETS[(edge_id, track_id)]
+    raise ValueError(f"unknown transformation policy {policy!r}; expected one of {TRANSFORMATION_POLICIES}")
+
+
+def build_transformations_and_edges(policy: str, local_tracks: Dict[str, Dict]):
+    """The ONLY thing that differs between the two policies. Neither `r`
+    nor any discrepancy is ever a literal here -- every value is
+    computed from the shared track evidence plus this policy's own
+    declared offsets, then independently reconstructed downstream by the
+    unmodified verifier."""
     transformations = []
     for edge_id, i, j in EDGES:
         for track_id in (i, j):
             transformations.append({
-                "transformation_id": f"xf-{edge_id}-{track_id}",
+                "transformation_id": f"xf-{policy}-{edge_id}-{track_id}",
                 "edge_id": edge_id,
                 "track_id": local_tracks[track_id]["track"]["track_id"],
                 "kind": "additive_offset",
-                "offset": COHERENT_OFFSETS[track_id],
+                "offset": _offset_for(policy, edge_id, track_id),
             })
 
     comparison_edges = []
     for edge_id, i, j in EDGES:
         ti = int(local_tracks[i]["track"]["state_values"][0])
         tj = int(local_tracks[j]["track"]["state_values"][0])
-        oi = int(COHERENT_OFFSETS[i])
-        oj = int(COHERENT_OFFSETS[j])
+        oi = int(_offset_for(policy, edge_id, i))
+        oj = int(_offset_for(policy, edge_id, j))
         discrepancy = (tj + oj) - (ti + oi)
         comparison_edges.append({
             "edge_id": edge_id,
@@ -210,18 +254,36 @@ def build_snapshot() -> dict:
             "target_track_id": local_tracks[j]["track"]["track_id"],
             "orientation": "source_to_target",
             "comparison_space_id": "cmp-1",
-            "transformation_id": "family-coherent",
+            "transformation_id": f"family-{policy}",
             "discrepancy": str(discrepancy),
             "coreference_provenance": "stonesoup-emitter-declared",
         })
 
+    return transformations, comparison_edges
+
+
+def build_snapshot(policy: str = "coherent") -> dict:
+    if policy not in TRANSFORMATION_POLICIES:
+        raise ValueError(f"unknown transformation policy {policy!r}; expected one of {TRANSFORMATION_POLICIES}")
+
+    local_tracks = build_local_tracks()
+    sources = [local_tracks[tid]["source"] for tid in TRACKER_IDS]
+    detections = [local_tracks[tid]["detection"] for tid in TRACKER_IDS]
+    tracks = [local_tracks[tid]["track"] for tid in TRACKER_IDS]
+    transformations, comparison_edges = build_transformations_and_edges(policy, local_tracks)
+
+    scenario_id = {
+        "coherent": "stonesoup-repairable-001",
+        "canonical_obstruction": "stonesoup-obstructed-001",
+    }[policy]
+
     doc = {
         "schema_version": "tracking-adapter/v1",
-        "scenario_id": "stonesoup-repairable-001",
+        "scenario_id": scenario_id,
         "evaluation_timestamp_utc": FIXED_TIMESTAMP_ISO,
         "state_space": {"dimension": 1},
         "quantisation_policy": QUANTISATION_POLICY,
-        "correction_policy": {"kind": "additive-per-track"},
+        "correction_policy": {"kind": "additive-per-track", "transformation_policy": policy},
         "sources": sources,
         "detections": detections,
         "tracks": tracks,
@@ -238,12 +300,16 @@ def build_snapshot() -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Emit a deterministic Stone Soup tracking-adapter/v1 snapshot.")
     parser.add_argument("--output", required=True, help="path to write the canonical snapshot JSON to")
+    parser.add_argument(
+        "--policy", choices=TRANSFORMATION_POLICIES, default="coherent",
+        help="declared transformation policy over the shared Stone Soup track evidence (default: coherent)",
+    )
     args = parser.parse_args()
 
-    snapshot = build_snapshot()
+    snapshot = build_snapshot(args.policy)
     with open(args.output, "w") as f:
         json.dump(snapshot, f, indent=2, sort_keys=True)
-    print(f"EMIT ACCEPT: wrote {args.output}")
+    print(f"EMIT ACCEPT: wrote {args.output} (policy={args.policy})")
 
 
 if __name__ == "__main__":
