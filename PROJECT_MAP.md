@@ -134,7 +134,25 @@ See `REPRODUCIBILITY.md` for dependency order, exact commands, toolchain
 versions, the inventory check, the preliminary source scan, and the
 complete `coqchk` invocation.
 
-## 7. Paper
+## 7. Applied domain adapter: Meridian tracking
+
+Not part of the numbered R1-R24 ladder — an applied layer connecting R21's exact rational repair-or-separator decision to multi-sensor tracking evidence. See `docs/design/TRACKING_EVIDENCE_TO_RATIONAL_ADAPTER_SPEC.md` for the governing design and `docs/TRACKING_ADAPTER_END_TO_END_DEMONSTRATION.md` for a captured, drift-locked run of the complete chain.
+
+- `tracking_adapter_format.py` — the domain-object model and closed `tracking-adapter/v1` snapshot schema (`Source`, `Detection`, `LocalTrack`, `ComparisonEdge`, `Transformation`, `AncestryNode`); structural validation only.
+- `tracking_adapter_canon.py` — canonical decimal-string to exact-rational conversion, via two independently-implemented rounding routes (`to_exact_rational`, `to_exact_rational_independent`) that must agree.
+- `tracking_adapter_generator.py` — derives `(D, r)` from a snapshot's declared per-edge transformations; the untrusted proposer, not the certifying authority.
+- `tracking_adapter_verifier.py` — independently reconstructs `(D, r)` from the same evidence, sharing no semantic reconstruction code with the generator (proved by an AST-import scan and a monkeypatch test, `tests/test_tracking_adapter_verifier_independence.py`); the architecturally critical independent authority.
+- `tracking_adapter_certificate.py` — binds a verified `(D, r)` into a `tracking-adapter-certificate/v1` certificate with per-value decimal-conversion attestations, and `verify_chain`, which checks the complete snapshot-to-R21-certificate chain.
+- `tracking_adapter_provenance.py` — a separate evidentiary-admissibility check (does a declared "independent" comparison actually share ancestry?), via an ancestry-graph transitive closure computed independently on both the generator and verifier sides; never used to infer repairability.
+- `run_tracking_adapter_pipeline.py` — an untrusted orchestration script composing the public CLIs above into one front-to-back run; not another verifier.
+- `examples/tracking_adapter/` — tracked repairable/obstructed fixture pairs (snapshot, adapter certificate, `roc-input/v1`, R21 certificate), regenerated and byte-compared against the same builder functions.
+- `tracking_adapter_stonesoup_trackfusion.py` — an OPTIONAL evidence source: a deterministic, minimally-adapted reconstruction of Stone Soup's own two-radar track-fusion tutorial, using genuine installed `stonesoup` APIs. Never imported by any file above (`tests/test_stonesoup_import_boundary.py`).
+- `tracking_adapter_stonesoup_trackfusion_emitter.py` — projects that reconstruction's captured local tracks into a `tracking-adapter/v1` snapshot (x-position only enters `(D, r)`; velocity and covariance are digest-bound provenance) for two declared transformation policies, `natural` and `artificial_perturbation`.
+- `tracking_adapter_stonesoup_emitter.py`, `tracking_adapter_stonesoup_provenance.py` — earlier, simpler Stone Soup fixtures: a four-tracker coherent/obstructed comparison pair, and three provenance fixtures (disjoint/duplicated-path/correlated-reuse ancestry) over the same evidence.
+- `docs/design/STONESOUP_TRACK_FUSION_EVALUATOR_SPEC.md` — a pre-implementation audit of the actual upstream Stone Soup source establishing, before any evaluator code was written, that the two-track/one-edge topology gives `rank(D) = 1 = dim(C^1)` — necessarily repairable, not obstruction-capable.
+- `requirements-stonesoup.txt` — Stone Soup's own pinned dependency tree, kept entirely separate from `requirements.txt`; `make check-stonesoup-adapter` (optional, not part of `check-all`) runs the Stone-Soup-dependent test suite with zero skips when installed.
+
+## 8. Paper
 
 - `paper/associator_fields_ACS_revised.tex` — the associator-fields manuscript. See `paper/README.md` for how it relates to the current repository state.
 - `paper/finite_obstruction_calculus_for_regional_warrant.tex` — the second manuscript: the realisability-line theorem ladder, including the Candidate 3b classification (§4) and refinement-witness composition (§5, Theorems 5.1-5.3: `N0_composes`, `A4_composes`, `E0_composes`). See `paper/README.md`.

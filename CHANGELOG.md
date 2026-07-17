@@ -14,6 +14,93 @@ current boundary.
 
 ## Unreleased
 
+### Meridian applied layer: tracking-evidence-to-rational adapter, and Stone Soup integration
+
+Not part of the numbered R1-R24 ladder — an applied layer connecting
+R21's exact rational repair-or-separator decision to multi-sensor
+tracking evidence, per the user's own Meridian priority order (this
+work was chosen over R28 as "the strategically stronger sequence
+because it directly advances the Meridian integration path").
+
+- `docs/design/TRACKING_EVIDENCE_TO_RATIONAL_ADAPTER_SPEC.md`
+  (`09824ba`): the governing design. `Db = r` is equivalent to
+  simultaneous repair of declared pairwise track comparisons only if
+  the correction is declared per EDGE, not per tracker — the key design
+  problem solved here, since naively differencing already-known global
+  track states makes `r` a coboundary by construction, so no fixture
+  built that way could ever be genuinely obstructed. A real sign bug
+  (additive vs. subtractive correction convention) was found and fixed
+  during review, caught only by hand-computing concrete numbers.
+- Ten-step implementation, each its own commit, `make check-all` green
+  throughout: `tracking_adapter_format.py` (closed `tracking-adapter/v1`
+  schema, `7003229`), `tracking_adapter_canon.py` (two independently-
+  implemented decimal-to-rational rounding routes, cross-checked,
+  `a77acfa`), `tracking_adapter_generator.py` (`(D, r)` derivation,
+  `2624255`), `tracking_adapter_verifier.py` (the architecturally
+  critical independent reconstruction, sharing no semantic code with
+  the generator — proved by an AST-import scan and a monkeypatch test,
+  `b19a20e`), `tracking_adapter_certificate.py` (`tracking-adapter-
+  certificate/v1`, per-value decimal-conversion attestations,
+  `verify_chain`, `4869983`), a tracked repairable/obstructed fixture
+  corpus (`examples/tracking_adapter/`, `e9ed3c3` — surfaced a genuine
+  gauge freedom: R21's deterministic repair witness for the coherent
+  fixture, `(-2,-1,1,0)`, differs from the `(0,1,3,2)` used to
+  construct it by a multiple of `ker(D)`'s all-ones vector, not a bug),
+  52 adversarial-rejection tests (`12ca7d4`), 12 metamorphic properties
+  including direct `rank(D)`/`rank(D^T)` checks (`e67969f`), and
+  `run_tracking_adapter_pipeline.py` plus `docs/TRACKING_ADAPTER_END_
+  TO_END_DEMONSTRATION.md` with its own drift test (`1b8100d`).
+- Stone Soup integration (step 10, sub-steps 10A-10F, each its own
+  commit): Stone Soup (`stonesoup==1.9.1`, pinned only in
+  `requirements-stonesoup.txt`) supplies an OPTIONAL genuine tracking-
+  evidence source on top of the same, unmodified adapter boundary —
+  mechanically proved never a dependency of the exact adapter or R21
+  kernel by `tests/test_stonesoup_import_boundary.py` (`3a8e859`, 10A).
+  A minimal, deterministic four-tracker fixture using genuine installed
+  Stone Soup objects (`State`/`LinearGaussian`/`Detection`/`Track`, not
+  reimplementations) demonstrates both a repairable (coherent
+  transformation family, `84c030c`, 10B) and an obstructed (incoherent,
+  edge-specific family, independently deriving the repository's own
+  canonical `r=(1,1,1,-2)`, `370125d`, 10C) verdict from identical
+  underlying evidence — the obstruction comes from the declared
+  transformation policy, not from Stone Soup itself. A provenance/data-
+  incest layer (`tracking_adapter_provenance.py`, `05b2208`, 10D)
+  checks evidentiary admissibility via an independently-computed
+  ancestry-graph transitive closure, establishing that numerical
+  coherence does not establish evidential independence — R21 is never
+  used to detect data incest.
+- A bounded, pre-implementation design audit
+  (`docs/design/STONESOUP_TRACK_FUSION_EVALUATOR_SPEC.md`) traced Stone
+  Soup's own two-radar track-fusion tutorial directly against the
+  fetched upstream source at the pinned tag, finding a genuine upstream
+  determinism gap (`np.random.seed(...)` does not seed the separately-
+  instantiated `np.random.default_rng()` the tutorial's own clutter
+  model uses) and establishing, BEFORE any evaluator code was written,
+  that the two-track/one-edge comparison topology gives
+  `rank(D) = 1 = dim(C^1)` — `D` is surjective, so this topology is
+  necessarily repairable for any residue, with or without an artificial
+  transformation perturbation. `tracking_adapter_stonesoup_trackfusion.
+  py` (10E.1, `d7ab75c`) reproduces that tutorial deterministically
+  through genuine installed APIs (`RadarBearingRange`,
+  `SingleTargetTracker`, `Tracks2GaussianDetectionFeeder`,
+  `ChernoffUpdater`), confirmed byte-identical across fresh subprocess
+  runs. `tracking_adapter_stonesoup_trackfusion_emitter.py` (10E.2,
+  `4b73def`) projects the captured local tracks into a real `tracking-
+  adapter/v1` snapshot (x-position only enters `(D, r)`; velocity and
+  covariance survive as digest-bound provenance) and runs it through
+  the complete, unmodified verification chain for both the `natural`
+  and `artificial_perturbation` policies — confirmed `rank(D) = 1`
+  directly via `rational_linear_algebra.nullspace_over_Q`, not merely
+  cited from the design doc.
+- `docs/TRACKING_ADAPTER_END_TO_END_DEMONSTRATION.md`'s Example 3
+  (10F) captures a real, fresh run of the Stone Soup pipeline end to
+  end, kept honest against drift by `tests/test_stonesoup_trackfusion_
+  documentation_drift.py`.
+- No tag has been created for this work; per this repository's own
+  discipline, an annotated release tag should point at the commit
+  including the final demonstration/evidence artefacts, not an earlier
+  one.
+
 ### R24: certificate transport under presentation change
 
 - Added `rocq/InvertiblePresentation.v`, `rocq/CertificateTransport.v`,

@@ -242,6 +242,14 @@ The unnumbered pairwise-to-global assembly and associator-contribution results c
 
 They establish representation, provenance, co-reference, outcome-separation, orientation, and sign-determinacy properties. They deliberately do not claim that every applied implementation component has been extracted from or verified by Rocq.
 
+### Applied domain adapters: Meridian tracking
+
+A second, also unnumbered, applied layer connects R21's exact rational repair-or-separator decision to Meridian-style multi-sensor tracking evidence: `docs/design/TRACKING_EVIDENCE_TO_RATIONAL_ADAPTER_SPEC.md` defines a `tracking-adapter/v1` snapshot schema (sources, detections, local tracks, per-edge declared coordinate transformations, comparison edges) and derives `(D, r)` from it, per edge rather than per tracker, so a residue can carry genuine cross-edge inconsistency rather than being a coboundary by construction. `tracking_adapter_verifier.py` independently reconstructs `(D, r)` from the same evidence, sharing no semantic reconstruction code with the generator (`tracking_adapter_generator.py`) that proposed it -- mechanically enforced by an AST-import scan and a monkeypatch test, the same independence discipline R21's own two checkers use. `tracking_adapter_certificate.py` binds that reconstruction to R21's own input digest with per-value decimal-to-exact-rational conversion attestations (two independently-implemented rounding routes, cross-checked) and verifies the complete chain -- snapshot, adapter certificate, `roc-input/v1`, R21 certificate, both R21 checkers -- end to end. A separate provenance/data-incest layer (`tracking_adapter_provenance.py`) answers a different question from R21's own: not "is this repairable?" but "is this declared comparison's evidence admissible as independent in the first place?", checked via an ancestry graph before `(D, r)` is ever computed, and never used to infer anything about repairability itself.
+
+Stone Soup (`stonesoup`, an open-source multi-target tracking library, pinned separately in `requirements-stonesoup.txt`, never a dependency of the exact adapter or R21 -- mechanically proved by `tests/test_stonesoup_import_boundary.py`) supplies one genuinely applied evidence source on top of this boundary: a deterministic, minimally-adapted reconstruction of Stone Soup's own two-radar track-fusion tutorial (`tracking_adapter_stonesoup_trackfusion.py`, real installed `RadarBearingRange`/`SingleTargetTracker`/`Tracks2GaussianDetectionFeeder`/`ChernoffUpdater` objects, not reimplementations) is projected into a `tracking-adapter/v1` snapshot and run through the identical, unmodified chain (`docs/TRACKING_ADAPTER_END_TO_END_DEMONSTRATION.md`, Example 3). A pre-implementation audit of the actual upstream source (`docs/design/STONESOUP_TRACK_FUSION_EVALUATOR_SPEC.md`) established, before any evaluator code was written, that this specific two-track, one-edge comparison topology gives `rank(D) = 1 = dim(C^1)` -- `D` is surjective, so no residue on it can ever be obstructed, with or without a deliberately labelled artificial transformation perturbation. The genuine result demonstrated is that a real, upstream-derived tracking pipeline's actual residue and repair witness pass through the unmodified certificate chain, not that this topology could exhibit an obstruction.
+
+This layer does not claim that Stone Soup's own fusion output (reported for side-by-side comparison only, never consumed by the verdict) is statistically calibrated, that a provenance ACCEPT verdict means the compared tracks are statistically independent estimators of one physical target (only that they share no sensor-record ancestor), or that any of this demonstrates verification of a real, non-simulated sensor feed.
+
 ## Interpretation, not formalism
 
 The proved and computed content is at the level of finite cochains, cocycles, coboundaries, exact rational linear algebra, and explicitly defined diagnostic judgements. It is a finite, Čech-style obstruction calculus, not a formal higher-category theory.
@@ -297,10 +305,12 @@ examples/
     exact JSON witness data
 
 tests/
-    254-test Python regression suite (377 including the R21 OCaml
+    520-test Python regression suite (648 including the R21 OCaml
     cross-language, canonical-vector, extracted-generator, and
     demonstration suites, once `make check-r21-ocaml`/`check-r21-
-    extraction` have built their binaries)
+    extraction` have built their binaries; the difference also includes
+    the optional Stone Soup suite, which skips rather than fails when
+    `stonesoup` is not installed -- see `make check-stonesoup-adapter`)
 
 ocaml/
     independent refinement and parity checkers
@@ -323,7 +333,7 @@ make check-python
 Expected result:
 
 ```text
-254 passed
+520 passed, 173 skipped
 ```
 
 ### Complete verification
@@ -384,6 +394,7 @@ See [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) for the complete command sequence
 | Quotient preservation and reflection      | `rocq/QuotientDescentReflection.v`                                            | machine-checked for linear refinement maps                     |
 | Quotient verdict closure                  | `rocq/QuotientVerdictClosure.v`                                               | machine-checked                                                |
 | Applied provenance bridges                | `rocq/PairwiseToGlobalAssembly.v`, `rocq/AssociatorContributionCertificate.v` | machine-checked, with independent OCaml parity checks          |
+| Applied tracking adapter (Meridian)      | `tracking_adapter_*.py`, `tracking_adapter_stonesoup_*.py`                    | executable and independently checked; optional Stone Soup evidence layer, never a dependency of the exact adapter or R21 |
 | Full presentation invariance              | none                                                                          | not claimed                                                    |
 | Full end-to-end verified implementation   | none                                                                          | not claimed                                                    |
 
