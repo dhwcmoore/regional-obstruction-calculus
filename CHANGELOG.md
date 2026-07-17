@@ -12,6 +12,18 @@ refinement. See the "Presentation fidelity and quotient semantics"
 checkpoint below and `docs/theory/THEOREM_CONCORDANCE.md` for the exact
 current boundary.
 
+**A note on commit hashes below this point (2026-07-17 history
+rewrite)**: this repository's git history was rewritten to remove the
+`paper/` manuscript directory (relocated, with its own commit history,
+to the separate `obstruction-calculus-manuscripts` repository), replace
+an internal codename ("TerraSense" -> "Meridian") throughout, and strip
+AI co-author trailers from every commit message. Every commit's hash
+changed as a result, including every tag through `v0.21`. Short commit
+hashes cited below and in the `v0.1`-`v0.21` tag messages describe the
+history as it existed BEFORE that rewrite and no longer resolve to
+objects in this repository; they are kept as an accurate narrative of
+what happened and in what order, not as literal object references.
+
 ## Unreleased
 
 ### Meridian applied layer: tracking-evidence-to-rational adapter, and Stone Soup integration
