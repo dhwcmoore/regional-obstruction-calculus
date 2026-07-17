@@ -58,7 +58,7 @@ ROCQ_MODULES := AdmissibleRefinementPersistence AssociatorResidueRepair \
   check-rocq check-rocq-inventory check-rocq-scan check-rocq-trust check-ocaml \
   check-assembly-parity check-contribution-parity check-associator check-diagnostics \
   check-certificates check-r21-ocaml extract-r21 check-r21-extraction check-all \
-  check-tracking-adapter
+  check-tracking-adapter check-stonesoup-adapter
 
 check: check-python
 
@@ -105,6 +105,27 @@ check-python:
 # its explicit "untrusted coordinator" trust-boundary statement.
 check-tracking-adapter:
 	$(PYTHON) run_tracking_adapter_pipeline.py
+
+# Optional -- Stone Soup (requirements-stonesoup.txt) is NOT part of
+# requirements.txt and is not assumed installed; this target runs the
+# architectural import-boundary test (which needs no Stone Soup install
+# at all -- it AST-scans the exact adapter/R21 modules' own source) and,
+# only if `stonesoup` actually imports successfully in the current
+# environment, the Stone Soup-dependent test files themselves. Not part
+# of check-all -- see the separate `stonesoup` CI job
+# (.github/workflows/formal-verification.yml) for where this runs with
+# the pinned dependency actually installed.
+check-stonesoup-adapter:
+	$(PYTEST) -q tests/test_stonesoup_import_boundary.py
+	@if $(PYTHON) -c "import stonesoup" 2>/dev/null; then \
+	  echo "check-stonesoup-adapter: stonesoup is importable -- running any Stone-Soup-dependent test files too"; \
+	  $(PYTEST) -q -k stonesoup --ignore=tests/test_stonesoup_import_boundary.py; \
+	  code=$$?; \
+	  if [ $$code -ne 0 ] && [ $$code -ne 5 ]; then exit $$code; fi; \
+	  if [ $$code -eq 5 ]; then echo "check-stonesoup-adapter: no additional Stone-Soup-dependent test files exist yet"; fi; \
+	else \
+	  echo "check-stonesoup-adapter: stonesoup not installed -- ran only the import-boundary test (see requirements-stonesoup.txt to install it)"; \
+	fi
 
 check-diagnostics:
 	$(PYTHON) realisability_diagnostic.py

@@ -132,3 +132,22 @@ jobs:
             exit 1
           fi
           echo "$output" | grep -qE "^[0-9]+ passed( in [0-9.]+s)?$" || { echo "::error::pytest did not report a clean 'N passed' summary line" >&2; exit 1; }
+
+  # Separate, optional job: Stone Soup (step 10 of the tracking-adapter
+  # implementation order) is pinned only in requirements-stonesoup.txt,
+  # never requirements.txt -- this job is the only place in CI that
+  # installs it, deliberately kept apart from the `python` job above so
+  # a Stone Soup regression or upstream version bump can never block the
+  # exact adapter's or R21's own CI signal. check-stonesoup-adapter is
+  # NOT part of check-all for the same reason.
+  stonesoup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: python -m pip install -U pip
+      - run: pip install -r requirements.txt
+      - run: pip install -r requirements-stonesoup.txt
+      - run: make check-stonesoup-adapter
