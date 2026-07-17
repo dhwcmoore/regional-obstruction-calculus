@@ -1,13 +1,17 @@
 # Tracking Adapter End-to-End Demonstration: Canonical Snapshot to Independently Checked Verdict
 
-**Status (2026-07-16): canonical reference example.** Every command and
-output below was actually run against this repository's own tracked
-fixtures (`examples/tracking_adapter/`), not reconstructed from memory or
-hand-edited afterward. `tests/test_tracking_adapter_documentation_drift
-.py` re-runs the same pipeline and asserts the commands, filenames,
-schema versions, and witness values below still hold — this document
-cannot silently drift from what the repository actually does without
-that test failing.
+**Status (2026-07-17): canonical reference example, now including a
+Stone Soup-derived example (Example 3).** Every command and output
+below was actually run against this repository's own tracked fixtures
+(`examples/tracking_adapter/`) or, for Example 3, a fresh Stone Soup run
+against the pinned version in `requirements-stonesoup.txt` — none
+reconstructed from memory or hand-edited afterward. `tests/test_
+tracking_adapter_documentation_drift.py` (Examples 1-2) and `tests/
+test_stonesoup_trackfusion_documentation_drift.py` (Example 3) re-run
+the same pipelines and assert the commands, filenames, schema versions,
+and witness values below still hold — this document cannot silently
+drift from what the repository actually does without those tests
+failing.
 
 ## Scope of what this demonstrates
 
@@ -223,6 +227,169 @@ $ python3 tracking_adapter_certificate.py verify-chain \
 CHAIN ACCEPT
 ```
 
+## Example 3: Stone Soup track fusion — real sensor-derived evidence, not a hand-authored fixture
+
+**Status update, superseding the closing section below as originally
+written**: Examples 1 and 2 above are hand-authored fixtures. This
+example runs the identical, unmodified chain on evidence produced by a
+genuinely different source: a deterministic reconstruction of Stone
+Soup's own two-radar track-fusion tutorial (`docs/examples/trackfusion/
+track_fusion_example.py`, pinned at `stonesoup==1.9.1`), traced and
+audited before implementation in
+`docs/design/STONESOUP_TRACK_FUSION_EVALUATOR_SPEC.md`. See that
+document for the full upstream-artefact audit, the state-projection and
+covariance-boundary decisions, and — critically — §9's topology
+argument, established *before* any evaluator code was written.
+
+Stone Soup is an OPTIONAL evidence producer, never a dependency of the
+exact adapter or R21 kernel: `tests/test_stonesoup_import_boundary.py`
+proves this mechanically (AST scan plus a runtime `sys.modules` check),
+and `tracking_adapter_stonesoup_trackfusion.py`/`tracking_adapter_
+stonesoup_trackfusion_emitter.py` are the only two files in this example
+that import it at all.
+
+```text
+Stone Soup (real installed APIs: RadarBearingRange, SingleTargetTracker,
+Tracks2GaussianDetectionFeeder, ChernoffUpdater, PointProcessMultiTarget
+Tracker) -- deterministic reconstruction
+          |
+          v
+tracking_adapter_stonesoup_trackfusion.py: run_scenario()
+    captures 2 local tracks (x, vx, y, vy + 4x4 covariance) immediately
+    before Tracks2GaussianDetectionFeeder, and the fused track (reporting
+    only)
+          |
+          v
+tracking_adapter_stonesoup_trackfusion_emitter.py: build_snapshot(policy)
+    projects state index 0 (x-position) into a tracking-adapter/v1
+    snapshot; velocity + covariance retained as Detection-level
+    provenance only
+          |
+          v
+[ the same unmodified chain as Examples 1-2: independent verification,
+  adapter certificate, real R21 emitter, both real R21 checkers,
+  complete chain verification ]
+```
+
+Two declared transformation policies over the SAME captured Stone Soup
+evidence:
+
+```sh
+$ python3 tracking_adapter_stonesoup_trackfusion_emitter.py \
+    --output snapshot.json --policy natural
+EMIT ACCEPT: wrote snapshot.json (policy=natural)
+
+$ python3 tracking_adapter_verifier.py snapshot.json
+ACCEPT: snapshot.json
+
+$ python3 tracking_adapter_certificate.py emit snapshot.json --output cert.json
+EMIT ACCEPT: wrote cert.json
+```
+
+Captured local track x-positions at the one shared evaluation timestamp
+(`track:kf-1` and `track:kf-2`, seed `20260117`, `NUMBER_OF_STEPS = 5`):
+
+```text
+track:kf-1  x = 26.98039176055807
+track:kf-2  x = 26.927482582803126
+```
+
+**`natural` policy** (identity transformation for both tracks — Stone
+Soup's own Unscented Kalman filters already produce both tracks in one
+common global frame, design doc §4):
+
+```json
+{"schema": "roc-input/v1", "D": [["-1", "1"]], "r": ["-52909/1000000"]}
+```
+
+```sh
+$ python3 r21_certificate_emitter.py roc_input.json --certificate r21_cert.json
+REPAIR: wrote r21_cert.json
+```
+
+```json
+{"schema": "repair-or-separator/v1", "input_digest": "sha256:e6d3b9545ee213f7f4fb32f7c03d108daa08bbfa469d4a19f61ea41b5e239cda", "result": "repair", "repair": ["52909/1000000", "0"]}
+```
+
+**`artificial_perturbation` policy** (a clearly labelled, evaluator-
+imposed offset of `10` added to `track:kf-2` only — testing
+transformation HANDLING, never presented as an attempt to manufacture an
+obstruction, design doc §9):
+
+```json
+{"schema": "roc-input/v1", "D": [["-1", "1"]], "r": ["9947091/1000000"]}
+```
+
+```sh
+$ python3 r21_certificate_emitter.py roc_input.json --certificate r21_cert.json
+REPAIR: wrote r21_cert.json
+```
+
+```json
+{"schema": "repair-or-separator/v1", "input_digest": "sha256:0a624b744a847da1fe45feacb12bde2a563aedbca7c9299872c0c13b3198db18", "result": "repair", "repair": ["-9947091/1000000", "0"]}
+```
+
+Both independent verifiers accept both certificates, and the complete
+chain verifies for both:
+
+```sh
+$ python3 r21_certificate_checker.py roc_input.json r21_cert.json
+ACCEPT: r21_cert.json          # exit 0
+
+$ ./roc-verify-ocaml roc_input.json r21_cert.json
+ACCEPT: r21_cert.json          # exit 0
+
+$ python3 tracking_adapter_certificate.py verify-chain \
+    snapshot.json cert.json r21_cert.json
+CHAIN ACCEPT
+```
+
+**Why both policies are necessarily repairable — checked directly, not
+assumed:** the comparison topology here is two tracks, one edge, no
+cycle: `D = (-1, 1)` is `1x2`, and `rank(D) = 1 = dim(C^1)` (confirmed
+directly via `rational_linear_algebra.nullspace_over_Q` in `tests/
+test_stonesoup_trackfusion.py`), so `D` is surjective onto the one-
+dimensional residue space — no residue on this topology can ever be
+obstructed, with or without the artificial perturbation. This is
+`docs/design/STONESOUP_TRACK_FUSION_EVALUATOR_SPEC.md` §9's central,
+checked-before-implementation finding: the empirical content of this
+example is the actual residue value and repair witness a real Stone
+Soup pipeline produces, not whether a witness exists at all. A cyclic,
+obstruction-capable Stone Soup topology is future work, not attempted
+here.
+
+**Provenance**: the two radar detection streams are genuinely disjoint
+`source_record` ancestors (confirmed in the design doc §7 by tracing
+the fetched upstream source directly — each `RadarBearingRange`
+generates its own, numerically distinct, detection at every timestep),
+so `tracking_adapter_provenance.check_independence` returns PROVENANCE
+ACCEPT for the one declared comparison, for both policies. This says
+`comparison:kf1-kf2` shares no sensor-record ancestor — **it does not
+say the two tracks are statistically independent estimators of the one
+shared simulated target**, a distinction the design doc's own §7 states
+explicitly as a non-claim, not an oversight.
+
+**Stone Soup's own fused-track output**, captured for side-by-side
+reporting only, never read by the adapter or fed into the verdict above:
+
+```json
+{"stonesoup_fused_track_position_x": "26.521051413273668"}
+```
+
+This is the STRUCTURAL result (do the declared local-track comparisons
+repair coherently?), not a STATISTICAL one (is Stone Soup's own fusion
+estimate itself accurate or well-calibrated?) — the two are not the same
+claim, and this document does not make the second one.
+
+Commands and captured values above were run against this repository's
+own working tree at commit `4b73def`, Python 3.12.3, Stone Soup 1.9.1,
+in a separate `.venv-stonesoup` environment (see `requirements-
+stonesoup.txt`) — never committed, never part of the main project venv.
+`tests/test_stonesoup_trackfusion_documentation_drift.py` re-runs this
+exact pipeline and asserts the values above still hold, skipping (not
+failing) when Stone Soup is not installed, matching every other Stone-
+Soup-dependent test file in this repository.
+
 ## What this licenses saying, precisely
 
 You can say: for a `tracking-adapter/v1` snapshot matching this
@@ -236,11 +403,27 @@ chain verifier that checks the whole thing end to end — including R21's
 own two independently-implemented verifiers on the resulting linear
 system.
 
-You cannot say this from raw tracking data, a real sensor feed, or
-Stone Soup output. The verified boundary begins at an already-encoded
-canonical `tracking-adapter/v1` snapshot, not at whatever produced it.
-Whether Stone Soup (or any other evidence source) populates that
-snapshot correctly is a separate verification task, out of scope for
-this demonstration — see `docs/design/TRACKING_EVIDENCE_TO_RATIONAL
-_ADAPTER_SPEC.md` §18 for what that later integration is and is not
-expected to add.
+**You can now also say**: this repository has run one real, deterministic,
+upstream-derived Stone Soup track-fusion pipeline (Example 3 above)
+through the exact same unmodified certificate chain, on genuinely
+captured local-tracker evidence (not hand-typed literals), and
+independently confirmed the repair witness in both a natural and a
+labelled artificially-perturbed transformation policy. Velocity and
+covariance survive as digest-bound provenance without ever entering
+`(D, r)`.
+
+**You still cannot say**: that this specific two-track topology
+demonstrates, or could ever demonstrate, an obstruction — `docs/design/
+STONESOUP_TRACK_FUSION_EVALUATOR_SPEC.md` §9 shows directly it cannot,
+for any residue value. That Stone Soup's own Chernoff/PHD fusion
+output, or its statistical calibration, has been validated by anything
+here — Example 3's fused-track value is reported, never verified. That
+a `PROVENANCE ACCEPT` verdict means the two tracks are statistically
+independent estimators of one shared physical target — it means only
+that their declared comparison shares no sensor-record ancestor. Nor,
+more generally, can you say this from raw tracking data or a real
+(non-simulated) sensor feed in general: the verified boundary begins at
+an already-encoded canonical `tracking-adapter/v1` snapshot, not at
+whatever produced it, and Example 3's own evidence, while genuinely
+Stone-Soup-derived, remains a deterministic, noise-suppressed,
+clutter-free simulation, not a live sensor feed.
