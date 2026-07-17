@@ -72,16 +72,22 @@ from r21_certificate_format import (
 )
 from tracking_adapter_canon import to_exact_rational_independent
 from tracking_adapter_format import (
+    ALLOWED_ANCESTRY_NODE_TYPES,
     ALLOWED_EDGE_ORIENTATIONS,
+    ANCESTRY_NODE_KEYS,
+    ANCESTRY_NODE_REQUIRED_KEYS,
     COMPARISON_EDGE_KEYS,
     DETECTION_KEYS,
     DETECTION_REQUIRED_KEYS,
+    INDEPENDENCE_POLICY_KEYS,
     SNAPSHOT_KEYS,
+    SNAPSHOT_REQUIRED_KEYS,
     SNAPSHOT_SCHEMA,
     SOURCE_KEYS,
     SUPPORTED_TRANSFORMATION_KINDS,
     TRACK_KEYS,
     TRANSFORMATION_KEYS,
+    AncestryNode,
     ComparisonEdge,
     Detection,
     LocalTrack,
@@ -108,6 +114,8 @@ class VerificationResult:
     edge_order: Optional[List[str]] = None
     roc_input: Optional[dict] = None
     input_digest: Optional[str] = None
+    ancestry_nodes: Optional[List["AncestryNode"]] = None
+    independence_policy: Optional[dict] = None
 
     def reject(self, msg: str) -> None:
         self.accepted = False
@@ -206,6 +214,91 @@ def _verify_parse_transformation(obj: Any) -> Transformation:
     return Transformation(**obj)
 
 
+def _verify_parse_ancestry_node(obj: Any) -> AncestryNode:
+    obj = _v_require_object(obj, "ancestry node")
+    validate_closed_keys(obj, ANCESTRY_NODE_KEYS, "ancestry node")
+    _v_require_keys(obj, ANCESTRY_NODE_REQUIRED_KEYS, "ancestry node")
+    if obj["node_type"] not in ALLOWED_ANCESTRY_NODE_TYPES:
+        raise ValueError(f"ancestry node {obj.get('node_id')!r} has unsupported node_type {obj['node_type']!r}")
+    if not isinstance(obj["parent_ids"], list):
+        raise ValueError(f"ancestry node {obj.get('node_id')!r} parent_ids must be a list")
+    return AncestryNode(**{**{"transformation_or_feeder_id": None}, **obj})
+
+
+def _verify_ancestry_graph(nodes: List[AncestryNode], result: VerificationResult) -> None:
+    """Independently-coded structural checks -- duplicate node_id,
+    dangling parent_id, cycles -- written from scratch here, sharing no
+    code with tracking_adapter_format.py's own `_validate_ancestry_graph`
+    beyond the shared `AncestryNode` type and `ALLOWED_ANCESTRY_NODE_
+    TYPES` constant, matching this file's own established independence
+    discipline for every other structural check it performs."""
+    seen_ids = set()
+    for node in nodes:
+        if node.node_id in seen_ids:
+            result.reject(f"duplicate ancestry node_id: {node.node_id!r}")
+        seen_ids.add(node.node_id)
+    if not result.accepted:
+        return
+
+    by_id = {node.node_id: node for node in nodes}
+    for node in nodes:
+        for parent_id in node.parent_ids:
+            if parent_id not in by_id:
+                result.reject(f"ancestry node {node.node_id!r} references unknown parent_id {parent_id!r}")
+    if not result.accepted:
+        return
+
+    # Cycle detection via iterative colouring (white/gray/black), not
+    # recursion -- an independent implementation strategy from the
+    # format module's own recursive DFS, not merely a renamed copy.
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {node.node_id: WHITE for node in nodes}
+    for start in nodes:
+        if color[start.node_id] != WHITE:
+            continue
+        stack = [(start.node_id, iter(by_id[start.node_id].parent_ids))]
+        color[start.node_id] = GRAY
+        while stack:
+            node_id, it = stack[-1]
+            advanced = False
+            for parent_id in it:
+                if color[parent_id] == GRAY:
+                    result.reject(f"ancestry graph contains a cycle involving {parent_id!r}")
+                    return
+                if color[parent_id] == WHITE:
+                    color[parent_id] = GRAY
+                    stack.append((parent_id, iter(by_id[parent_id].parent_ids)))
+                    advanced = True
+                    break
+            if not advanced:
+                color[node_id] = BLACK
+                stack.pop()
+
+
+def compute_ancestry_closure(nodes: List[AncestryNode], node_id: str) -> frozenset:
+    """Independently-implemented transitive closure: the set of all
+    `source_record` node_ids reachable by walking `parent_ids` from
+    `node_id`, arbitrarily far back. Iterative (a work-list, not
+    recursion), and does not reuse tracking_adapter_provenance.py's own
+    closure function at all -- see tests/test_stonesoup_provenance.py's
+    explicit cross-check that both implementations agree, which would be
+    meaningless if they were the same code."""
+    by_id = {node.node_id: node for node in nodes}
+    seen = set()
+    source_records = set()
+    worklist = [node_id]
+    while worklist:
+        current = worklist.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        node = by_id[current]
+        if node.node_type == "source_record":
+            source_records.add(current)
+        worklist.extend(node.parent_ids)
+    return frozenset(source_records)
+
+
 def _verify_no_duplicate_ids(items: List[Any], id_attr: str, label: str, result: VerificationResult) -> None:
     seen = set()
     for item in items:
@@ -296,25 +389,37 @@ def _verify_dimensions(tracks: List[LocalTrack], result: VerificationResult) -> 
 
 def compute_payload_digest(doc: dict) -> str:
     """Canonical whole-evidence digest, binding `sources`, `detections`,
-    `tracks`, `transformations`, and `comparison_edges` (everything
-    `(D, r)` is reconstructed FROM) -- the same style as `r21_
-    certificate_format.canonical_input_digest` (a fixed, deterministic
-    serialisation of the canonical JSON values, not of the input
-    document's own incidental formatting). Deliberately excludes
-    `derived_problem` (the CLAIM being checked against this evidence,
-    not part of the evidence itself) and `payload_digest` (which cannot
-    include itself)."""
-    canonical = json.dumps(
-        {
-            "sources": doc["sources"],
-            "detections": doc["detections"],
-            "tracks": doc["tracks"],
-            "transformations": doc["transformations"],
-            "comparison_edges": doc["comparison_edges"],
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    `tracks`, `transformations`, `comparison_edges`, and -- when present
+    -- `provenance` (the ancestry graph, step 10D) and `independence_
+    policy`, the same style as `r21_certificate_format.
+    canonical_input_digest` (a fixed, deterministic serialisation of the
+    canonical JSON values, not of the input document's own incidental
+    formatting). Deliberately excludes `derived_problem` (the CLAIM
+    being checked against this evidence, not part of the evidence
+    itself) and `payload_digest` (which cannot include itself).
+
+    `provenance`/`independence_policy` are included ONLY when non-
+    trivial (a non-empty ancestry graph / a declared policy) --
+    preserving the EXACT digest every snapshot committed before step
+    10D already has (`provenance: []`, no `independence_policy` key),
+    while still binding ancestry tampering to the digest for any
+    snapshot that actually declares a graph. Checked directly in tests/
+    test_tracking_adapter_provenance.py, not assumed: tampering
+    `provenance` on a snapshot that uses it changes this digest."""
+    payload = {
+        "sources": doc["sources"],
+        "detections": doc["detections"],
+        "tracks": doc["tracks"],
+        "transformations": doc["transformations"],
+        "comparison_edges": doc["comparison_edges"],
+    }
+    provenance = doc.get("provenance") or []
+    if provenance:
+        payload["provenance"] = provenance
+    independence_policy = doc.get("independence_policy")
+    if independence_policy is not None:
+        payload["independence_policy"] = independence_policy
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -329,7 +434,7 @@ def _verify(doc: Any, result: VerificationResult) -> None:
     if extra:
         result.reject(f"snapshot has unrecognized field(s): {sorted(extra)}")
         return
-    missing = SNAPSHOT_KEYS - set(doc.keys())
+    missing = SNAPSHOT_REQUIRED_KEYS - set(doc.keys())
     if missing:
         result.reject(f"snapshot missing required field(s): {sorted(missing)}")
         return
@@ -338,7 +443,7 @@ def _verify(doc: Any, result: VerificationResult) -> None:
         return
 
     # 3: resource limits before any expensive reconstruction work.
-    for key in ("sources", "detections", "tracks", "transformations", "comparison_edges"):
+    for key in ("sources", "detections", "tracks", "transformations", "comparison_edges", "provenance"):
         if not isinstance(doc.get(key), list):
             result.reject(f"{key} must be a list")
             return
@@ -353,6 +458,7 @@ def _verify(doc: Any, result: VerificationResult) -> None:
         tracks = [_verify_parse_track(t) for t in doc["tracks"]]
         edges = [_verify_parse_edge(e) for e in doc["comparison_edges"]]
         transformations = [_verify_parse_transformation(t) for t in doc["transformations"]]
+        ancestry_nodes = [_verify_parse_ancestry_node(n) for n in doc["provenance"]]
     except ValueError as e:
         result.reject(str(e))
         return
@@ -368,6 +474,26 @@ def _verify(doc: Any, result: VerificationResult) -> None:
     _verify_references(sources, detections, tracks, edges, transformations, result)
     if not result.accepted:
         return
+
+    _verify_ancestry_graph(ancestry_nodes, result)
+    if not result.accepted:
+        return
+
+    independence_policy = doc.get("independence_policy")
+    if independence_policy is not None:
+        if not isinstance(independence_policy, dict):
+            result.reject("independence_policy must be a JSON object")
+            return
+        extra_pol = set(independence_policy.keys()) - INDEPENDENCE_POLICY_KEYS
+        if extra_pol:
+            result.reject(f"independence_policy has unrecognized field(s): {sorted(extra_pol)}")
+            return
+        missing_pol = INDEPENDENCE_POLICY_KEYS - set(independence_policy.keys())
+        if missing_pol:
+            result.reject(f"independence_policy missing required field(s): {sorted(missing_pol)}")
+            return
+    result.ancestry_nodes = ancestry_nodes
+    result.independence_policy = independence_policy
 
     # 5: dimensions and timestamps. (Coordinate-space/units cross-
     # checking beyond dimension count is deferred -- not yet specified

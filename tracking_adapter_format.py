@@ -111,6 +111,44 @@ TRANSFORMATION_KEYS = frozenset({
 })
 SUPPORTED_TRANSFORMATION_KINDS = frozenset({"additive_offset"})
 
+# `AncestryNode` -- step 10D of the tracking-adapter implementation
+# order (the Stone Soup data-incest / provenance-admissibility layer).
+# Reuses the SNAPSHOT's own pre-existing `provenance` field (previously
+# declared but never given real content -- an unvalidated `List[Any]`
+# since step 1) to carry the ancestry graph, rather than adding a new
+# top-level key for it: `provenance: []` (the value every prior fixture
+# already has) now means "no ancestry graph declared", preserving every
+# snapshot committed before this step unchanged. `independence_policy`
+# IS a new, OPTIONAL top-level key (absent in every pre-10D snapshot,
+# which is why it is allowed but not required, see SNAPSHOT_REQUIRED_
+# KEYS below) -- it is a policy DECLARATION, not evidence, so folding it
+# into `provenance` would conflate the two.
+#
+# GOVERNING DISTINCTION, stated once here since every function below
+# depends on keeping it: R21 (steps 3-9) asks whether accepted pairwise
+# declarations can be repaired coherently -- a MATHEMATICAL question
+# about (D, r). This layer asks whether those declarations are
+# ADMISSIBLE as independent evidence in the first place -- an
+# EVIDENTIARY question about the ancestry graph, answered before (D, r)
+# is ever computed, and answered independently of whether (D, r) turns
+# out repairable or obstructed. Numerical coherence does not establish
+# evidential independence, and a genuinely obstructed (D, r) says
+# nothing about whether the evidence that produced it was admissible.
+ALLOWED_ANCESTRY_NODE_TYPES = frozenset({
+    "source_record", "detection", "local_track", "track_feeder",
+    "fusion_stage_track", "declared_comparison",
+})
+ANCESTRY_NODE_KEYS = frozenset({
+    "node_id", "node_type", "parent_ids", "originating_source_id",
+    "source_record_digest", "transformation_or_feeder_id",
+})
+ANCESTRY_NODE_REQUIRED_KEYS = ANCESTRY_NODE_KEYS - {"transformation_or_feeder_id"}
+
+INDEPENDENCE_POLICY_KEYS = frozenset({
+    "policy_version", "independent_comparisons", "shared_ancestry_prohibited",
+    "declared_correlated_reuse",
+})
+
 DERIVED_PROBLEM_KEYS = frozenset({"D", "r"})
 
 SNAPSHOT_KEYS = frozenset({
@@ -118,7 +156,13 @@ SNAPSHOT_KEYS = frozenset({
     "state_space", "quantisation_policy", "correction_policy",
     "sources", "detections", "tracks", "transformations",
     "comparison_edges", "provenance", "derived_problem", "payload_digest",
+    "independence_policy",
 })
+# `independence_policy` is OPTIONAL -- every snapshot committed before
+# step 10D lacks it, and provenance/independence checking (10D) is
+# opt-in: absent entirely means "no independence claim is being made,
+# skip that checking", not a validation failure.
+SNAPSHOT_REQUIRED_KEYS = SNAPSHOT_KEYS - {"independence_policy"}
 
 
 @dataclass(frozen=True)
@@ -179,6 +223,16 @@ class Transformation:
 
 
 @dataclass(frozen=True)
+class AncestryNode:
+    node_id: str
+    node_type: str
+    parent_ids: List[str]
+    originating_source_id: str
+    source_record_digest: str
+    transformation_or_feeder_id: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class AdapterSnapshot:
     schema_version: str
     scenario_id: str
@@ -191,9 +245,10 @@ class AdapterSnapshot:
     tracks: List[LocalTrack]
     transformations: List[Transformation]
     comparison_edges: List[ComparisonEdge]
-    provenance: List[Any]
+    provenance: List[AncestryNode]
     derived_problem: Dict[str, Any]
     payload_digest: str
+    independence_policy: Optional[Dict[str, Any]] = None
 
 
 def _require_object(obj: Any, label: str) -> dict:
@@ -276,6 +331,60 @@ def parse_comparison_edge(obj: Any) -> ComparisonEdge:
     return ComparisonEdge(**obj)
 
 
+def parse_ancestry_node(obj: Any) -> AncestryNode:
+    obj = _require_object(obj, "ancestry node")
+    validate_closed_keys(obj, ANCESTRY_NODE_KEYS, "ancestry node")
+    _require_keys(obj, ANCESTRY_NODE_REQUIRED_KEYS, "ancestry node")
+    if obj["node_type"] not in ALLOWED_ANCESTRY_NODE_TYPES:
+        raise ValueError(
+            f"ancestry node {obj.get('node_id')!r} has unsupported node_type {obj['node_type']!r}; "
+            f"supported: {sorted(ALLOWED_ANCESTRY_NODE_TYPES)}"
+        )
+    if not isinstance(obj["parent_ids"], list):
+        raise ValueError(f"ancestry node {obj.get('node_id')!r} parent_ids must be a list")
+    return AncestryNode(**{**{"transformation_or_feeder_id": None}, **obj})
+
+
+def _validate_ancestry_graph(nodes: List[AncestryNode]) -> None:
+    """Structural checks only -- duplicate node IDs, dangling parent
+    references, and cycles. Does NOT compute closures for independence
+    checking (that is tracking_adapter_provenance.py's job, a separate
+    concern per this step's own governing distinction) -- a malformed
+    graph is a SNAPSHOT REJECT regardless of what any independence
+    policy says, exactly as a malformed comparison_edges list already
+    is regardless of what (D, r) would have been."""
+    seen_ids = set()
+    for node in nodes:
+        if node.node_id in seen_ids:
+            raise ValueError(f"duplicate ancestry node_id: {node.node_id!r}")
+        seen_ids.add(node.node_id)
+
+    by_id = {node.node_id: node for node in nodes}
+    for node in nodes:
+        for parent_id in node.parent_ids:
+            if parent_id not in by_id:
+                raise ValueError(f"ancestry node {node.node_id!r} references unknown parent_id {parent_id!r}")
+
+    # Cycle detection: plain DFS with a recursion-stack set, over the
+    # (small, finite) ancestry graph.
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {node.node_id: WHITE for node in nodes}
+
+    def visit(node_id: str, path: List[str]) -> None:
+        color[node_id] = GRAY
+        for parent_id in by_id[node_id].parent_ids:
+            if color[parent_id] == GRAY:
+                cycle = " -> ".join(path + [parent_id])
+                raise ValueError(f"ancestry graph contains a cycle: {cycle}")
+            if color[parent_id] == WHITE:
+                visit(parent_id, path + [parent_id])
+        color[node_id] = BLACK
+
+    for node in nodes:
+        if color[node.node_id] == WHITE:
+            visit(node.node_id, [node.node_id])
+
+
 def _validate_references(
     detections: List[Detection],
     tracks: List[LocalTrack],
@@ -347,7 +456,7 @@ def parse_snapshot_doc(doc: Any) -> AdapterSnapshot:
     fixtures without writing a temp file for every case."""
     doc = _require_object(doc, "snapshot")
     validate_closed_keys(doc, SNAPSHOT_KEYS, "snapshot")
-    _require_keys(doc, SNAPSHOT_KEYS, "snapshot")
+    _require_keys(doc, SNAPSHOT_REQUIRED_KEYS, "snapshot")
 
     if doc["schema_version"] != SNAPSHOT_SCHEMA:
         raise ValueError(f"unrecognized schema_version: {doc['schema_version']!r}")
@@ -374,14 +483,31 @@ def parse_snapshot_doc(doc: Any) -> AdapterSnapshot:
     tracks = [parse_track(t) for t in doc["tracks"]]
     edges = [parse_comparison_edge(e) for e in doc["comparison_edges"]]
     transformations = [parse_transformation(t) for t in doc["transformations"]]
+    # `provenance` is optionally an ancestry graph (10D) -- `[]` (every
+    # pre-10D snapshot's own value) means "no graph declared".
+    ancestry_nodes = [parse_ancestry_node(n) for n in doc["provenance"]]
 
     _check_no_duplicate_ids(sources, "source_id", "sources")
     _check_no_duplicate_ids(detections, "detection_id", "detections")
     _check_no_duplicate_ids(tracks, "track_id", "tracks")
     _check_no_duplicate_ids(edges, "edge_id", "comparison_edges")
     _check_no_duplicate_ids(transformations, "transformation_id", "transformations")
+    _check_no_duplicate_ids(ancestry_nodes, "node_id", "provenance (ancestry graph)")
 
     _validate_references(detections, tracks, edges, sources, transformations)
+    _validate_ancestry_graph(ancestry_nodes)
+
+    independence_policy = doc.get("independence_policy")
+    if independence_policy is not None:
+        independence_policy = _require_object(independence_policy, "independence_policy")
+        validate_closed_keys(independence_policy, INDEPENDENCE_POLICY_KEYS, "independence_policy")
+        _require_keys(independence_policy, INDEPENDENCE_POLICY_KEYS, "independence_policy")
+        if not isinstance(independence_policy["independent_comparisons"], list):
+            raise ValueError("independence_policy.independent_comparisons must be a list")
+        if not isinstance(independence_policy["declared_correlated_reuse"], list):
+            raise ValueError("independence_policy.declared_correlated_reuse must be a list")
+        if not isinstance(independence_policy["shared_ancestry_prohibited"], bool):
+            raise ValueError("independence_policy.shared_ancestry_prohibited must be a bool")
 
     return AdapterSnapshot(
         schema_version=doc["schema_version"],
@@ -395,9 +521,10 @@ def parse_snapshot_doc(doc: Any) -> AdapterSnapshot:
         tracks=tracks,
         transformations=transformations,
         comparison_edges=edges,
-        provenance=doc["provenance"],
+        provenance=ancestry_nodes,
         derived_problem=derived_problem,
         payload_digest=doc["payload_digest"],
+        independence_policy=independence_policy,
     )
 
 

@@ -41,6 +41,7 @@ CORE_MODULES = [
     "tracking_adapter_verifier",
     "tracking_adapter_certificate",
     "tracking_adapter_generator",
+    "tracking_adapter_provenance",
     "r21_certificate_format",
     "r21_certificate_emitter",
     "r21_certificate_checker",

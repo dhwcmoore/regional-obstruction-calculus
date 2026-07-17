@@ -50,6 +50,7 @@ from typing import Any, Dict, List
 from r21_certificate_format import canonical_input_digest, strict_json_load, validate_closed_keys
 from r21_certificate_checker import check_certificate
 from tracking_adapter_canon import to_exact_rational_independent
+from tracking_adapter_provenance import check_independence
 from tracking_adapter_verifier import VerificationResult, verify_snapshot_doc
 
 CERTIFICATE_SCHEMA = "tracking-adapter-certificate/v1"
@@ -185,6 +186,16 @@ def emit_certificate(doc: dict) -> dict:
     result = verify_snapshot_doc(doc)
     if not result.accepted:
         raise CertificateError(f"snapshot rejected by independent verifier: {result.reasons}")
+
+    # Provenance/independence admissibility is checked BEFORE anything
+    # below is built -- a PROVENANCE REFUSE means neither this
+    # certificate nor R21 is ever invoked, per this step's own governing
+    # distinction (tracking_adapter_provenance.py's own docstring): R21
+    # is never used to "detect data incest", so this check happens
+    # entirely separately from, and prior to, (D, r) reconstruction.
+    provenance = check_independence(result)
+    if not provenance.accepted:
+        raise CertificateError(f"PROVENANCE REFUSE ({provenance.reason}): {provenance.message}")
 
     row_bindings = [{"row_index": i, "edge_id": eid} for i, eid in enumerate(result.edge_order)]
     column_bindings = [{"col_index": i, "track_id": tid} for i, tid in enumerate(result.track_order)]
