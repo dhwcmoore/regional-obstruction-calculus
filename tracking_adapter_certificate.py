@@ -409,3 +409,30 @@ def _verify_chain(snapshot_doc: Any, certificate: Any, r21_certificate: Any, res
         return
 
     # 10. Every stage agreed -- ACCEPT.
+
+
+def main() -> None:
+    """CLI (`tracking-adapter-verify-chain <snapshot.json> <certificate.
+    json> <r21_certificate.json>`), matching R21's own `roc-verify`
+    fail-closed convention: exit 0 only if the complete chain is
+    accepted, exit 1 otherwise, printing every rejection reason."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Verify the complete tracking-adapter evidence chain.")
+    parser.add_argument("snapshot", help="path to a tracking-adapter/v1 snapshot JSON file")
+    parser.add_argument("certificate", help="path to a tracking-adapter-certificate/v1 file")
+    parser.add_argument("r21_certificate", help="path to a repair-or-separator/v1 R21 certificate file")
+    args = parser.parse_args()
+
+    result = verify_chain_files(args.snapshot, args.certificate, args.r21_certificate)
+    if result.accepted:
+        print("CHAIN ACCEPT")
+        raise SystemExit(0)
+    print("CHAIN REJECT")
+    for reason in result.reasons:
+        print(f"  - {reason}")
+    raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

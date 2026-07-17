@@ -72,6 +72,7 @@ from r21_certificate_format import (
 )
 from tracking_adapter_canon import to_exact_rational_independent
 from tracking_adapter_format import (
+    ALLOWED_EDGE_ORIENTATIONS,
     COMPARISON_EDGE_KEYS,
     DETECTION_KEYS,
     DETECTION_REQUIRED_KEYS,
@@ -174,6 +175,14 @@ def _verify_parse_track(obj: Any) -> LocalTrack:
     obj = _v_require_object(obj, "track")
     validate_closed_keys(obj, TRACK_KEYS, "track")
     _v_require_keys(obj, TRACK_KEYS, "track")
+    if not isinstance(obj["state_values"], list):
+        raise ValueError(f"track {obj.get('track_id')!r} state_values must be a list, got {obj['state_values']!r}")
+    if not isinstance(obj["ancestry"], list):
+        raise ValueError(f"track {obj.get('track_id')!r} ancestry must be a list, got {obj['ancestry']!r}")
+    if not isinstance(obj["contributing_detection_ids"], list) or len(obj["contributing_detection_ids"]) == 0:
+        raise ValueError(
+            f"track {obj.get('track_id')!r} must have at least one contributing_detection_id"
+        )
     return LocalTrack(**obj)
 
 
@@ -181,6 +190,10 @@ def _verify_parse_edge(obj: Any) -> ComparisonEdge:
     obj = _v_require_object(obj, "comparison_edge")
     validate_closed_keys(obj, COMPARISON_EDGE_KEYS, "comparison_edge")
     _v_require_keys(obj, COMPARISON_EDGE_KEYS, "comparison_edge")
+    if obj["orientation"] not in ALLOWED_EDGE_ORIENTATIONS:
+        raise ValueError(
+            f"comparison_edge {obj.get('edge_id')!r} has unsupported orientation {obj['orientation']!r}"
+        )
     return ComparisonEdge(**obj)
 
 
@@ -458,3 +471,27 @@ def _verify(doc: Any, result: VerificationResult) -> None:
 
     # 14: reaching here with result.accepted still True means every check
     # above passed -- ACCEPT.
+
+
+def main() -> None:
+    """CLI (`tracking-adapter-verify <snapshot.json>`), matching R21's
+    own `roc-verify` fail-closed convention: exit 0 only if `result.
+    accepted`, exit 1 otherwise, printing every rejection reason."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Independently verify a tracking-adapter/v1 snapshot.")
+    parser.add_argument("snapshot", help="path to a tracking-adapter/v1 snapshot JSON file")
+    args = parser.parse_args()
+
+    result = verify_snapshot(args.snapshot)
+    if result.accepted:
+        print(f"ACCEPT: {args.snapshot}")
+        raise SystemExit(0)
+    print(f"REJECT: {args.snapshot}")
+    for reason in result.reasons:
+        print(f"  - {reason}")
+    raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

@@ -86,6 +86,12 @@ COMPARISON_EDGE_KEYS = frozenset({
     "comparison_space_id", "transformation_id", "discrepancy",
     "coreference_provenance",
 })
+# The only orientation this design's D (SS3: row = target-column minus
+# source-column) is defined for -- "orientation" was previously a
+# free-form required string never checked against any allowed value at
+# all, a real gap caught only by asking "what happens if this says
+# something else."
+ALLOWED_EDGE_ORIENTATIONS = frozenset({"source_to_target"})
 
 # `Transformation`, added when step 3 (the (D,r) generator) needed a
 # properly typed object here instead of step 1's original placeholder
@@ -229,6 +235,20 @@ def parse_track(obj: Any) -> LocalTrack:
     obj = _require_object(obj, "track")
     validate_closed_keys(obj, TRACK_KEYS, "track")
     _require_keys(obj, TRACK_KEYS, "track")
+    # Dataclass field type annotations are hints, not runtime-enforced --
+    # `LocalTrack(**obj)` below would happily accept a string where
+    # `List[str]` is declared, so these list-typed fields need an
+    # explicit isinstance check, caught only by actually trying a
+    # wrong-typed value rather than trusting the annotation.
+    if not isinstance(obj["state_values"], list):
+        raise ValueError(f"track {obj.get('track_id')!r} state_values must be a list, got {obj['state_values']!r}")
+    if not isinstance(obj["ancestry"], list):
+        raise ValueError(f"track {obj.get('track_id')!r} ancestry must be a list, got {obj['ancestry']!r}")
+    if not isinstance(obj["contributing_detection_ids"], list) or len(obj["contributing_detection_ids"]) == 0:
+        raise ValueError(
+            f"track {obj.get('track_id')!r} must have at least one contributing_detection_id "
+            f"(a track with no ancestry at all is not derived from any evidence)"
+        )
     return LocalTrack(**obj)
 
 
@@ -248,6 +268,11 @@ def parse_comparison_edge(obj: Any) -> ComparisonEdge:
     obj = _require_object(obj, "comparison_edge")
     validate_closed_keys(obj, COMPARISON_EDGE_KEYS, "comparison_edge")
     _require_keys(obj, COMPARISON_EDGE_KEYS, "comparison_edge")
+    if obj["orientation"] not in ALLOWED_EDGE_ORIENTATIONS:
+        raise ValueError(
+            f"comparison_edge {obj.get('edge_id')!r} has unsupported orientation {obj['orientation']!r}; "
+            f"supported: {sorted(ALLOWED_EDGE_ORIENTATIONS)}"
+        )
     return ComparisonEdge(**obj)
 
 
