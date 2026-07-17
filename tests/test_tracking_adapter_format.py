@@ -18,6 +18,7 @@ from tracking_adapter_format import (
     parse_snapshot_doc,
     parse_source,
     parse_track,
+    parse_transformation,
 )
 
 
@@ -72,6 +73,16 @@ def _valid_edge(edge_id="e12", source_track_id="trk-1", target_track_id="trk-2")
     }
 
 
+def _valid_transformation(transformation_id, edge_id, track_id, offset="0"):
+    return {
+        "transformation_id": transformation_id,
+        "edge_id": edge_id,
+        "track_id": track_id,
+        "kind": "additive_offset",
+        "offset": offset,
+    }
+
+
 def _valid_snapshot():
     return {
         "schema_version": SNAPSHOT_SCHEMA,
@@ -89,7 +100,10 @@ def _valid_snapshot():
             _valid_track("trk-1", "tracker-1", ("det-1",)),
             _valid_track("trk-2", "tracker-2", ("det-2",)),
         ],
-        "transformations": [],
+        "transformations": [
+            _valid_transformation("xf-e12-1", "e12", "trk-1", "0"),
+            _valid_transformation("xf-e12-2", "e12", "trk-2", "1"),
+        ],
         "comparison_edges": [_valid_edge("e12", "trk-1", "trk-2")],
         "provenance": [],
         "derived_problem": {"D": [], "r": []},
@@ -154,6 +168,62 @@ def test_edge_rejects_unknown_field():
     obj["bogus"] = 1
     with pytest.raises(ValueError, match="unrecognized field"):
         parse_comparison_edge(obj)
+
+
+def test_valid_transformation_parses():
+    parse_transformation(_valid_transformation("xf-1", "e12", "trk-1"))
+
+
+def test_transformation_rejects_unsupported_kind():
+    obj = _valid_transformation("xf-1", "e12", "trk-1")
+    obj["kind"] = "projective"
+    with pytest.raises(ValueError, match="unsupported transformation kind"):
+        parse_transformation(obj)
+
+
+def test_transformation_rejects_unknown_field():
+    obj = _valid_transformation("xf-1", "e12", "trk-1")
+    obj["bogus"] = 1
+    with pytest.raises(ValueError, match="unrecognized field"):
+        parse_transformation(obj)
+
+
+# --- transformation cross-referencing within a full snapshot -----------
+
+def test_snapshot_rejects_transformation_dangling_edge_reference():
+    doc = _valid_snapshot()
+    doc["transformations"][0] = _valid_transformation("xf-bad", "e-does-not-exist", "trk-1")
+    with pytest.raises(ValueError, match="references unknown edge_id"):
+        parse_snapshot_doc(doc)
+
+
+def test_snapshot_rejects_transformation_track_not_an_edge_endpoint():
+    doc = _valid_snapshot()
+    doc["tracks"].append(_valid_track("trk-3", "tracker-3", ("det-1",)))
+    doc["transformations"][0] = _valid_transformation("xf-bad", "e12", "trk-3")
+    with pytest.raises(ValueError, match="not an endpoint of edge"):
+        parse_snapshot_doc(doc)
+
+
+def test_snapshot_rejects_edge_missing_a_transformation():
+    doc = _valid_snapshot()
+    doc["transformations"].pop()  # remove trk-2's transformation for e12
+    with pytest.raises(ValueError, match="has no declared transformation"):
+        parse_snapshot_doc(doc)
+
+
+def test_snapshot_rejects_edge_with_duplicate_transformation_for_same_track():
+    doc = _valid_snapshot()
+    doc["transformations"].append(_valid_transformation("xf-e12-1-dup", "e12", "trk-1", "5"))
+    with pytest.raises(ValueError, match="expected exactly 1"):
+        parse_snapshot_doc(doc)
+
+
+def test_snapshot_rejects_duplicate_transformation_id():
+    doc = _valid_snapshot()
+    doc["transformations"][1] = dict(doc["transformations"][1], transformation_id="xf-e12-1")
+    with pytest.raises(ValueError, match="duplicate transformation_id"):
+        parse_snapshot_doc(doc)
 
 
 # --- full snapshot ------------------------------------------------------

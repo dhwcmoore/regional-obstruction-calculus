@@ -87,6 +87,24 @@ COMPARISON_EDGE_KEYS = frozenset({
     "coreference_provenance",
 })
 
+# `Transformation`, added when step 3 (the (D,r) generator) needed a
+# properly typed object here instead of step 1's original placeholder
+# `transformations: List[Dict[str, Any]]` -- the design doc's SS6
+# construction needs, per edge, one declared transformation PER
+# ENDPOINT TRACK (F_ij^(i) and F_ij^(j)), not one transformation per
+# edge as a whole. `kind` is fixed to `"additive_offset"` at v1, the
+# same affine family already checked end-to-end in this design's
+# feasibility spike (SS20): `F(x) = x + offset`. A `Transformation`
+# is looked up by its OWN `(edge_id, track_id)` pair, not by an edge's
+# `transformation_id` field -- that field is a human/provenance label
+# for which registration procedure was used, not a foreign key into
+# this list, to avoid conflating "which named procedure" with "which
+# specific per-endpoint parameter record".
+TRANSFORMATION_KEYS = frozenset({
+    "transformation_id", "edge_id", "track_id", "kind", "offset",
+})
+SUPPORTED_TRANSFORMATION_KINDS = frozenset({"additive_offset"})
+
 DERIVED_PROBLEM_KEYS = frozenset({"D", "r"})
 
 SNAPSHOT_KEYS = frozenset({
@@ -146,6 +164,15 @@ class ComparisonEdge:
 
 
 @dataclass(frozen=True)
+class Transformation:
+    transformation_id: str
+    edge_id: str
+    track_id: str
+    kind: str
+    offset: str  # canonical decimal string, per SS10 -- exact conversion happens in tracking_adapter_canon.py
+
+
+@dataclass(frozen=True)
 class AdapterSnapshot:
     schema_version: str
     scenario_id: str
@@ -156,7 +183,7 @@ class AdapterSnapshot:
     sources: List[Source]
     detections: List[Detection]
     tracks: List[LocalTrack]
-    transformations: List[Dict[str, Any]]
+    transformations: List[Transformation]
     comparison_edges: List[ComparisonEdge]
     provenance: List[Any]
     derived_problem: Dict[str, Any]
@@ -205,6 +232,18 @@ def parse_track(obj: Any) -> LocalTrack:
     return LocalTrack(**obj)
 
 
+def parse_transformation(obj: Any) -> Transformation:
+    obj = _require_object(obj, "transformation")
+    validate_closed_keys(obj, TRANSFORMATION_KEYS, "transformation")
+    _require_keys(obj, TRANSFORMATION_KEYS, "transformation")
+    if obj["kind"] not in SUPPORTED_TRANSFORMATION_KINDS:
+        raise ValueError(
+            f"unsupported transformation kind {obj['kind']!r}; "
+            f"supported: {sorted(SUPPORTED_TRANSFORMATION_KINDS)}"
+        )
+    return Transformation(**obj)
+
+
 def parse_comparison_edge(obj: Any) -> ComparisonEdge:
     obj = _require_object(obj, "comparison_edge")
     validate_closed_keys(obj, COMPARISON_EDGE_KEYS, "comparison_edge")
@@ -217,6 +256,7 @@ def _validate_references(
     tracks: List[LocalTrack],
     edges: List[ComparisonEdge],
     sources: List[Source],
+    transformations: List[Transformation],
 ) -> None:
     """Rejects dangling references -- design doc SS12 item 5 ("reject
     dangling references"), checked here since it is purely structural
@@ -225,6 +265,7 @@ def _validate_references(
     source_ids = {s.source_id for s in sources}
     detection_ids = {d.detection_id for d in detections}
     track_ids = {t.track_id for t in tracks}
+    edge_by_id = {e.edge_id: e for e in edges}
 
     for d in detections:
         if d.source_id not in source_ids:
@@ -242,6 +283,36 @@ def _validate_references(
             raise ValueError(f"comparison_edge {e.edge_id!r} references unknown target_track_id {e.target_track_id!r}")
         if e.source_track_id == e.target_track_id:
             raise ValueError(f"comparison_edge {e.edge_id!r} compares a track to itself ({e.source_track_id!r})")
+
+    for xf in transformations:
+        edge = edge_by_id.get(xf.edge_id)
+        if edge is None:
+            raise ValueError(f"transformation {xf.transformation_id!r} references unknown edge_id {xf.edge_id!r}")
+        if xf.track_id not in (edge.source_track_id, edge.target_track_id):
+            raise ValueError(
+                f"transformation {xf.transformation_id!r} declares track_id {xf.track_id!r}, "
+                f"which is not an endpoint of edge {xf.edge_id!r} "
+                f"({edge.source_track_id!r} -> {edge.target_track_id!r})"
+            )
+
+    # Every edge needs EXACTLY one transformation per endpoint (SS6: F_ij^(i)
+    # and F_ij^(j), both declared) -- neither zero (no registration claim at
+    # all) nor more than one (an ambiguous, conflicting claim for the same
+    # endpoint under the same edge) is well-formed.
+    per_edge_track_count: Dict[Any, int] = {}
+    for xf in transformations:
+        key = (xf.edge_id, xf.track_id)
+        per_edge_track_count[key] = per_edge_track_count.get(key, 0) + 1
+    for e in edges:
+        for track_id in (e.source_track_id, e.target_track_id):
+            count = per_edge_track_count.get((e.edge_id, track_id), 0)
+            if count == 0:
+                raise ValueError(f"comparison_edge {e.edge_id!r} has no declared transformation for track {track_id!r}")
+            if count > 1:
+                raise ValueError(
+                    f"comparison_edge {e.edge_id!r} has {count} declared transformations for "
+                    f"track {track_id!r}, expected exactly 1"
+                )
 
 
 def parse_snapshot_doc(doc: Any) -> AdapterSnapshot:
@@ -277,13 +348,15 @@ def parse_snapshot_doc(doc: Any) -> AdapterSnapshot:
     detections = [parse_detection(d) for d in doc["detections"]]
     tracks = [parse_track(t) for t in doc["tracks"]]
     edges = [parse_comparison_edge(e) for e in doc["comparison_edges"]]
+    transformations = [parse_transformation(t) for t in doc["transformations"]]
 
     _check_no_duplicate_ids(sources, "source_id", "sources")
     _check_no_duplicate_ids(detections, "detection_id", "detections")
     _check_no_duplicate_ids(tracks, "track_id", "tracks")
     _check_no_duplicate_ids(edges, "edge_id", "comparison_edges")
+    _check_no_duplicate_ids(transformations, "transformation_id", "transformations")
 
-    _validate_references(detections, tracks, edges, sources)
+    _validate_references(detections, tracks, edges, sources, transformations)
 
     return AdapterSnapshot(
         schema_version=doc["schema_version"],
@@ -295,7 +368,7 @@ def parse_snapshot_doc(doc: Any) -> AdapterSnapshot:
         sources=sources,
         detections=detections,
         tracks=tracks,
-        transformations=doc["transformations"],
+        transformations=transformations,
         comparison_edges=edges,
         provenance=doc["provenance"],
         derived_problem=derived_problem,
