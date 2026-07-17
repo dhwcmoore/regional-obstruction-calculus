@@ -1,0 +1,11 @@
+{
+  "schema": "repair-or-separator/v1",
+  "input_digest": "sha256:3db7d90d805d5e8f20708609a395c479951dc1e4ab18901c363f9269ad5bb240",
+  "result": "separator",
+  "separator": [
+    "1/5",
+    "1/5",
+    "1/5",
+    "-1/5"
+  ]
+}
