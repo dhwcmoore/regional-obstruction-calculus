@@ -134,7 +134,7 @@ See `REPRODUCIBILITY.md` for dependency order, exact commands, toolchain
 versions, the inventory check, the preliminary source scan, and the
 complete `coqchk` invocation.
 
-## 7. Applied domain adapter: Meridian tracking
+## 7. Applied domain adapter: multi-sensor tracking
 
 Not part of the numbered R1-R24 ladder — an applied layer connecting R21's exact rational repair-or-separator decision to multi-sensor tracking evidence. See `docs/design/TRACKING_EVIDENCE_TO_RATIONAL_ADAPTER_SPEC.md` for the governing design and `docs/TRACKING_ADAPTER_END_TO_END_DEMONSTRATION.md` for a captured, drift-locked run of the complete chain.
 

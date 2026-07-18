@@ -1,4 +1,4 @@
-# Tracking Evidence to Rational Adapter: Exact Semantics (first Meridian domain adapter)
+# Tracking Evidence to Rational Adapter: Exact Semantics (first applied domain adapter)
 
 **Status (2026-07-16): design, now reviewed against the real R21
 pipeline. No adapter code, no Stone Soup dependency, and no `rocq/*.v`
@@ -569,8 +569,8 @@ tampering with evidence, transformations, provenance, `D`, `r`, or
 digests is rejected (§14); no uncontrolled time, RNG, or floating-point
 rendering enters any fixture; the exact claim is restricted to the
 canonical quantised snapshot (§10); and the design clearly marks what
-remains a provisional reference policy rather than a Meridian-validated
-MIST policy.
+remains a provisional reference policy rather than an externally
+validated MIST policy.
 
 ## 18. What happens immediately afterward -- Stone Soup stays outside this milestone
 
@@ -586,7 +586,8 @@ Soup version; reproduce a seeded linear-architecture example; map its
 sources/detections/tracks into §11's canonical snapshot; freeze the
 output; run §12's verifier; run R21; verify the certificate; port a
 track-to-track fusion example; add a data-incest provenance case;
-present the result to Meridian as a functioning reference integration.
+present the result to a prospective partner as a functioning reference
+integration.
 None of that is scoped further here.
 
 ## 20. Feasibility review results (2026-07-16)
@@ -684,10 +685,10 @@ but it means "the design is validated" refers specifically to §4-§10 and
   explored further here) because it is the smallest one that avoids §5's
   "residue automatically telescopes to zero" failure mode, not because
   the others are unsound.
-- That this connects to any real Meridian tracking scenario, sensor,
+- That this connects to any real deployed tracking scenario, sensor,
   or fusion architecture -- §0's citations ground this document's
   mathematical conventions in the existing repository, not in any actual
-  Meridian data.
+  partner data.
 - That velocity, more than four trackers, more than one timestamp, or
   any of §1's excluded complexity classes are scoped, planned, or even
   sketched beyond being named as explicitly deferred.

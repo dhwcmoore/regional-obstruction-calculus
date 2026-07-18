@@ -16,8 +16,10 @@ current boundary.
 rewrite)**: this repository's git history was rewritten to remove the
 `paper/` manuscript directory (relocated, with its own commit history,
 to the separate `obstruction-calculus-manuscripts` repository), replace
-an internal codename ("TerraSense" -> "Meridian") throughout, and strip
-AI co-author trailers from every commit message. Every commit's hash
+the name of a prospective industry partner with a neutral descriptor
+throughout (the partner is not named here pending their agreement to be
+named), and strip AI co-author trailers from every commit message.
+Every commit's hash
 changed as a result, including every tag through `v0.21`. Short commit
 hashes cited below and in the `v0.1`-`v0.21` tag messages describe the
 history as it existed BEFORE that rewrite and no longer resolve to
@@ -26,13 +28,12 @@ what happened and in what order, not as literal object references.
 
 ## Unreleased
 
-### Meridian applied layer: tracking-evidence-to-rational adapter, and Stone Soup integration
+### Applied layer: tracking-evidence-to-rational adapter, and Stone Soup integration
 
 Not part of the numbered R1-R24 ladder — an applied layer connecting
 R21's exact rational repair-or-separator decision to multi-sensor
-tracking evidence, per the user's own Meridian priority order (this
-work was chosen over R28 as "the strategically stronger sequence
-because it directly advances the Meridian integration path").
+tracking evidence, chosen over R28 as the strategically stronger
+sequence because it directly advances the applied integration path.
 
 - `docs/design/TRACKING_EVIDENCE_TO_RATIONAL_ADAPTER_SPEC.md`
   (`09824ba`): the governing design. `Db = r` is equivalent to
@@ -142,7 +143,7 @@ because it directly advances the Meridian integration path").
   transpose), was the only one needed anywhere.
 - `PresentationEquivalence` bundles a transformed system with the
   `InvertibleMatrix` witnesses used to reach it, so later results (R23
-  signature transport, compositional transport, Meridian-facing
+  signature transport, compositional transport, application-facing
   presentation changes) can depend on one proposition instead of
   repeatedly unfolding `transform_operator`/`transform_residue`.
 - Instantiated on a coordinate swap, a nonzero rational scaling, an

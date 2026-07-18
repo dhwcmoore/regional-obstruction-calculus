@@ -22,7 +22,7 @@ Yes, in both directions, exactly (not merely up to scalar), and the
 transport promotes to a verdict-invariance theorem, not just witness
 manipulation. This is deliberately narrower than "presentation
 invariance" in general -- §4 states precisely what is excluded, because
-the Meridian motivation for this document (representation changes
+the applied motivation for this document (representation changes
 from zoom, resolution, and coordinate-frame changes) mostly does
 **not** live inside this narrow class, and claiming otherwise would
 repeat the archived scaffold's mistake recorded in
@@ -181,7 +181,7 @@ All of the above -- and every supporting lemma in
 reports the full 37-module dependency closure introduces no
 project-added axioms or admitted proofs.
 
-## 4. What this explicitly does not cover -- stated because the Meridian motivation mostly lives here, not in §1-3
+## 4. What this explicitly does not cover -- stated because the applied motivation mostly lives here, not in §1-3
 
 None of the following are invertible linear changes of basis, and the
 proved theorems say nothing about them:
@@ -200,18 +200,18 @@ proved theorems say nothing about them:
 Zoom, in particular, is usually **not** a single invertible linear map
 in the sense §1 needs: it typically combines a genuinely invertible
 scale change with a non-invertible crop or resolution change. A
-Meridian zoom scenario would need to be decomposed into its
+zoom scenario would need to be decomposed into its
 invertible part (in scope here) and its lossy part (needing a
 refinement/quotient theory this document does not attempt) before this
 theorem applies to any of it. This document does not perform that
-decomposition for any real Meridian scenario -- that is exactly the
+decomposition for any real deployment scenario -- that is exactly the
 domain-adapter-level work `docs/design/R21_CERTIFICATE_TCB.md` already
 says is out of scope for the calculus itself.
 
 Also not covered: **affine** changes of presentation (a translation
 plus a linear map, `x' = Bx + t`) are not linear maps and are not
 covered by §1's `D' = B D A^{-1}` form -- pixel-coordinate translation
-(part of Meridian's own crop/pan scenario) is affine, not linear.
+(part of the crop/pan scenario) is affine, not linear.
 Whether to extend to affine transformations is deferred to a follow-up
 document, not attempted here or implicitly assumed by any proof above.
 
@@ -279,7 +279,7 @@ lemma), not a custom extensionality axiom.
 ## 7. What this document does not claim
 
 - That this covers, decomposes, or says anything about any actual
-  Meridian zoom, resolution, or coordinate-frame scenario -- §4 states
+  zoom, resolution, or coordinate-frame scenario -- §4 states
   plainly that most such scenarios are not purely linear and invertible,
   and no decomposition of a real scenario is attempted here.
 - That affine transformations, lossy transformations, or any of §4's

@@ -5,7 +5,7 @@ committed as a repository proof, and no `rocq/*.v` file should be
 created or modified from it until an explicit go-ahead names which
 theorem below (or a scoped variant) to build.** This document exists to
 answer, before any streaming/incremental-certificate code is written,
-what the smallest true one-step transition calculus is that Meridian's
+what the smallest true one-step transition calculus is that the applied
 "evidence arrives over time" scenario actually needs, and to separate
 that from the larger, genuinely harder, non-monotone update calculus
 that "evidence changes over time" would require instead.
@@ -580,9 +580,9 @@ append arithmetic checked here.
 - That this composes with R24 (a presentation change happening
   concurrently with evidence arriving) -- not attempted here, flagged in
   §0 as a later question if it arises.
-- That this connects to any real Meridian evidence stream -- per this
+- That this connects to any real deployed evidence stream -- per this
   repository's own recurring caveat (`CERTIFICATE_TRANSPORT_SPEC.md` §7,
-  `OBSTRUCTION_SIGNATURE_SPEC.md` §5), no real Meridian scenario is
+  `OBSTRUCTION_SIGNATURE_SPEC.md` §5), no real deployment scenario is
   decomposed or claimed to fit this scope here.
 - That this is the next authorized phase. Starting any tracked Rocq
   implementation from this document -- including only §3's smallest

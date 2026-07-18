@@ -202,9 +202,9 @@ does not have, not a small extension of what R21/R22/R24 already prove.
 ### 3.3. Recommendation
 
 Modest R23 (§3.1) first, completely, before deciding whether full
-computational R23 (§3.2) is needed at all. Meridian's own near-term
-signature use ("these four transformation declarations form an
-inconsistent loop", per the Meridian roadmap's R30 rationale) may only
+computational R23 (§3.2) is needed at all. Near-term applied signature
+use ("these four transformation declarations form an inconsistent
+loop", per this repository's own R30 rationale) may only
 need §3.1's guarantee -- that a *given* annihilator basis correctly
 detects repairability -- with basis computation handled outside Rocq
 (e.g. by R21's existing elimination, informally, with the Rocq theorem
@@ -256,9 +256,9 @@ deferred) and R22's own resolved question (Route C, not Route B).
   two possible scopings -- they are the two this document identifies as
   most useful to distinguish; a future revision may find a different
   cut point more useful once §3.1 is actually attempted.
-- That this connects to any real Meridian signature use case --
+- That this connects to any real signature use case --
   `docs/design/CERTIFICATE_TRANSPORT_SPEC.md` §4's own caveat about not
-  decomposing real Meridian scenarios applies equally here.
+  decomposing real deployment scenarios applies equally here.
 - That this is the next authorized phase. Per this repository's own
   precedent, starting any tracked implementation from this document --
   including §3.1's smaller first theorem -- needs its own explicit

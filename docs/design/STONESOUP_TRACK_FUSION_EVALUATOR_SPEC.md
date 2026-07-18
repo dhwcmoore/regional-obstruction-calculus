@@ -467,8 +467,8 @@ pinned environment:
   built, though `pip install -r requirements-stonesoup.txt` still
   installs them all, since Stone Soup's own `pyproject.toml` declares
   them as required, not optional, dependencies. **This is the single
-  largest practical cost for an edge-computing conversation with
-  Meridian**: a full Stone Soup install pulls in a plotting/scientific
+  largest practical cost for an edge-computing deployment**: a full
+  Stone Soup install pulls in a plotting/scientific
   stack (matplotlib+scipy+plotly+contourpy+kiwisolver+pillow+...) an
   edge deployment would need to either accept or work around (e.g. via
   a constrained install excluding Stone Soup's own optional extras, not

@@ -34,7 +34,7 @@
    `PresentationEquivalence` bundles a `D`/`D'`/`r`/`r'` quadruple with
    the `InvertibleMatrix` witnesses and the two transport equations, so
    later results (R23 signature transport, compositional transport,
-   Meridian-facing presentation changes) can depend on one clean
+   application-facing presentation changes) can depend on one clean
    proposition instead of repeatedly unfolding `transform_operator`/
    `transform_residue`.
 
